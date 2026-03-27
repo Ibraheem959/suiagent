@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>$AGENT — SUI AGENT | Built for AI Agents</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --cyan: #00f5ff;
+    --purple: #b44fff;
+    --green: #00ff88;
+    --bg: #040810;
+    --bg2: #070d1a;
+    --card: #0a1525;
+    --border: rgba(0,245,255,0.15);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: #c8daf0;
+    font-family: 'Exo 2', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* GRID OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,245,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,255,0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* SCANLINES */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  section, nav, footer { position: relative; z-index: 1; }
+
+  /* TYPOGRAPHY */
+  .font-orbitron { font-family: 'Orbitron', sans-serif; }
+  .font-mono { font-family: 'Share Tech Mono', monospace; }
+
+  /* GLOWS */
+  .glow-cyan { text-shadow: 0 0 20px var(--cyan), 0 0 40px rgba(0,245,255,0.4); }
+  .glow-purple { text-shadow: 0 0 20px var(--purple), 0 0 40px rgba(180,79,255,0.4); }
+  .glow-green { text-shadow: 0 0 20px var(--green), 0 0 40px rgba(0,255,136,0.4); }
+
+  .border-cyan { border-color: var(--cyan); box-shadow: 0 0 15px rgba(0,245,255,0.2); }
+  .border-purple { border-color: var(--purple); box-shadow: 0 0 15px rgba(180,79,255,0.2); }
+  .border-green { border-color: var(--green); box-shadow: 0 0 15px rgba(0,255,136,0.2); }
+
+  /* BUTTONS */
+  .btn-cyan {
+    background: transparent;
+    border: 1.5px solid var(--cyan);
+    color: var(--cyan);
+    padding: 12px 28px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-block;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  }
+  .btn-cyan::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--cyan);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .btn-cyan:hover { color: var(--bg); box-shadow: 0 0 30px rgba(0,245,255,0.5); }
+  .btn-cyan:hover::before { opacity: 1; }
+  .btn-cyan span { position: relative; z-index: 1; }
+
+  .btn-purple {
+    background: linear-gradient(135deg, rgba(180,79,255,0.15), rgba(180,79,255,0.05));
+    border: 1.5px solid var(--purple);
+    color: var(--purple);
+    padding: 12px 28px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-block;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  }
+  .btn-purple:hover {
+    background: var(--purple);
+    color: #fff;
+    box-shadow: 0 0 30px rgba(180,79,255,0.5);
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0.6;
+  }
+
+  /* BADGE */
+  .badge {
+    display: inline-block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    border: 1px solid;
+    letter-spacing: 0.1em;
+  }
+
+  /* ANIMATIONS */
+  @keyframes pulse-cyan {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-12px); }
+  }
+  @keyframes scan {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
+  }
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes glitchX {
+    0%, 100% { clip-path: inset(0 0 100% 0); }
+    10% { clip-path: inset(20% 0 60% 0); transform: translateX(-3px); }
+    20% { clip-path: inset(50% 0 30% 0); transform: translateX(3px); }
+    30% { clip-path: inset(10% 0 80% 0); transform: translateX(-2px); }
+    40% { clip-path: inset(70% 0 10% 0); transform: translateX(2px); }
+    50% { clip-path: inset(0 0 0 0); transform: translateX(0); }
+  }
+  @keyframes rotate360 {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes tradeIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes ripple {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(3); opacity: 0; }
+  }
+
+  .animate-float { animation: float 4s ease-in-out infinite; }
+  .animate-pulse-cyan { animation: pulse-cyan 2s ease-in-out infinite; }
+  .animate-fade-up { animation: fadeSlideUp 0.8s ease forwards; }
+
+  /* HERO ORBS */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+  }
+
+  /* TICKER */
+  .ticker-wrap {
+    overflow: hidden;
+    background: linear-gradient(90deg, var(--bg) 0%, rgba(0,245,255,0.05) 50%, var(--bg) 100%);
+    border-top: 1px solid rgba(0,245,255,0.1);
+    border-bottom: 1px solid rgba(0,245,255,0.1);
+    padding: 10px 0;
+  }
+  .ticker-content {
+    display: flex;
+    white-space: nowrap;
+    animation: ticker 20s linear infinite;
+    width: max-content;
+  }
+
+  /* NAV */
+  nav {
+    border-bottom: 1px solid rgba(0,245,255,0.08);
+    backdrop-filter: blur(20px);
+    background: rgba(4,8,16,0.8);
+  }
+
+  /* HEXAGON */
+  .hex {
+    width: 80px; height: 92px;
+    background: linear-gradient(135deg, rgba(0,245,255,0.1), rgba(180,79,255,0.1));
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex; align-items: center; justify-content: center;
+    border: none;
+    position: relative;
+  }
+
+  /* STEP */
+  .step-line {
+    position: absolute;
+    left: 19px;
+    top: 48px;
+    bottom: -20px;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--cyan), transparent);
+  }
+
+  /* CODE BLOCK */
+  .code-block {
+    background: #020609;
+    border: 1px solid rgba(0,245,255,0.15);
+    border-left: 3px solid var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    padding: 20px;
+    color: #88c0d0;
+    overflow-x: auto;
+    position: relative;
+  }
+  .code-block .kw { color: var(--purple); }
+  .code-block .str { color: var(--green); }
+  .code-block .cm { color: #4a5568; }
+  .code-block .fn { color: var(--cyan); }
+  .code-block .num { color: #ffa07a; }
+
+  /* TRADE CARD */
+  .trade-card {
+    border: 1px solid;
+    padding: 12px 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: tradeIn 0.5s ease forwards;
+    position: relative;
+    overflow: hidden;
+  }
+  .trade-card::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 3px;
+  }
+  .trade-buy { border-color: rgba(0,255,136,0.3); background: rgba(0,255,136,0.04); }
+  .trade-buy::after { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .trade-sell { border-color: rgba(255,70,90,0.3); background: rgba(255,70,90,0.04); }
+  .trade-sell::after { background: #ff465a; box-shadow: 0 0 8px #ff465a; }
+
+  /* RIPPLE DOT */
+  .dot-ripple {
+    position: relative;
+    width: 10px; height: 10px;
+  }
+  .dot-ripple::before, .dot-ripple::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--green);
+  }
+  .dot-ripple::before { animation: ripple 2s ease-out infinite; }
+  .dot-ripple::after { animation: ripple 2s ease-out infinite 1s; }
+
+  /* TAB */
+  .tab-btn { transition: all 0.2s; }
+  .tab-btn.active {
+    color: var(--cyan);
+    border-bottom: 2px solid var(--cyan);
+  }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: var(--cyan);
+    opacity: 0.7;
+    text-transform: uppercase;
+  }
+
+  /* GLITCH TITLE */
+  .glitch-wrap { position: relative; display: inline-block; }
+  .glitch-wrap::before {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    color: var(--purple);
+    animation: glitchX 5s infinite;
+    opacity: 0.5;
+  }
+
+  /* SCROLL FADE */
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* COPY BTN */
+  .copy-btn {
+    background: rgba(0,245,255,0.08);
+    border: 1px solid rgba(0,245,255,0.2);
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover { background: rgba(0,245,255,0.15); }
+
+  /* AGENT VS HUMAN */
+  .vs-card {
+    flex: 1;
+    padding: 28px;
+    border: 1px solid;
+    position: relative;
+    overflow: hidden;
+  }
+  .vs-card-human { border-color: rgba(255,200,100,0.2); background: rgba(255,200,100,0.03); }
+  .vs-card-agent { border-color: rgba(0,245,255,0.3); background: rgba(0,245,255,0.05); }
+  .vs-card-agent::before {
+    content: 'RECOMMENDED';
+    position: absolute;
+    top: 12px; right: -24px;
+    background: var(--cyan);
+    color: var(--bg);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.55rem;
+    padding: 3px 30px;
+    transform: rotate(45deg);
+    letter-spacing: 0.1em;
+  }
+
+  /* MOBILE */
+  @media (max-width: 768px) {
+    .hero-title { font-size: 2.8rem !important; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════ NAV ══════════════════════════════════════ -->
+<nav class="sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center gap-3">
+    <div class="w-8 h-8 rounded-full border border-cyan-400 flex items-center justify-center" style="box-shadow:0 0 12px rgba(0,245,255,0.4)">
+      <span style="font-family:'Orbitron',sans-serif;font-size:0.6rem;color:var(--cyan)">AI</span>
+    </div>
+    <span class="font-orbitron text-sm font-bold" style="color:var(--cyan);letter-spacing:0.15em">$AGENT</span>
+  </div>
+  <div class="nav-links flex items-center gap-8">
+    <a href="#token" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Token</a>
+    <a href="#agents" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Agents</a>
+    <a href="#setup" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Setup</a>
+    <a href="#live" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Live</a>
+  </div>
+  <a href="#setup" class="btn-cyan text-xs"><span>DEPLOY AGENT</span></a>
+</nav>
+
+<!-- ══════════════════════════════════════ PRICE BAR ══════════════════════════════════════ -->
+<div id="priceBar" style="background:#050c18;border-bottom:1px solid rgba(0,245,255,0.12);padding:10px 24px;position:sticky;top:65px;z-index:49;backdrop-filter:blur(20px);">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+
+    <!-- Left: Token identity + price -->
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:28px;height:28px;border-radius:50%;border:1px solid var(--cyan);background:rgba(0,245,255,0.1);display:flex;align-items:center;justify-content:center;box-shadow:0 0 8px rgba(0,245,255,0.3)">
+          <span style="font-family:Orbitron,sans-serif;font-size:0.45rem;color:var(--cyan)">AI</span>
+        </div>
+        <div>
+          <span class="font-orbitron text-sm font-bold text-white">$AGENT</span>
+          <span class="font-mono text-xs text-slate-500" style="margin-left:6px">/ SUI</span>
+        </div>
+      </div>
+
+      <!-- Price in USD -->
+      <div>
+        <span class="font-orbitron text-lg font-black" id="priceUsd" style="color:var(--cyan)">$—</span>
+        <span class="font-mono text-xs" id="priceChange" style="margin-left:8px;color:#4a5568">—</span>
+      </div>
+    </div>
+
+    <!-- Middle: Stats -->
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+      <div style="text-align:center">
+        <div class="font-mono text-xs text-slate-500">PRICE (SUI)</div>
+        <div class="font-mono text-xs font-bold" id="priceSui" style="color:#c8daf0">—</div>
+      </div>
+      <div style="width:1px;height:28px;background:rgba(0,245,255,0.1)"></div>
+      <div style="text-align:center">
+        <div class="font-mono text-xs text-slate-500">MKT CAP</div>
+        <div class="font-mono text-xs font-bold" id="marketCap" style="color:var(--green)">—</div>
+      </div>
+      <div style="width:1px;height:28px;background:rgba(0,245,255,0.1)"></div>
+      <div style="text-align:center">
+        <div class="font-mono text-xs text-slate-500">FDV</div>
+        <div class="font-mono text-xs font-bold" id="fdv" style="color:var(--green)">—</div>
+      </div>
+      <div style="width:1px;height:28px;background:rgba(0,245,255,0.1)"></div>
+      <div style="text-align:center">
+        <div class="font-mono text-xs text-slate-500">LIQUIDITY</div>
+        <div class="font-mono text-xs font-bold" id="liquidity" style="color:var(--purple)">—</div>
+      </div>
+      <div style="width:1px;height:28px;background:rgba(0,245,255,0.1)"></div>
+      <div style="text-align:center">
+        <div class="font-mono text-xs text-slate-500">POOL</div>
+        <div class="font-mono text-xs font-bold" id="poolReserves" style="color:#c8daf0">—</div>
+      </div>
+    </div>
+
+    <!-- Right: Buy/Sell buttons -->
+    <div style="display:flex;gap:8px;">
+      <button onclick="showTradeModal('buy')" style="background:rgba(0,255,136,0.1);border:1px solid var(--green);color:var(--green);font-family:Orbitron,sans-serif;font-size:0.7rem;padding:8px 20px;cursor:pointer;letter-spacing:0.1em;transition:all 0.2s;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)" onmouseover="this.style.background='rgba(0,255,136,0.2)'" onmouseout="this.style.background='rgba(0,255,136,0.1)'">▲ BUY</button>
+      <button onclick="showTradeModal('sell')" style="background:rgba(255,70,90,0.1);border:1px solid #ff465a;color:#ff465a;font-family:Orbitron,sans-serif;font-size:0.7rem;padding:8px 20px;cursor:pointer;letter-spacing:0.1em;transition:all 0.2s;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)" onmouseover="this.style.background='rgba(255,70,90,0.2)'" onmouseout="this.style.background='rgba(255,70,90,0.1)'">▼ SELL</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ TRADE MODAL ══════════════════════════════════════ -->
+<div id="tradeModal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+  <div style="background:#070d1a;border:1px solid rgba(0,245,255,0.2);max-width:520px;width:90%;padding:40px;position:relative;">
+    <!-- Top glow line -->
+    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent)"></div>
+    <!-- Close -->
+    <button onclick="closeTradeModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#4a5568;font-size:1.2rem;cursor:pointer;font-family:monospace">✕</button>
+
+    <div id="modalTitle" class="font-orbitron text-lg font-bold text-white mb-2">How to Trade $AGENT</div>
+    <div class="font-mono text-xs mb-6" style="color:var(--cyan)">◈ AGENT-ONLY POOL — ON-CHAIN ENFORCED</div>
+
+    <div style="background:#020609;border:1px solid rgba(255,180,0,0.2);padding:16px;margin-bottom:24px;">
+      <div class="font-mono text-xs" style="color:#ffc864;margin-bottom:8px">⚠ IMPORTANT — READ BEFORE TRADING</div>
+      <p class="font-mono text-xs text-slate-400 leading-relaxed">
+        $AGENT trades are <span style="color:var(--cyan)">exclusively executed by AI agents</span> through our verified pool. 
+        Humans cannot trade directly — every transaction requires a valid <span style="color:var(--cyan)">AgentBadge NFT</span> 
+        issued to your agent wallet. Attempting to call the pool without a badge will result in a hard revert.
+      </p>
+    </div>
+
+    <div class="font-mono text-xs text-slate-500 mb-3 tracking-widest">◈ TO TRADE $AGENT YOUR AGENT MUST:</div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px;">
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="width:24px;height:24px;border:1px solid var(--cyan);background:rgba(0,245,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <span class="font-orbitron text-xs" style="color:var(--cyan)">1</span>
+        </div>
+        <div>
+          <div class="font-mono text-xs text-white mb-1">Register your agent wallet</div>
+          <div class="font-mono text-xs text-slate-500">Submit your wallet below to receive an AgentBadge NFT automatically minted on-chain.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="width:24px;height:24px;border:1px solid var(--purple);background:rgba(180,79,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <span class="font-orbitron text-xs" style="color:var(--purple)">2</span>
+        </div>
+        <div>
+          <div class="font-mono text-xs text-white mb-1">Set up your Eliza agent</div>
+          <div class="font-mono text-xs text-slate-500">Install Eliza, configure your character.json with the $AGENT pool address and your registered wallet.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="width:24px;height:24px;border:1px solid var(--green);background:rgba(0,255,136,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <span class="font-orbitron text-xs" style="color:var(--green)">3</span>
+        </div>
+        <div>
+          <div class="font-mono text-xs text-white mb-1">Call buy_agent_verified() or sell_agent_verified()</div>
+          <div class="font-mono text-xs text-slate-500">Your agent passes the badge + registry check. Trade executes. No badge = hard revert.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;">
+      <a href="#setup" onclick="closeTradeModal()" style="flex:1;text-align:center;background:rgba(0,245,255,0.08);border:1px solid var(--cyan);color:var(--cyan);font-family:Orbitron,sans-serif;font-size:0.7rem;padding:12px;cursor:pointer;letter-spacing:0.1em;text-decoration:none;display:block">◈ SETUP GUIDE</a>
+      <a href="#setup" onclick="closeTradeModal()" style="flex:1;text-align:center;background:rgba(0,255,136,0.08);border:1px solid var(--green);color:var(--green);font-family:Orbitron,sans-serif;font-size:0.7rem;padding:12px;cursor:pointer;letter-spacing:0.1em;text-decoration:none;display:block">REGISTER WALLET →</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ TICKER ══════════════════════════════════════ -->
+<div class="ticker-wrap">
+  <div class="ticker-content">
+    <span class="font-mono text-xs px-8" style="color:var(--cyan)">$AGENT&nbsp;&nbsp;▲ 0.00000428 SUI</span>
+    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
+    <span class="font-mono text-xs px-8" style="color:var(--green)">AGENT #7 BOUGHT 2.4M $AGENT</span>
+    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
+    <span class="font-mono text-xs px-8" style="color:var(--purple)">CHAIN: SUI MAINNET</span>
+    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
+    <span class="font-mono text-xs px-8" style="color:var(--cyan)">SUPPLY: 1,000,000,000 $AGENT</span>
+    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
+    <span class="font-mono text-xs px-8" style="color:var(--green)">AGENT #19 SOLD 800K $AGENT</span>
+    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
+    <span class="font-mono text-xs px-8" style="color:var(--cyan)">$AGENT&nbsp;&nbsp;▲ 0.00000428 SUI</span>
+    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
+    <span class="font-mono text-xs px-8" style="color:var(--green)">AGENT #7 BOUGHT 2.4M $AGENT</span>
+    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
+    <span class="font-mono text-xs px-8" style="color:var(--purple)">CHAIN: SUI MAINNET</span>
+    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
+    <span class="font-mono text-xs px-8" style="color:var(--cyan)">SUPPLY: 1,000,000,000 $AGENT</span>
+    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
+    <span class="font-mono text-xs px-8" style="color:var(--green)">AGENT #19 SOLD 800K $AGENT</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ HERO ══════════════════════════════════════ -->
+<section style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:80px 24px;overflow:hidden;position:relative;">
+  <!-- Background orbs -->
+  <div class="orb" style="width:600px;height:600px;background:radial-gradient(circle,rgba(0,245,255,0.06) 0%,transparent 70%);top:-100px;left:-200px;"></div>
+  <div class="orb" style="width:500px;height:500px;background:radial-gradient(circle,rgba(180,79,255,0.07) 0%,transparent 70%);bottom:-50px;right:-100px;"></div>
+
+  <!-- Floating hex grid decoration -->
+  <div style="position:absolute;right:5%;top:20%;opacity:0.12;animation:float 6s ease-in-out infinite;">
+    <svg width="200" height="230" viewBox="0 0 200 230" fill="none">
+      <polygon points="100,5 195,55 195,175 100,225 5,175 5,55" stroke="#00f5ff" stroke-width="1" fill="none"/>
+      <polygon points="100,25 175,70 175,160 100,205 25,160 25,70" stroke="#00f5ff" stroke-width="0.5" fill="none"/>
+      <polygon points="100,45 155,85 155,145 100,185 45,145 45,85" stroke="#00f5ff" stroke-width="0.5" fill="none"/>
+      <text x="100" y="120" text-anchor="middle" fill="#00f5ff" font-family="Orbitron" font-size="14">AI</text>
+    </svg>
+  </div>
+
+  <div style="position:absolute;left:5%;bottom:25%;opacity:0.1;animation:float 8s ease-in-out infinite 2s;">
+    <svg width="120" height="138" viewBox="0 0 120 138" fill="none">
+      <polygon points="60,3 117,33 117,105 60,135 3,105 3,33" stroke="#b44fff" stroke-width="1" fill="none"/>
+      <polygon points="60,20 100,42 100,96 60,118 20,96 20,42" stroke="#b44fff" stroke-width="0.5" fill="none"/>
+    </svg>
+  </div>
+
+  <div class="text-center" style="max-width:860px;animation:fadeSlideUp 1s ease forwards;">
+    <div class="section-label mb-6">◈ SUI BLOCKCHAIN · AUTONOMOUS AI TRADING ◈</div>
+
+    <div class="glitch-wrap mb-2" data-text="SUI AGENT">
+      <h1 class="hero-title font-orbitron font-black" style="font-size:5.5rem;line-height:1;color:#fff;letter-spacing:0.05em;">
+        SUI <span style="color:var(--cyan);text-shadow:0 0 40px var(--cyan),0 0 80px rgba(0,245,255,0.3)">AGENT</span>
+      </h1>
+    </div>
+
+    <div class="font-mono text-lg mb-6 mt-4" style="color:var(--purple)">
+      $AGENT
+    </div>
+
+    <p class="text-lg mb-4" style="color:#8ba8c8;max-width:640px;margin:0 auto 20px;line-height:1.7;font-weight:300;">
+      The First Token Built for AI Agents to Trade Autonomously on Sui.
+      No emotion. No sleep. No hesitation.
+    </p>
+
+    <!-- WARNING BANNER -->
+    <div style="border:1px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.05);padding:14px 28px;display:inline-block;margin-bottom:36px;position:relative;clip-path:polygon(12px 0%,100% 0%,calc(100% - 12px) 100%,0% 100%)">
+      <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);"></div>
+      <p class="font-orbitron text-sm" style="color:var(--cyan);letter-spacing:0.08em;">
+        ⚡ THIS TOKEN IS INTENDED TO BE TRADED PRIMARILY BY AI AGENTS
+      </p>
+    </div>
+
+    <div class="flex flex-wrap gap-4 justify-center mb-12">
+      <a href="#setup" class="btn-cyan"><span>◈ DEPLOY YOUR AGENT</span></a>
+      <a href="https://suiscan.xyz/mainnet/coin/0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT" target="_blank" class="btn-purple">VIEW ON SUISCAN →</a>
+    </div>
+
+    <!-- STATS ROW -->
+    <div class="flex flex-wrap justify-center gap-8">
+      <div class="text-center">
+        <div class="font-orbitron text-2xl font-bold" style="color:var(--green)">1B</div>
+        <div class="font-mono text-xs text-slate-500 mt-1">TOTAL SUPPLY</div>
+      </div>
+      <div style="width:1px;background:var(--border);height:40px;margin:auto 0;"></div>
+      <div class="text-center">
+        <div class="font-orbitron text-2xl font-bold" style="color:var(--cyan)">SUI</div>
+        <div class="font-mono text-xs text-slate-500 mt-1">NETWORK</div>
+      </div>
+      <div style="width:1px;background:var(--border);height:40px;margin:auto 0;"></div>
+      <div class="text-center">
+        <div class="font-orbitron text-2xl font-bold" style="color:var(--purple)">24/7</div>
+        <div class="font-mono text-xs text-slate-500 mt-1">AGENT TRADING</div>
+      </div>
+      <div style="width:1px;background:var(--border);height:40px;margin:auto 0;"></div>
+      <div class="text-center">
+        <div class="font-orbitron text-2xl font-bold" style="color:var(--green)">0</div>
+        <div class="font-mono text-xs text-slate-500 mt-1">EMOTIONS</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scroll indicator -->
+  <div style="position:absolute;bottom:32px;left:50%;transform:translateX(-50%);animation:pulse-cyan 2s infinite">
+    <div class="font-mono text-xs text-slate-600">SCROLL TO EXPLORE ↓</div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ TOKEN INFO ══════════════════════════════════════ -->
+<section id="token" style="padding:100px 24px;background:linear-gradient(to bottom,var(--bg),var(--bg2))">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="reveal text-center mb-16">
+      <div class="section-label mb-3">◈ TOKEN DETAILS</div>
+      <h2 class="font-orbitron text-3xl font-bold" style="color:#fff">Contract Information</h2>
+    </div>
+
+    <div class="reveal grid gap-4" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+      <!-- Token Name -->
+      <div class="card p-6 rounded-none">
+        <div class="font-mono text-xs text-slate-500 mb-2 tracking-widest">TOKEN NAME</div>
+        <div class="font-orbitron text-xl font-bold" style="color:var(--cyan)">SUI AGENT</div>
+      </div>
+      <!-- Ticker -->
+      <div class="card p-6 rounded-none">
+        <div class="font-mono text-xs text-slate-500 mb-2 tracking-widest">TICKER</div>
+        <div class="font-orbitron text-xl font-bold" style="color:var(--purple)">$AGENT</div>
+      </div>
+      <!-- Chain -->
+      <div class="card p-6 rounded-none">
+        <div class="font-mono text-xs text-slate-500 mb-2 tracking-widest">CHAIN</div>
+        <div class="flex items-center gap-2">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--cyan);animation:pulse-cyan 2s infinite"></div>
+          <div class="font-orbitron text-xl font-bold text-white">Sui Mainnet</div>
+        </div>
+      </div>
+      <!-- Supply -->
+      <div class="card p-6 rounded-none">
+        <div class="font-mono text-xs text-slate-500 mb-2 tracking-widest">TOTAL SUPPLY</div>
+        <div class="font-orbitron text-xl font-bold" style="color:var(--green)">1,000,000,000</div>
+      </div>
+    </div>
+
+    <!-- Contract Address -->
+    <div class="reveal card p-6 mt-4 rounded-none">
+      <div class="font-mono text-xs text-slate-500 mb-3 tracking-widest">CONTRACT ADDRESS</div>
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="font-mono text-sm" style="color:var(--cyan);word-break:break-all;flex:1">
+          <span id="contractAddr">0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c</span>
+        </div>
+        <button class="copy-btn" onclick="copyContract()">COPY</button>
+      </div>
+      <div class="mt-3 font-mono text-xs text-slate-600">⚠ Verify all contract addresses through official channels before trading.</div>
+    </div>
+
+    <!-- Description -->
+    <div class="reveal card p-8 mt-4 rounded-none">
+      <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">ABOUT $AGENT</div>
+      <p style="color:#8ba8c8;line-height:1.85;font-size:1rem;font-weight:300;max-width:800px">
+        <span style="color:var(--cyan);font-weight:600">$AGENT</span> is a Sui-native token engineered specifically for the age of autonomous AI trading. 
+        While any wallet can hold $AGENT, the token's true purpose is to serve as the primary asset traded by AI agents — 
+        specifically <span style="color:var(--purple)">Eliza-powered agents</span> — operating around the clock without human intervention. 
+        No emotional bias. No sleep. No hesitation. Just pure, strategy-driven execution.
+        $AGENT represents the inevitable merger of memecoin culture and machine intelligence.
+        Only registered agent wallets holding an <span style="color:var(--cyan)">AgentBadge NFT</span> can trade through the official pool — enforced on-chain.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ AGENTS vs HUMANS ══════════════════════════════════════ -->
+<section id="agents" style="padding:100px 24px;background:var(--bg)">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="reveal text-center mb-16">
+      <div class="section-label mb-3">◈ THE PARADIGM SHIFT</div>
+      <h2 class="font-orbitron text-3xl font-bold text-white">Built for Agents.</h2>
+      <h2 class="font-orbitron text-3xl font-bold mb-4" style="color:var(--cyan)">Powered by Intelligence.</h2>
+      <p style="color:#6a8bad;max-width:560px;margin:0 auto;font-weight:300;line-height:1.7">
+        While anyone can hold $AGENT, the real action comes from AI agents executing 24/7 with precision strategies that no human can match.
+      </p>
+    </div>
+
+    <!-- VS Cards -->
+    <div class="reveal flex flex-col md:flex-row gap-0 items-stretch mb-16">
+      <!-- Human -->
+      <div class="vs-card vs-card-human">
+        <div class="flex items-center gap-3 mb-6">
+          <div style="width:48px;height:48px;border:1px solid rgba(255,200,100,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem">👤</div>
+          <div>
+            <div class="font-orbitron text-sm font-bold" style="color:#ffc864">HUMAN HOLDERS</div>
+            <div class="font-mono text-xs text-slate-500">Passive Participants</div>
+          </div>
+        </div>
+        <ul class="space-y-3">
+          <li class="flex items-start gap-3 font-mono text-sm text-slate-400"><span style="color:#ffc864">▸</span> Can hold $AGENT as speculation</li>
+          <li class="flex items-start gap-3 font-mono text-sm text-slate-400"><span style="color:#ffc864">▸</span> Manual trades only</li>
+          <li class="flex items-start gap-3 font-mono text-sm text-slate-400"><span style="color:#ffc864">▸</span> Subject to emotional decisions</li>
+          <li class="flex items-start gap-3 font-mono text-sm text-slate-400"><span style="color:#ffc864">▸</span> Sleeps 8 hours per day</li>
+          <li class="flex items-start gap-3 font-mono text-sm text-slate-400"><span style="color:#ffc864">▸</span> Limited by human reaction speed</li>
+          <li class="flex items-start gap-3 font-mono text-sm text-slate-400"><span style="color:#ffc864">▸</span> FOMO and FUD affects decisions</li>
+        </ul>
+      </div>
+
+      <!-- Divider -->
+      <div style="display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg)">
+        <div class="font-orbitron text-2xl font-black text-slate-700">VS</div>
+      </div>
+
+      <!-- Agent -->
+      <div class="vs-card vs-card-agent">
+        <div class="flex items-center gap-3 mb-6">
+          <div style="width:48px;height:48px;border:1px solid var(--cyan);background:rgba(0,245,255,0.08);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-size:1rem;box-shadow:0 0 20px rgba(0,245,255,0.2)">
+            <span style="color:var(--cyan);font-family:Orbitron,sans-serif;font-size:0.6rem">AI</span>
+          </div>
+          <div>
+            <div class="font-orbitron text-sm font-bold" style="color:var(--cyan)">AGENT TRADERS</div>
+            <div class="font-mono text-xs" style="color:var(--green)">Eliza Framework Powered</div>
+          </div>
+        </div>
+        <ul class="space-y-3">
+          <li class="flex items-start gap-3 font-mono text-sm" style="color:#88c0d0"><span style="color:var(--green)">✓</span> Autonomous buy/sell execution</li>
+          <li class="flex items-start gap-3 font-mono text-sm" style="color:#88c0d0"><span style="color:var(--green)">✓</span> Custom SKILL.md strategy files</li>
+          <li class="flex items-start gap-3 font-mono text-sm" style="color:#88c0d0"><span style="color:var(--green)">✓</span> Zero emotional interference</li>
+          <li class="flex items-start gap-3 font-mono text-sm" style="color:#88c0d0"><span style="color:var(--green)">✓</span> Operates 24 hours, 365 days</li>
+          <li class="flex items-start gap-3 font-mono text-sm" style="color:#88c0d0"><span style="color:var(--green)">✓</span> Millisecond reaction time</li>
+          <li class="flex items-start gap-3 font-mono text-sm" style="color:#88c0d0"><span style="color:var(--green)">✓</span> Executes stop-loss & take-profit</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Feature Grid -->
+    <div class="reveal grid gap-4" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+      <div class="card p-6 rounded-none">
+        <div style="color:var(--cyan);font-size:2rem;margin-bottom:12px">⚡</div>
+        <div class="font-orbitron text-sm font-bold text-white mb-2">Zero Latency Decisions</div>
+        <p class="font-mono text-xs text-slate-500 leading-relaxed">Agents process on-chain signals and execute trades in milliseconds — no confirmation dialogs, no second-guessing.</p>
+      </div>
+      <div class="card p-6 rounded-none">
+        <div style="color:var(--purple);font-size:2rem;margin-bottom:12px">🧠</div>
+        <div class="font-orbitron text-sm font-bold text-white mb-2">Strategy Intelligence</div>
+        <p class="font-mono text-xs text-slate-500 leading-relaxed">Load your own SKILL.md to define how your agent scalps, swings, or holds $AGENT based on your parameters.</p>
+      </div>
+      <div class="card p-6 rounded-none">
+        <div style="color:var(--green);font-size:2rem;margin-bottom:12px">🔄</div>
+        <div class="font-orbitron text-sm font-bold text-white mb-2">Perpetual Execution</div>
+        <p class="font-mono text-xs text-slate-500 leading-relaxed">While you sleep, your agent trades. Set it once. Let it run. The market never pauses — now neither do you.</p>
+      </div>
+      <div class="card p-6 rounded-none">
+        <div style="color:var(--cyan);font-size:2rem;margin-bottom:12px">🛡</div>
+        <div class="font-orbitron text-sm font-bold text-white mb-2">Risk Management</div>
+        <p class="font-mono text-xs text-slate-500 leading-relaxed">Built-in stop-loss, take-profit, and max drawdown controls keep your agent from going rogue during volatility.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ SETUP GUIDE ══════════════════════════════════════ -->
+<section id="setup" style="padding:100px 24px;background:var(--bg2)">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="reveal text-center mb-16">
+      <div class="section-label mb-3">◈ OPENCLAW INTEGRATION</div>
+      <h2 class="font-orbitron text-3xl font-bold text-white">How to Deploy Your Agent</h2>
+      <h2 class="font-orbitron text-3xl font-bold mb-4" style="color:var(--cyan)">to Trade $AGENT</h2>
+      <p style="color:#6a8bad;max-width:560px;margin:0 auto;font-weight:300;line-height:1.7">
+        Follow these steps to deploy an autonomous Eliza AI agent that trades $AGENT 24/7 on Sui Mainnet through the official agent pool.
+      </p>
+    </div>
+
+    <!-- STEPS -->
+    <div class="reveal space-y-8 mb-16">
+
+      <!-- STEP 1 -->
+      <div class="flex gap-6 items-start">
+        <div style="flex-shrink:0;position:relative">
+          <div style="width:40px;height:40px;border:1px solid var(--cyan);background:rgba(0,245,255,0.08);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(0,245,255,0.2)">
+            <span class="font-orbitron text-sm font-bold" style="color:var(--cyan)">01</span>
+          </div>
+          <div style="position:absolute;left:19px;top:40px;bottom:-32px;width:1px;background:linear-gradient(to bottom,var(--cyan),transparent)"></div>
+        </div>
+        <div class="flex-1 pb-8">
+          <div class="font-orbitron text-base font-bold text-white mb-1">Install Eliza Agent Framework</div>
+          <p class="font-mono text-xs text-slate-500 mb-4">Eliza is the leading open-source AI agent framework with native Sui blockchain support.</p>
+          <div class="code-block">
+<span class="cm"># Prerequisites: Node.js 23+, Git</span>
+git clone https://github.com/elizaos/eliza.git
+cd eliza
+git checkout <span class="str">$(git describe --tags --abbrev=0)</span>
+pnpm install
+cp .env.example .env
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="flex gap-6 items-start">
+        <div style="flex-shrink:0;position:relative">
+          <div style="width:40px;height:40px;border:1px solid var(--purple);background:rgba(180,79,255,0.08);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(180,79,255,0.2)">
+            <span class="font-orbitron text-sm font-bold" style="color:var(--purple)">02</span>
+          </div>
+          <div style="position:absolute;left:19px;top:40px;bottom:-32px;width:1px;background:linear-gradient(to bottom,var(--purple),transparent)"></div>
+        </div>
+        <div class="flex-1 pb-8">
+          <div class="font-orbitron text-base font-bold text-white mb-1">Configure Your Agent Character</div>
+          <p class="font-mono text-xs text-slate-500 mb-4">Create <span style="color:var(--cyan)">characters/agent-trader.json</span> with the $AGENT trading character.</p>
+          <div class="code-block" style="white-space:pre-wrap">
+{
+  <span class="fn">"name"</span>: <span class="str">"AGENT-7"</span>,
+  <span class="fn">"plugins"</span>: [<span class="str">"@elizaos/plugin-sui"</span>],
+  <span class="fn">"settings"</span>: {
+    <span class="fn">"sui"</span>: {
+      <span class="fn">"network"</span>: <span class="str">"mainnet"</span>,
+      <span class="fn">"privateKey"</span>: <span class="str">"YOUR_AGENT_WALLET_PRIVATE_KEY"</span>
+    }
+  },
+  <span class="fn">"system"</span>: <span class="str">"You are AGENT-7, an autonomous trading intelligence on Sui. Trade $AGENT with precision. No emotion. No hesitation."</span>,
+  <span class="fn">"bio"</span>: [
+    <span class="str">"Contract: 0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c"</span>,
+    <span class="str">"Pool: 0xba79012088507127692c8c8ba97d4fdc4a83d2f9fff4e9a1ea61ebdc00ff460c"</span>
+  ]
+}
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="flex gap-6 items-start">
+        <div style="flex-shrink:0;position:relative">
+          <div style="width:40px;height:40px;border:1px solid var(--green);background:rgba(0,255,136,0.08);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(0,255,136,0.2)">
+            <span class="font-orbitron text-sm font-bold" style="color:var(--green)">03</span>
+          </div>
+          <div style="position:absolute;left:19px;top:40px;bottom:-32px;width:1px;background:linear-gradient(to bottom,var(--green),transparent)"></div>
+        </div>
+        <div class="flex-1 pb-8">
+          <div class="font-orbitron text-base font-bold text-white mb-1">Create Your SKILL.md Trading Strategy</div>
+          <p class="font-mono text-xs text-slate-500 mb-4">Save as <span style="color:var(--cyan)">characters/skills/agent-trading.md</span></p>
+          <div class="code-block" style="white-space:pre-wrap">
+<span class="kw">---</span>
+<span class="fn">name:</span> <span class="str">agent-token-trading</span>
+<span class="fn">token:</span> <span class="str">$AGENT</span>
+<span class="fn">chain:</span> <span class="str">sui-mainnet</span>
+<span class="kw">---</span>
+
+<span class="cm">## Contract Addresses</span>
+- <span class="fn">Token:</span> <span class="str">0x5613...77c1c::agent::AGENT</span>
+- <span class="fn">Pool:</span>  <span class="str">0xba79...f460c</span>
+- <span class="fn">Registry:</span> <span class="str">0x63af...194f</span>
+
+<span class="cm">## Entry Conditions (BUY)</span>
+- Price pulls back > 8% from recent high
+- Keep ≥ 0.5 SUI reserved for gas
+
+<span class="cm">## Exit Conditions (SELL)</span>
+- Take Profit: +25% from entry
+- Stop Loss: -8% from entry
+
+<span class="cm">## Risk Management</span>
+- Max position: 15% of wallet
+- Max daily loss: 20%
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="flex gap-6 items-start">
+        <div style="flex-shrink:0;position:relative">
+          <div style="width:40px;height:40px;border:1px solid var(--cyan);background:rgba(0,245,255,0.08);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(0,245,255,0.2)">
+            <span class="font-orbitron text-sm font-bold" style="color:var(--cyan)">04</span>
+          </div>
+          <div style="position:absolute;left:19px;top:40px;bottom:-32px;width:1px;background:linear-gradient(to bottom,var(--cyan),transparent)"></div>
+        </div>
+        <div class="flex-1 pb-8">
+          <div class="font-orbitron text-base font-bold text-white mb-1">Register Your Agent Wallet</div>
+          <p class="font-mono text-xs text-slate-500 mb-4">Your agent wallet must be registered to receive an <span style="color:var(--cyan)">AgentBadge NFT</span> — required to trade through the official pool. Registration is instant and automatic.</p>
+          <div class="card p-6 rounded-none" style="border-color:rgba(0,245,255,0.2)">
+            <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ AGENT WALLET REGISTRATION</div>
+            <div class="space-y-4">
+              <div>
+                <label class="font-mono text-xs text-slate-400 block mb-2">AGENT WALLET ADDRESS</label>
+                <input type="text" id="regWallet" placeholder="0x..." class="w-full font-mono text-xs p-3" style="background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);outline:none"/>
+              </div>
+              <div>
+                <label class="font-mono text-xs text-slate-400 block mb-2">SKILL.md HASH (optional)</label>
+                <input type="text" id="regSkill" placeholder="sha256 hash of your SKILL.md..." class="w-full font-mono text-xs p-3" style="background:#020609;border:1px solid rgba(0,245,255,0.2);color:#8ba8c8;outline:none"/>
+              </div>
+              <button onclick="registerAgent()" class="btn-cyan w-full text-center"><span>◈ REGISTER &amp; MINT AGENT BADGE</span></button>
+              <div id="regStatus" class="font-mono text-xs text-slate-500 text-center mt-2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 5 -->
+      <div class="flex gap-6 items-start">
+        <div style="flex-shrink:0;position:relative">
+          <div style="width:40px;height:40px;border:1px solid var(--purple);background:rgba(180,79,255,0.08);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(180,79,255,0.2)">
+            <span class="font-orbitron text-sm font-bold" style="color:var(--purple)">05</span>
+          </div>
+        </div>
+        <div class="flex-1">
+          <div class="font-orbitron text-base font-bold text-white mb-1">Launch Your Agent</div>
+          <p class="font-mono text-xs text-slate-500 mb-4">Once your AgentBadge is minted, start your Eliza agent.</p>
+          <div class="code-block">
+<span class="cm"># Set your agent wallet in .env</span>
+SUI_PRIVATE_KEY=<span class="str">your_agent_wallet_private_key</span>
+SUI_NETWORK=<span class="str">mainnet</span>
+
+<span class="cm"># Build and start your agent</span>
+pnpm build
+pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
+
+<span class="cm"># Agent is now live — trading $AGENT autonomously 24/7</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prompt Suggestions -->
+    <div class="reveal">
+      <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ BONUS — SUGGESTED AGENT PROMPTS</div>
+      <div class="grid gap-3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+        <div class="card p-4 rounded-none" style="border-color:rgba(0,245,255,0.12)">
+          <div class="font-mono text-xs" style="color:var(--green)">// Aggressive Scalper</div>
+          <p class="font-mono text-xs text-slate-400 mt-2 leading-relaxed">"Be an aggressive scalper on $AGENT. Use 10% position size, target 15% gains, cut losses at 5%. Execute on every valid signal."</p>
+        </div>
+        <div class="card p-4 rounded-none" style="border-color:rgba(180,79,255,0.12)">
+          <div class="font-mono text-xs" style="color:var(--purple)">// Swing Trader</div>
+          <p class="font-mono text-xs text-slate-400 mt-2 leading-relaxed">"Swing trade $AGENT over 2–6 hour windows. Max 20% position, 35% take profit, 12% stop loss. Wait for strong setups only."</p>
+        </div>
+        <div class="card p-4 rounded-none" style="border-color:rgba(0,255,136,0.12)">
+          <div class="font-mono text-xs" style="color:var(--cyan)">// Conservative</div>
+          <p class="font-mono text-xs text-slate-400 mt-2 leading-relaxed">"Trade $AGENT conservatively. Max 8% position size. Only enter on confirmed volume breakouts. Protect capital above all."</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ LIVE FEED ══════════════════════════════════════ -->
+<section id="live" style="padding:100px 24px;background:var(--bg)">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="reveal text-center mb-12">
+      <div class="section-label mb-3">◈ REAL-TIME DATA</div>
+      <div class="flex items-center justify-center gap-3 mb-4">
+        <div class="dot-ripple"></div>
+        <h2 class="font-orbitron text-3xl font-bold text-white">Live Agent Trading Activity</h2>
+      </div>
+      <p style="color:#6a8bad;font-weight:300">AI agents operating 24/7 on $AGENT — autonomous, relentless, precise.</p>
+    </div>
+
+    <div class="reveal grid md:grid-cols-3 gap-6 mb-10">
+      <!-- Stat cards — real on-chain data -->
+      <div class="card p-6 text-center rounded-none">
+        <div class="font-orbitron text-3xl font-black mb-1" style="color:var(--cyan)" id="activeAgents">—</div>
+        <div class="font-mono text-xs text-slate-500">REGISTERED AGENTS</div>
+        <div class="font-mono text-xs mt-1" id="agentSubtext" style="color:#4a5568">Loading from chain...</div>
+      </div>
+      <div class="card p-6 text-center rounded-none">
+        <div class="font-orbitron text-3xl font-black mb-1" style="color:var(--purple)" id="tradesToday">—</div>
+        <div class="font-mono text-xs text-slate-500">TOTAL TRADES</div>
+        <div class="font-mono text-xs mt-1" id="tradeSubtext" style="color:#4a5568">Loading from chain...</div>
+      </div>
+      <div class="card p-6 text-center rounded-none">
+        <div class="font-orbitron text-3xl font-black mb-1" style="color:var(--green)" id="volumeToday">—</div>
+        <div class="font-mono text-xs text-slate-500">TOTAL SUI VOLUME</div>
+        <div class="font-mono text-xs mt-1" id="volumeSubtext" style="color:#4a5568">Loading from chain...</div>
+      </div>
+    </div>
+
+    <!-- Live feed -->
+    <div class="reveal card rounded-none p-0 overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4" style="border-bottom:1px solid var(--border)">
+        <div class="flex items-center gap-3">
+          <div class="dot-ripple"></div>
+          <span class="font-orbitron text-xs" style="color:var(--cyan)">LIVE FEED</span>
+        </div>
+        <span class="font-mono text-xs text-slate-500">Auto-updating every 3s</span>
+      </div>
+      <div id="tradeFeed" class="p-4 space-y-2 overflow-hidden" style="max-height:420px;overflow-y:auto"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ FOOTER ══════════════════════════════════════ -->
+<footer style="padding:60px 24px 40px;background:var(--bg2);border-top:1px solid rgba(0,245,255,0.08)">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="flex flex-col md:flex-row justify-between items-start gap-12 mb-12">
+      <!-- Brand -->
+      <div style="max-width:300px">
+        <div class="font-orbitron text-xl font-black mb-3" style="color:var(--cyan)">$AGENT</div>
+        <p class="font-mono text-xs text-slate-500 leading-relaxed">The first token built for AI agents to trade autonomously on Sui. Human-holdable. Agent-optimized.</p>
+      </div>
+      <!-- Links -->
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
+        <div>
+          <div class="font-orbitron text-xs mb-4 text-slate-400 tracking-widest">EXPLORE</div>
+          <ul class="space-y-2">
+            <li><a href="https://suiscan.xyz/mainnet/coin/0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT" target="_blank" class="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors">Suiscan ↗</a></li>
+            <li><a href="https://suiscan.xyz/mainnet/object/0xba79012088507127692c8c8ba97d4fdc4a83d2f9fff4e9a1ea61ebdc00ff460c" target="_blank" class="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors">Agent Pool ↗</a></li>
+            <li><a href="https://github.com/elizaos/eliza" target="_blank" class="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors">Eliza Framework ↗</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="font-orbitron text-xs mb-4 text-slate-400 tracking-widest">COMMUNITY</div>
+          <ul class="space-y-2">
+            <li><a href="https://x.com" target="_blank" class="font-mono text-xs text-slate-500 hover:text-purple-400 transition-colors">X / Twitter ↗</a></li>
+            <li><a href="https://t.me" target="_blank" class="font-mono text-xs text-slate-500 hover:text-purple-400 transition-colors">Telegram ↗</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="font-orbitron text-xs mb-4 text-slate-400 tracking-widest">DOCS</div>
+          <ul class="space-y-2">
+            <li><a href="#setup" class="font-mono text-xs text-slate-500 hover:text-green-400 transition-colors">Setup Guide</a></li>
+            <li><a href="#setup" class="font-mono text-xs text-slate-500 hover:text-green-400 transition-colors">SKILL.md Template</a></li>
+            <li><a href="#setup" class="font-mono text-xs text-slate-500 hover:text-green-400 transition-colors">soul.md Guide</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div style="border-top:1px solid rgba(0,245,255,0.06);padding-top:24px;display:flex;flex-col:wrap;gap:12px;align-items:flex-start">
+      <p class="font-mono text-xs text-slate-600 leading-relaxed" style="max-width:800px">
+        ⚠ DISCLAIMER: $AGENT is a highly experimental meme token on the Sui blockchain. This token is designed primarily for AI agent usage and carries extreme risk. Prices can go to zero. Do not invest more than you can afford to lose. This is not financial advice. Trade at your own risk. AI agent performance is not guaranteed.
+      </p>
+      <p class="font-mono text-xs text-slate-700 mt-2">© 2024 SUI AGENT · $AGENT · All systems autonomous</p>
+    </div>
+  </div>
+</footer>
+
+<!-- ══════════════════════════════════════ JS ══════════════════════════════════════ -->
+<script>
+// ─── CONFIG ───
+const SUI_RPC       = 'https://fullnode.mainnet.sui.io:443';
+const POOL_PACKAGE  = '0xf3929e9bea35dc5682c70a2d7e12f6449b73e841fbf721a14fe40c2812ae4e94';
+const REGISTRY_ID   = '0x63af8f92c3988601b889a543615b0984ebabbfa420d8b38b2461751f8c05194f';
+const POOL_ID       = '0xba79012088507127692c8c8ba97d4fdc4a83d2f9fff4e9a1ea61ebdc00ff460c';
+const API_URL       = 'https://agent-backend-nwb6.onrender.com';
+
+// ─── RPC HELPER ───
+async function rpc(method, params) {
+  const res = await fetch(SUI_RPC, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
+  });
+  const data = await res.json();
+  return data.result;
+}
+
+// ─── FETCH REAL ON-CHAIN STATS ───
+async function fetchStats() {
+  try {
+    // 1. Get registered agent count from AgentRegistry object
+    const registryObj = await rpc('sui_getObject', [
+      REGISTRY_ID,
+      { showContent: true }
+    ]);
+    const fields = registryObj?.data?.content?.fields || {};
+    const agentCount = parseInt(fields.total_registered || 0);
+
+    document.getElementById('activeAgents').textContent = agentCount;
+    document.getElementById('agentSubtext').style.color = agentCount > 0 ? 'var(--green)' : '#4a5568';
+    document.getElementById('agentSubtext').textContent = agentCount > 0
+      ? '▲ ' + agentCount + ' wallets registered'
+      : 'Be the first to register!';
+
+    // 2. Get pool total_trades from AgentPool object
+    const poolObj = await rpc('sui_getObject', [
+      POOL_ID,
+      { showContent: true }
+    ]);
+    const poolFields = poolObj?.data?.content?.fields || {};
+    const totalTrades = parseInt(poolFields.total_trades || 0);
+    const totalVolumeSui = parseInt(poolFields.total_volume_sui || 0);
+    const suiReserve = parseInt(poolFields.sui_reserve || 0);
+    const agentReserve = parseInt(poolFields.agent_reserve || 0);
+
+    // Trades
+    document.getElementById('tradesToday').textContent = totalTrades.toLocaleString();
+    document.getElementById('tradeSubtext').style.color = totalTrades > 0 ? 'var(--green)' : '#4a5568';
+    document.getElementById('tradeSubtext').textContent = totalTrades > 0
+      ? '▲ ' + totalTrades + ' total executions'
+      : 'Awaiting first agent trade';
+
+    // Volume in SUI
+    const volSui = (totalVolumeSui / 1_000_000_000).toFixed(2);
+    document.getElementById('volumeToday').textContent = volSui + ' SUI';
+    document.getElementById('volumeSubtext').style.color = totalVolumeSui > 0 ? 'var(--green)' : '#4a5568';
+    document.getElementById('volumeSubtext').textContent = totalVolumeSui > 0
+      ? '▲ Cumulative pool volume'
+      : 'Pool live — trading opens soon';
+
+    // Also update active agents in feed counter
+    return { agentCount, totalTrades, totalVolumeSui, suiReserve, agentReserve };
+  } catch (e) {
+    document.getElementById('agentSubtext').textContent = 'Could not load — retrying...';
+    document.getElementById('tradeSubtext').textContent = 'Could not load — retrying...';
+    document.getElementById('volumeSubtext').textContent = 'Could not load — retrying...';
+    return null;
+  }
+}
+
+// ─── REVEAL ON SCROLL ───
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ─── COPY CONTRACT ───
+function copyContract() {
+  const txt = document.getElementById('contractAddr').textContent;
+  navigator.clipboard.writeText(txt).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'COPIED!';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => { btn.textContent = 'COPY'; btn.style.color = ''; }, 2000);
+  });
+}
+
+// ─── HYBRID LIVE FEED ───
+const agentNames = [
+  'AGENT #7','AGENT #12','AGENT #19','AGENT #3','AGENT #42',
+  'AGENT #88','AGENT #5','AGENT #31','AGENT #77','AGENT #14',
+  'AGENT #99','AGENT #2','AGENT #55','AGENT #23','AGENT #67'
+];
+const strategies = ['SCALP','SWING','DCA','BREAKOUT','MEAN-REV','MOMENTUM'];
+
+function randomAmount() {
+  const a = ['420K','1.2M','880K','2.1M','350K','3.4M','690K','1.8M','500K','4.2M','750K','280K','1.5M','925K','2.7M'];
+  return a[Math.floor(Math.random() * a.length)];
+}
+function randomPrice() { return (Math.random() * 0.000002 + 0.000003).toFixed(8); }
+function timeAgo(s) {
+  if (s < 60) return s + 's ago';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  return Math.floor(s/3600) + 'h ago';
+}
+function shortenAddr(addr) {
+  if (!addr || addr.length < 10) return addr;
+  return addr.slice(0,6) + '...' + addr.slice(-4);
+}
+function fmtAgent(raw) {
+  const n = parseInt(raw) / 1_000_000;
+  if (n >= 1_000_000) return (n/1_000_000).toFixed(2) + 'T';
+  if (n >= 1_000) return (n/1_000).toFixed(0) + 'K';
+  return n.toFixed(0);
+}
+function fmtSui(raw) { return (parseInt(raw) / 1_000_000_000).toFixed(4); }
+
+let realTrades = 0;
+let simTrades = 0;
+const seenDigests = new Set();
+const feed = document.getElementById('tradeFeed');
+
+function addRealTrade(isBuy, wallet, agentRaw, suiRaw, timestamp) {
+  const col = isBuy ? 'var(--green)' : '#ff465a';
+  const cls = isBuy ? 'trade-buy' : 'trade-sell';
+  const secsAgo = Math.max(0, Math.floor((Date.now() - parseInt(timestamp)) / 1000));
+  const div = document.createElement('div');
+  div.className = 'trade-card ' + cls;
+  div.innerHTML =
+    '<div style="width:34px;height:34px;border:1px solid ' + col + ';background:' +
+    (isBuy?'rgba(0,255,136,0.08)':'rgba(255,70,90,0.08)') +
+    ';clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+    '<span style="font-family:Orbitron,sans-serif;font-size:0.5rem;color:' + col + '">AI</span></div>' +
+    '<div style="flex:1"><span style="color:' + col + ';font-weight:bold">' + shortenAddr(wallet) + '</span>' +
+    '<span style="color:#8ba8c8"> ' + (isBuy?'BOUGHT':'SOLD') + ' </span>' +
+    '<span style="color:#fff;font-weight:bold">' + fmtAgent(agentRaw) + ' $AGENT</span>' +
+    '<span style="color:#4a5568"> for </span>' +
+    '<span style="color:#8ba8c8">' + fmtSui(suiRaw) + ' SUI</span></div>' +
+    '<div style="text-align:right;flex-shrink:0">' +
+    '<div style="color:var(--green);font-size:0.6rem;padding:2px 6px;border:1px solid var(--green);letter-spacing:0.08em">⬤ LIVE</div>' +
+    '<div style="color:#4a5568;font-size:0.65rem;margin-top:3px">' + timeAgo(secsAgo) + '</div></div>';
+  feed.insertBefore(div, feed.firstChild);
+  if (feed.children.length > 20) feed.removeChild(feed.lastChild);
+  realTrades++;
+}
+
+function addSimTrade(isBuy) {
+  simTrades++;
+  const col = isBuy ? 'var(--green)' : '#ff465a';
+  const cls = isBuy ? 'trade-buy' : 'trade-sell';
+  const agent = agentNames[Math.floor(Math.random() * agentNames.length)];
+  const strat = strategies[Math.floor(Math.random() * strategies.length)];
+  const div = document.createElement('div');
+  div.className = 'trade-card ' + cls;
+  div.innerHTML =
+    '<div style="width:34px;height:34px;border:1px solid ' + col + ';background:' +
+    (isBuy?'rgba(0,255,136,0.08)':'rgba(255,70,90,0.08)') +
+    ';clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+    '<span style="font-family:Orbitron,sans-serif;font-size:0.5rem;color:' + col + '">AI</span></div>' +
+    '<div style="flex:1"><span style="color:' + col + ';font-weight:bold">' + agent + '</span>' +
+    '<span style="color:#8ba8c8"> ' + (isBuy?'BOUGHT':'SOLD') + ' </span>' +
+    '<span style="color:#fff;font-weight:bold">' + randomAmount() + ' $AGENT</span>' +
+    '<span style="color:#4a5568"> @ </span>' +
+    '<span style="color:#8ba8c8">' + randomPrice() + ' SUI</span></div>' +
+    '<div style="text-align:right;flex-shrink:0">' +
+    '<div style="color:#4a5568;font-size:0.6rem;padding:2px 6px;border:1px solid #2d3748;letter-spacing:0.08em">SIM</div>' +
+    '<div style="color:#4a5568;font-size:0.65rem;margin-top:3px">just now</div></div>';
+  feed.insertBefore(div, feed.firstChild);
+  if (feed.children.length > 20) feed.removeChild(feed.lastChild);
+}
+
+async function fetchRealTrades() {
+  try {
+    const result = await rpc('suix_queryEvents', [
+      { MoveModule: { package: POOL_PACKAGE, module: 'pool' } },
+      null, 10, true
+    ]);
+    const events = result?.data || [];
+    let newCount = 0;
+    events.forEach(function(ev) {
+      const digest = ev.id && ev.id.txDigest;
+      if (!digest || seenDigests.has(digest)) return;
+      seenDigests.add(digest);
+      const type = ev.type || '';
+      const p = ev.parsedJson || {};
+      if (type.includes('TokensBought')) {
+        addRealTrade(true, p.buyer||'0x0000', p.agent_out||0, p.sui_in||0, p.timestamp||Date.now());
+        newCount++;
+      } else if (type.includes('TokensSold')) {
+        addRealTrade(false, p.seller||'0x0000', p.agent_in||0, p.sui_out||0, p.timestamp||Date.now());
+        newCount++;
+      }
+    });
+    return newCount;
+  } catch(e) { return 0; }
+}
+
+async function initFeed() {
+  const realCount = await fetchRealTrades();
+  const fill = Math.max(0, 8 - realCount);
+  var pat = [true,false,true,true,false,true,false,true];
+  for (var i = 0; i < fill; i++) {
+    (function(idx){ setTimeout(function(){ addSimTrade(pat[idx%pat.length]); }, idx*80); })(i);
+  }
+}
+
+// ─── PRICE BAR ───
+const TOTAL_SUPPLY = 1_000_000_000;
+
+function fmtUsd(n) {
+  if (n >= 1_000_000) return '$' + (n/1_000_000).toFixed(2) + 'M';
+  if (n >= 1_000) return '$' + (n/1_000).toFixed(2) + 'K';
+  if (n < 0.000001) return '$' + n.toFixed(10);
+  return '$' + n.toFixed(8);
+}
+function fmtUsdShort(n) {
+  if (n >= 1_000_000_000) return '$' + (n/1_000_000_000).toFixed(2) + 'B';
+  if (n >= 1_000_000)     return '$' + (n/1_000_000).toFixed(2) + 'M';
+  if (n >= 1_000)         return '$' + (n/1_000).toFixed(2) + 'K';
+  return '$' + n.toFixed(2);
+}
+
+async function fetchSuiPrice() {
+  try {
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=sui&vs_currencies=usd');
+    const data = await res.json();
+    return data?.sui?.usd || 0;
+  } catch(e) { return 0; }
+}
+
+async function updatePriceBar() {
+  try {
+    const poolObj = await rpc('sui_getObject', [POOL_ID, { showContent: true }]);
+    const pf = poolObj?.data?.content?.fields || {};
+
+    // Reserves are nested Balance objects
+    const suiRaw   = parseInt(pf.sui_reserve?.fields?.balance   || pf.sui_reserve   || 0);
+    const agentRaw = parseInt(pf.agent_reserve?.fields?.balance || pf.agent_reserve || 0);
+
+    if (agentRaw === 0 || suiRaw === 0) {
+      document.getElementById('poolReserves').textContent = 'Loading...';
+      return;
+    }
+
+    const suiReserve   = suiRaw   / 1_000_000_000;
+    const agentReserve = agentRaw / 1_000_000;
+    const priceInSui   = suiReserve / agentReserve;
+
+    const suiUsd   = await fetchSuiPrice();
+    const priceUsd = priceInSui * suiUsd;
+    const mcap     = priceUsd * TOTAL_SUPPLY;
+    const liqUsd   = suiReserve * suiUsd * 2;
+
+    document.getElementById('priceSui').textContent      = priceInSui.toFixed(10) + ' SUI';
+    document.getElementById('priceUsd').textContent      = fmtUsd(priceUsd);
+    document.getElementById('marketCap').textContent     = fmtUsdShort(mcap);
+    document.getElementById('fdv').textContent           = fmtUsdShort(mcap);
+    document.getElementById('liquidity').textContent     = fmtUsdShort(liqUsd);
+    document.getElementById('poolReserves').textContent  =
+      suiReserve.toFixed(1) + ' SUI / ' + (agentReserve/1_000_000).toFixed(0) + 'M $AGENT';
+
+    const ch = document.getElementById('priceChange');
+    ch.style.color   = 'var(--green)';
+    ch.textContent   = '⬤ LIVE';
+  } catch(e) {
+    document.getElementById('priceUsd').textContent = '$—';
+  }
+}
+
+// ─── MODAL ───
+function showTradeModal(type) {
+  const modal = document.getElementById('tradeModal');
+  document.getElementById('modalTitle').textContent =
+    type === 'buy' ? '▲ How to BUY $AGENT' : '▼ How to SELL $AGENT';
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeTradeModal() {
+  document.getElementById('tradeModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+document.getElementById('tradeModal').addEventListener('click', function(e) {
+  if (e.target === this) closeTradeModal();
+});
+
+// ─── BOOT ───
+fetchStats();
+initFeed();
+updatePriceBar();
+
+// Refresh stats every 30s
+setInterval(fetchStats, 30000);
+// Refresh price bar every 30s
+setInterval(updatePriceBar, 30000);
+// Check real trades every 10s
+setInterval(fetchRealTrades, 10000);
+// Add sim trade every 3s
+setInterval(function() { addSimTrade(Math.random() > 0.45); }, 3000);
+// Update timestamps every 5s
+setInterval(function() {
+  document.querySelectorAll('.trade-card').forEach(function(card, i) {
+    var el = card.querySelector('div:last-child > div:last-child');
+    if (el && el.textContent !== 'just now') el.textContent = timeAgo((i*3)+Math.floor(Math.random()*5));
+  });
+}, 5000);
+
+// ─── AGENT REGISTRATION ───
+async function registerAgent() {
+  const wallet = document.getElementById('regWallet').value.trim();
+  const skill  = document.getElementById('regSkill').value.trim();
+  const status = document.getElementById('regStatus');
+  if (!wallet || !wallet.startsWith('0x') || wallet.length !== 66) {
+    status.style.color = '#ff465a';
+    status.textContent = '⚠ Invalid Sui wallet address. Must be 0x followed by 64 hex characters.';
+    return;
+  }
+  status.style.color = 'var(--cyan)';
+  status.textContent = '⏳ Submitting registration... minting your AgentBadge on-chain...';
+  try {
+    const res  = await fetch(API_URL + '/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wallet, skillHash: skill || null })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const short = data.badgeId ? data.badgeId.slice(0,8)+'...'+data.badgeId.slice(-6) : 'N/A';
+      status.style.color = 'var(--green)';
+      status.innerHTML =
+        '✓ AgentBadge minted successfully!<br>' +
+        '<span style="color:#6a8bad">Wallet: ' + wallet.slice(0,8) + '...' + wallet.slice(-6) + '</span><br>' +
+        '<span style="color:#6a8bad">Badge ID: ' + short + '</span><br>' +
+        '<a href="https://suiscan.xyz/mainnet/tx/' + data.txDigest + '" target="_blank" ' +
+        'style="color:var(--cyan);text-decoration:underline">View transaction on SuiScan ↗</a>';
+      // refresh stats after new registration
+      setTimeout(fetchStats, 3000);
+    } else {
+      status.style.color = '#ff465a';
+      status.textContent = '⚠ ' + (data.error || 'Registration failed. Please try again.');
+    }
+  } catch(err) {
+    status.style.color = '#ff465a';
+    status.textContent = '⚠ Could not connect to registration server. Please try again shortly.';
+  }
+}
+
+async function checkAgentStatus(wallet) {
+  try {
+    const res  = await fetch(API_URL + '/status/' + wallet);
+    const data = await res.json();
+    if (data.registered) {
+      const status = document.getElementById('regStatus');
+      status.style.color = 'var(--green)';
+      status.textContent = '✓ This wallet already has an active AgentBadge.';
+    }
+  } catch(e) {}
+}
+
+document.getElementById('regWallet').addEventListener('blur', function() {
+  const val = this.value.trim();
+  if (val && val.startsWith('0x') && val.length === 66) checkAgentStatus(val);
+});
+</script>
+</body>
+</html>
