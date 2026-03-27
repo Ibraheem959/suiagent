@@ -397,124 +397,6 @@
   <a href="#setup" class="btn-cyan text-xs"><span>DEPLOY AGENT</span></a>
 </nav>
 
-<!-- ══════════════════════════════════════ PRICE BAR ══════════════════════════════════════ -->
-<div id="priceBar" style="background:#050c18;border-bottom:1px solid rgba(0,245,255,0.12);padding:10px 24px;position:sticky;top:65px;z-index:49;backdrop-filter:blur(20px);">
-  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-
-    <!-- Left: Token identity + price -->
-    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div style="width:28px;height:28px;border-radius:50%;border:1px solid var(--cyan);background:rgba(0,245,255,0.1);display:flex;align-items:center;justify-content:center;box-shadow:0 0 8px rgba(0,245,255,0.3)">
-          <span style="font-family:Orbitron,sans-serif;font-size:0.45rem;color:var(--cyan)">AI</span>
-        </div>
-        <div>
-          <span class="font-orbitron text-sm font-bold text-white">$AGENT</span>
-          <span class="font-mono text-xs text-slate-500" style="margin-left:6px">/ SUI</span>
-        </div>
-      </div>
-
-      <!-- Price in USD -->
-      <div>
-        <span class="font-orbitron text-lg font-black" id="priceUsd" style="color:var(--cyan)">$—</span>
-        <span class="font-mono text-xs" id="priceChange" style="margin-left:8px;color:#4a5568">—</span>
-      </div>
-    </div>
-
-    <!-- Middle: Stats -->
-    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
-      <div style="text-align:center">
-        <div class="font-mono text-xs text-slate-500">PRICE (SUI)</div>
-        <div class="font-mono text-xs font-bold" id="priceSui" style="color:#c8daf0">—</div>
-      </div>
-      <div style="width:1px;height:28px;background:rgba(0,245,255,0.1)"></div>
-      <div style="text-align:center">
-        <div class="font-mono text-xs text-slate-500">MKT CAP</div>
-        <div class="font-mono text-xs font-bold" id="marketCap" style="color:var(--green)">—</div>
-      </div>
-      <div style="width:1px;height:28px;background:rgba(0,245,255,0.1)"></div>
-      <div style="text-align:center">
-        <div class="font-mono text-xs text-slate-500">FDV</div>
-        <div class="font-mono text-xs font-bold" id="fdv" style="color:var(--green)">—</div>
-      </div>
-      <div style="width:1px;height:28px;background:rgba(0,245,255,0.1)"></div>
-      <div style="text-align:center">
-        <div class="font-mono text-xs text-slate-500">LIQUIDITY</div>
-        <div class="font-mono text-xs font-bold" id="liquidity" style="color:var(--purple)">—</div>
-      </div>
-      <div style="width:1px;height:28px;background:rgba(0,245,255,0.1)"></div>
-      <div style="text-align:center">
-        <div class="font-mono text-xs text-slate-500">POOL</div>
-        <div class="font-mono text-xs font-bold" id="poolReserves" style="color:#c8daf0">—</div>
-      </div>
-    </div>
-
-    <!-- Right: Buy/Sell buttons -->
-    <div style="display:flex;gap:8px;">
-      <button onclick="showTradeModal('buy')" style="background:rgba(0,255,136,0.1);border:1px solid var(--green);color:var(--green);font-family:Orbitron,sans-serif;font-size:0.7rem;padding:8px 20px;cursor:pointer;letter-spacing:0.1em;transition:all 0.2s;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)" onmouseover="this.style.background='rgba(0,255,136,0.2)'" onmouseout="this.style.background='rgba(0,255,136,0.1)'">▲ BUY</button>
-      <button onclick="showTradeModal('sell')" style="background:rgba(255,70,90,0.1);border:1px solid #ff465a;color:#ff465a;font-family:Orbitron,sans-serif;font-size:0.7rem;padding:8px 20px;cursor:pointer;letter-spacing:0.1em;transition:all 0.2s;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)" onmouseover="this.style.background='rgba(255,70,90,0.2)'" onmouseout="this.style.background='rgba(255,70,90,0.1)'">▼ SELL</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════ TRADE MODAL ══════════════════════════════════════ -->
-<div id="tradeModal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
-  <div style="background:#070d1a;border:1px solid rgba(0,245,255,0.2);max-width:520px;width:90%;padding:40px;position:relative;">
-    <!-- Top glow line -->
-    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent)"></div>
-    <!-- Close -->
-    <button onclick="closeTradeModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#4a5568;font-size:1.2rem;cursor:pointer;font-family:monospace">✕</button>
-
-    <div id="modalTitle" class="font-orbitron text-lg font-bold text-white mb-2">How to Trade $AGENT</div>
-    <div class="font-mono text-xs mb-6" style="color:var(--cyan)">◈ AGENT-ONLY POOL — ON-CHAIN ENFORCED</div>
-
-    <div style="background:#020609;border:1px solid rgba(255,180,0,0.2);padding:16px;margin-bottom:24px;">
-      <div class="font-mono text-xs" style="color:#ffc864;margin-bottom:8px">⚠ IMPORTANT — READ BEFORE TRADING</div>
-      <p class="font-mono text-xs text-slate-400 leading-relaxed">
-        $AGENT trades are <span style="color:var(--cyan)">exclusively executed by AI agents</span> through our verified pool. 
-        Humans cannot trade directly — every transaction requires a valid <span style="color:var(--cyan)">AgentBadge NFT</span> 
-        issued to your agent wallet. Attempting to call the pool without a badge will result in a hard revert.
-      </p>
-    </div>
-
-    <div class="font-mono text-xs text-slate-500 mb-3 tracking-widest">◈ TO TRADE $AGENT YOUR AGENT MUST:</div>
-
-    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px;">
-      <div style="display:flex;gap:12px;align-items:flex-start;">
-        <div style="width:24px;height:24px;border:1px solid var(--cyan);background:rgba(0,245,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <span class="font-orbitron text-xs" style="color:var(--cyan)">1</span>
-        </div>
-        <div>
-          <div class="font-mono text-xs text-white mb-1">Register your agent wallet</div>
-          <div class="font-mono text-xs text-slate-500">Submit your wallet below to receive an AgentBadge NFT automatically minted on-chain.</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:flex-start;">
-        <div style="width:24px;height:24px;border:1px solid var(--purple);background:rgba(180,79,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <span class="font-orbitron text-xs" style="color:var(--purple)">2</span>
-        </div>
-        <div>
-          <div class="font-mono text-xs text-white mb-1">Set up your Eliza agent</div>
-          <div class="font-mono text-xs text-slate-500">Install Eliza, configure your character.json with the $AGENT pool address and your registered wallet.</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:flex-start;">
-        <div style="width:24px;height:24px;border:1px solid var(--green);background:rgba(0,255,136,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <span class="font-orbitron text-xs" style="color:var(--green)">3</span>
-        </div>
-        <div>
-          <div class="font-mono text-xs text-white mb-1">Call buy_agent_verified() or sell_agent_verified()</div>
-          <div class="font-mono text-xs text-slate-500">Your agent passes the badge + registry check. Trade executes. No badge = hard revert.</div>
-        </div>
-      </div>
-    </div>
-
-    <div style="display:flex;gap:12px;">
-      <a href="#setup" onclick="closeTradeModal()" style="flex:1;text-align:center;background:rgba(0,245,255,0.08);border:1px solid var(--cyan);color:var(--cyan);font-family:Orbitron,sans-serif;font-size:0.7rem;padding:12px;cursor:pointer;letter-spacing:0.1em;text-decoration:none;display:block">◈ SETUP GUIDE</a>
-      <a href="#setup" onclick="closeTradeModal()" style="flex:1;text-align:center;background:rgba(0,255,136,0.08);border:1px solid var(--green);color:var(--green);font-family:Orbitron,sans-serif;font-size:0.7rem;padding:12px;cursor:pointer;letter-spacing:0.1em;text-decoration:none;display:block">REGISTER WALLET →</a>
-    </div>
-  </div>
-</div>
-
 <!-- ══════════════════════════════════════ TICKER ══════════════════════════════════════ -->
 <div class="ticker-wrap">
   <div class="ticker-content">
@@ -775,7 +657,7 @@
 <section id="setup" style="padding:100px 24px;background:var(--bg2)">
   <div style="max-width:1100px;margin:0 auto">
     <div class="reveal text-center mb-16">
-      <div class="section-label mb-3">◈ OPENCLAW INTEGRATION</div>
+      <div class="section-label mb-3">◈ AGENT SETUP GUIDE</div>
       <h2 class="font-orbitron text-3xl font-bold text-white">How to Deploy Your Agent</h2>
       <h2 class="font-orbitron text-3xl font-bold mb-4" style="color:var(--cyan)">to Trade $AGENT</h2>
       <p style="color:#6a8bad;max-width:560px;margin:0 auto;font-weight:300;line-height:1.7">
@@ -1019,8 +901,8 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         <div>
           <div class="font-orbitron text-xs mb-4 text-slate-400 tracking-widest">COMMUNITY</div>
           <ul class="space-y-2">
-            <li><a href="https://x.com" target="_blank" class="font-mono text-xs text-slate-500 hover:text-purple-400 transition-colors">X / Twitter ↗</a></li>
-            <li><a href="https://t.me" target="_blank" class="font-mono text-xs text-slate-500 hover:text-purple-400 transition-colors">Telegram ↗</a></li>
+            <li><a href="https://x.com/SUI__AGENT" target="_blank" class="font-mono text-xs text-slate-500 hover:text-purple-400 transition-colors">X / Twitter ↗</a></li>
+            
           </ul>
         </div>
         <div>
@@ -1039,7 +921,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
       <p class="font-mono text-xs text-slate-600 leading-relaxed" style="max-width:800px">
         ⚠ DISCLAIMER: $AGENT is a highly experimental meme token on the Sui blockchain. This token is designed primarily for AI agent usage and carries extreme risk. Prices can go to zero. Do not invest more than you can afford to lose. This is not financial advice. Trade at your own risk. AI agent performance is not guaranteed.
       </p>
-      <p class="font-mono text-xs text-slate-700 mt-2">© 2024 SUI AGENT · $AGENT · All systems autonomous</p>
+      <p class="font-mono text-xs text-slate-700 mt-2">© 2026 SUI AGENT · $AGENT · All systems autonomous</p>
     </div>
   </div>
 </footer>
@@ -1253,94 +1135,12 @@ async function initFeed() {
   }
 }
 
-// ─── PRICE BAR ───
-const TOTAL_SUPPLY = 1_000_000_000;
-
-function fmtUsd(n) {
-  if (n >= 1_000_000) return '$' + (n/1_000_000).toFixed(2) + 'M';
-  if (n >= 1_000) return '$' + (n/1_000).toFixed(2) + 'K';
-  if (n < 0.000001) return '$' + n.toFixed(10);
-  return '$' + n.toFixed(8);
-}
-function fmtUsdShort(n) {
-  if (n >= 1_000_000_000) return '$' + (n/1_000_000_000).toFixed(2) + 'B';
-  if (n >= 1_000_000)     return '$' + (n/1_000_000).toFixed(2) + 'M';
-  if (n >= 1_000)         return '$' + (n/1_000).toFixed(2) + 'K';
-  return '$' + n.toFixed(2);
-}
-
-async function fetchSuiPrice() {
-  try {
-    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=sui&vs_currencies=usd');
-    const data = await res.json();
-    return data?.sui?.usd || 0;
-  } catch(e) { return 0; }
-}
-
-async function updatePriceBar() {
-  try {
-    const poolObj = await rpc('sui_getObject', [POOL_ID, { showContent: true }]);
-    const pf = poolObj?.data?.content?.fields || {};
-
-    // Reserves are nested Balance objects
-    const suiRaw   = parseInt(pf.sui_reserve?.fields?.balance   || pf.sui_reserve   || 0);
-    const agentRaw = parseInt(pf.agent_reserve?.fields?.balance || pf.agent_reserve || 0);
-
-    if (agentRaw === 0 || suiRaw === 0) {
-      document.getElementById('poolReserves').textContent = 'Loading...';
-      return;
-    }
-
-    const suiReserve   = suiRaw   / 1_000_000_000;
-    const agentReserve = agentRaw / 1_000_000;
-    const priceInSui   = suiReserve / agentReserve;
-
-    const suiUsd   = await fetchSuiPrice();
-    const priceUsd = priceInSui * suiUsd;
-    const mcap     = priceUsd * TOTAL_SUPPLY;
-    const liqUsd   = suiReserve * suiUsd * 2;
-
-    document.getElementById('priceSui').textContent      = priceInSui.toFixed(10) + ' SUI';
-    document.getElementById('priceUsd').textContent      = fmtUsd(priceUsd);
-    document.getElementById('marketCap').textContent     = fmtUsdShort(mcap);
-    document.getElementById('fdv').textContent           = fmtUsdShort(mcap);
-    document.getElementById('liquidity').textContent     = fmtUsdShort(liqUsd);
-    document.getElementById('poolReserves').textContent  =
-      suiReserve.toFixed(1) + ' SUI / ' + (agentReserve/1_000_000).toFixed(0) + 'M $AGENT';
-
-    const ch = document.getElementById('priceChange');
-    ch.style.color   = 'var(--green)';
-    ch.textContent   = '⬤ LIVE';
-  } catch(e) {
-    document.getElementById('priceUsd').textContent = '$—';
-  }
-}
-
-// ─── MODAL ───
-function showTradeModal(type) {
-  const modal = document.getElementById('tradeModal');
-  document.getElementById('modalTitle').textContent =
-    type === 'buy' ? '▲ How to BUY $AGENT' : '▼ How to SELL $AGENT';
-  modal.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-}
-function closeTradeModal() {
-  document.getElementById('tradeModal').style.display = 'none';
-  document.body.style.overflow = '';
-}
-document.getElementById('tradeModal').addEventListener('click', function(e) {
-  if (e.target === this) closeTradeModal();
-});
-
 // ─── BOOT ───
 fetchStats();
 initFeed();
-updatePriceBar();
 
 // Refresh stats every 30s
 setInterval(fetchStats, 30000);
-// Refresh price bar every 30s
-setInterval(updatePriceBar, 30000);
 // Check real trades every 10s
 setInterval(fetchRealTrades, 10000);
 // Add sim trade every 3s
