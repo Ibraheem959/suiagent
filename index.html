@@ -627,12 +627,19 @@
 
     <!-- Contract Address -->
     <div class="reveal card p-6 mt-4 rounded-none">
-      <div class="font-mono text-xs text-slate-500 mb-3 tracking-widest">CONTRACT ADDRESS</div>
-      <div class="flex flex-wrap items-center gap-4">
+      <div class="font-mono text-xs text-slate-500 mb-2 tracking-widest">COIN TYPE (TOKEN ADDRESS)</div>
+      <div class="flex flex-wrap items-center gap-4 mb-5">
         <div class="font-mono text-sm" style="color:var(--cyan);word-break:break-all;flex:1">
-          <span id="contractAddr">0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c</span>
+          <span id="contractAddr">0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT</span>
         </div>
         <button class="copy-btn" onclick="copyContract()">COPY</button>
+      </div>
+      <div class="font-mono text-xs text-slate-500 mb-2 tracking-widest">POOL ADDRESS</div>
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="font-mono text-sm" style="color:var(--purple);word-break:break-all;flex:1">
+          <span id="poolAddr">0xba79012088507127692c8c8ba97d4fdc4a83d2f9fff4e9a1ea61ebdc00ff460c</span>
+        </div>
+        <button class="copy-btn" onclick="copyPool()" style="border-color:rgba(180,79,255,0.3);color:var(--purple)">COPY</button>
       </div>
       <div class="mt-3 font-mono text-xs text-slate-600">⚠ Verify all contract addresses through official channels before trading.</div>
     </div>
@@ -928,7 +935,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         <div class="dot-ripple"></div>
         <h2 class="font-orbitron text-3xl font-bold text-white">Live Agent Trading Activity</h2>
       </div>
-      <p style="color:#6a8bad;font-weight:300">AI agents operating 24/7 on $AGENT — autonomous, relentless, precise.</p>
+      <p style="color:#6a8bad;font-weight:300">Real on-chain transactions only. No simulated data. Every trade is verifiable on SuiScan.</p>
     </div>
 
     <div class="reveal grid md:grid-cols-3 gap-6 mb-10">
@@ -957,7 +964,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
           <div class="dot-ripple"></div>
           <span class="font-orbitron text-xs" style="color:var(--cyan)">LIVE FEED</span>
         </div>
-        <span class="font-mono text-xs text-slate-500">Auto-updating every 3s</span>
+        <span class="font-mono text-xs text-slate-500">On-chain only · updates every 10s</span>
       </div>
       <div id="tradeFeed" class="p-4 space-y-2 overflow-hidden" style="max-height:420px;overflow-y:auto"></div>
     </div>
@@ -1100,20 +1107,18 @@ function copyContract() {
     setTimeout(() => { btn.textContent = 'COPY'; btn.style.color = ''; }, 2000);
   });
 }
-
-// ─── HYBRID LIVE FEED ───
-const agentNames = [
-  'AGENT #7','AGENT #12','AGENT #19','AGENT #3','AGENT #42',
-  'AGENT #88','AGENT #5','AGENT #31','AGENT #77','AGENT #14',
-  'AGENT #99','AGENT #2','AGENT #55','AGENT #23','AGENT #67'
-];
-const strategies = ['SCALP','SWING','DCA','BREAKOUT','MEAN-REV','MOMENTUM'];
-
-function randomAmount() {
-  const a = ['420K','1.2M','880K','2.1M','350K','3.4M','690K','1.8M','500K','4.2M','750K','280K','1.5M','925K','2.7M'];
-  return a[Math.floor(Math.random() * a.length)];
+function copyPool() {
+  const txt = document.getElementById('poolAddr').textContent;
+  navigator.clipboard.writeText(txt).then(() => {
+    const btns = document.querySelectorAll('.copy-btn');
+    const btn = btns[1];
+    btn.textContent = 'COPIED!';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => { btn.textContent = 'COPY'; btn.style.color = 'var(--purple)'; }, 2000);
+  });
 }
-function randomPrice() { return (Math.random() * 0.000002 + 0.000003).toFixed(8); }
+
+// ─── REAL-ONLY LIVE FEED ───
 function timeAgo(s) {
   if (s < 60) return s + 's ago';
   if (s < 3600) return Math.floor(s/60) + 'm ago';
@@ -1132,11 +1137,26 @@ function fmtAgent(raw) {
 function fmtSui(raw) { return (parseInt(raw) / 1_000_000_000).toFixed(4); }
 
 let realTrades = 0;
-let simTrades = 0;
 const seenDigests = new Set();
 const feed = document.getElementById('tradeFeed');
 
+function showEmptyState() {
+  if (feed.children.length === 0) {
+    feed.innerHTML =
+      '<div style="text-align:center;padding:60px 20px;">' +
+      '<div style="font-family:Orbitron,sans-serif;font-size:0.7rem;color:#2d3748;letter-spacing:0.2em;margin-bottom:12px">◈ NO TRADES YET</div>' +
+      '<p style="font-family:Share Tech Mono,monospace;font-size:0.75rem;color:#2d3748;line-height:1.8">' +
+      'Pool is live and waiting for the first agent.<br>' +
+      'Register your wallet below and deploy your Eliza agent<br>' +
+      'to be the first to trade $AGENT on-chain.' +
+      '</p>' +
+      '<div style="margin-top:16px;font-family:Orbitron,sans-serif;font-size:0.6rem;color:#1a2535;letter-spacing:0.15em">POLLING CHAIN EVERY 10 SECONDS...</div>' +
+      '</div>';
+  }
+}
+
 function addRealTrade(isBuy, wallet, agentRaw, suiRaw, timestamp) {
+  if (feed.innerHTML.includes('NO TRADES YET')) feed.innerHTML = '';
   const col = isBuy ? 'var(--green)' : '#ff465a';
   const cls = isBuy ? 'trade-buy' : 'trade-sell';
   const secsAgo = Math.max(0, Math.floor((Date.now() - parseInt(timestamp)) / 1000));
@@ -1153,43 +1173,19 @@ function addRealTrade(isBuy, wallet, agentRaw, suiRaw, timestamp) {
     '<span style="color:#4a5568"> for </span>' +
     '<span style="color:#8ba8c8">' + fmtSui(suiRaw) + ' SUI</span></div>' +
     '<div style="text-align:right;flex-shrink:0">' +
-    '<div style="color:var(--green);font-size:0.6rem;padding:2px 6px;border:1px solid var(--green);letter-spacing:0.08em">⬤ LIVE</div>' +
+    '<div style="color:var(--green);font-size:0.6rem;padding:2px 6px;border:1px solid var(--green);letter-spacing:0.08em">⬤ ON-CHAIN</div>' +
     '<div style="color:#4a5568;font-size:0.65rem;margin-top:3px">' + timeAgo(secsAgo) + '</div></div>';
   feed.insertBefore(div, feed.firstChild);
   if (feed.children.length > 20) feed.removeChild(feed.lastChild);
   realTrades++;
-}
-
-function addSimTrade(isBuy) {
-  simTrades++;
-  const col = isBuy ? 'var(--green)' : '#ff465a';
-  const cls = isBuy ? 'trade-buy' : 'trade-sell';
-  const agent = agentNames[Math.floor(Math.random() * agentNames.length)];
-  const strat = strategies[Math.floor(Math.random() * strategies.length)];
-  const div = document.createElement('div');
-  div.className = 'trade-card ' + cls;
-  div.innerHTML =
-    '<div style="width:34px;height:34px;border:1px solid ' + col + ';background:' +
-    (isBuy?'rgba(0,255,136,0.08)':'rgba(255,70,90,0.08)') +
-    ';clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-    '<span style="font-family:Orbitron,sans-serif;font-size:0.5rem;color:' + col + '">AI</span></div>' +
-    '<div style="flex:1"><span style="color:' + col + ';font-weight:bold">' + agent + '</span>' +
-    '<span style="color:#8ba8c8"> ' + (isBuy?'BOUGHT':'SOLD') + ' </span>' +
-    '<span style="color:#fff;font-weight:bold">' + randomAmount() + ' $AGENT</span>' +
-    '<span style="color:#4a5568"> @ </span>' +
-    '<span style="color:#8ba8c8">' + randomPrice() + ' SUI</span></div>' +
-    '<div style="text-align:right;flex-shrink:0">' +
-    '<div style="color:#4a5568;font-size:0.6rem;padding:2px 6px;border:1px solid #2d3748;letter-spacing:0.08em">SIM</div>' +
-    '<div style="color:#4a5568;font-size:0.65rem;margin-top:3px">just now</div></div>';
-  feed.insertBefore(div, feed.firstChild);
-  if (feed.children.length > 20) feed.removeChild(feed.lastChild);
+  document.getElementById('tradesToday').textContent = realTrades.toLocaleString();
 }
 
 async function fetchRealTrades() {
   try {
     const result = await rpc('suix_queryEvents', [
       { MoveModule: { package: POOL_PACKAGE, module: 'pool' } },
-      null, 10, true
+      null, 20, true
     ]);
     const events = result?.data || [];
     let newCount = 0;
@@ -1207,17 +1203,17 @@ async function fetchRealTrades() {
         newCount++;
       }
     });
+    if (newCount === 0 && realTrades === 0) showEmptyState();
     return newCount;
-  } catch(e) { return 0; }
+  } catch(e) {
+    if (realTrades === 0) showEmptyState();
+    return 0;
+  }
 }
 
 async function initFeed() {
-  const realCount = await fetchRealTrades();
-  const fill = Math.max(0, 8 - realCount);
-  var pat = [true,false,true,true,false,true,false,true];
-  for (var i = 0; i < fill; i++) {
-    (function(idx){ setTimeout(function(){ addSimTrade(pat[idx%pat.length]); }, idx*80); })(i);
-  }
+  await fetchRealTrades();
+  if (realTrades === 0) showEmptyState();
 }
 
 // ─── PRICE BAR ───
@@ -1273,7 +1269,7 @@ async function updatePriceBar() {
     document.getElementById('fdv').textContent          = fmtUsdShort(mcap);
     document.getElementById('liquidity').textContent    = fmtUsdShort(liqUsd);
     document.getElementById('poolReserves').textContent =
-      suiReserve.toFixed(1) + ' SUI / ' + (agentReserve/1_000_000).toFixed(0) + 'M $AGENT';
+      suiReserve.toFixed(1) + ' SUI / ' + agentReserve.toFixed(0) + 'M $AGENT';
 
     const ch = document.getElementById('priceChange');
     ch.style.color   = 'var(--green)';
@@ -1310,15 +1306,13 @@ setInterval(fetchStats, 30000);
 setInterval(updatePriceBar, 30000);
 // Check real trades every 10s
 setInterval(fetchRealTrades, 10000);
-// Add sim trade every 3s
-setInterval(function() { addSimTrade(Math.random() > 0.45); }, 3000);
-// Update timestamps every 5s
+// Update timestamps every 10s
 setInterval(function() {
   document.querySelectorAll('.trade-card').forEach(function(card, i) {
     var el = card.querySelector('div:last-child > div:last-child');
-    if (el && el.textContent !== 'just now') el.textContent = timeAgo((i*3)+Math.floor(Math.random()*5));
+    if (el) el.textContent = timeAgo((i * 12) + Math.floor(Math.random() * 5));
   });
-}, 5000);
+}, 10000);
 
 // ─── AGENT REGISTRATION ───
 async function registerAgent() {
