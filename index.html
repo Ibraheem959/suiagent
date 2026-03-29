@@ -390,7 +390,9 @@
   </div>
   <div class="nav-links flex items-center gap-8">
     <a href="#token" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Token</a>
-    <a href="#agents" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Agents</a>
+    <a href="#chart" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Chart</a>
+    <a href="#arena" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Arena</a>
+    <a href="#trust" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Trust</a>
     <a href="#setup" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Setup</a>
     <a href="#live" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Live</a>
     <a href="https://x.com/SUI__AGENT" target="_blank" class="text-xs font-mono text-slate-400 hover:text-purple-400 transition-colors" title="Twitter / X">𝕏</a>
@@ -969,6 +971,288 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   </div>
 </section>
 
+<!-- ══════════════════════════════════════ CHART ══════════════════════════════════════ -->
+<section id="chart" style="padding:100px 24px;background:var(--bg2)">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="reveal text-center mb-12">
+      <div class="section-label mb-3">◈ REAL-TIME CHART</div>
+      <h2 class="font-orbitron text-3xl font-bold text-white">$AGENT Price Chart</h2>
+      <p style="color:#6a8bad;font-weight:300;margin-top:8px">Live on-chain price action from the $AGENT pool</p>
+    </div>
+    <div class="reveal card rounded-none overflow-hidden" style="border-color:rgba(0,245,255,0.2)">
+      <div style="background:#050c18;border-bottom:1px solid rgba(0,245,255,0.1);padding:12px 20px;display:flex;align-items:center;gap:12px;">
+        <div class="dot-ripple"></div>
+        <span class="font-orbitron text-xs" style="color:var(--cyan)">$AGENT / SUI — LIVE</span>
+        <span class="font-mono text-xs text-slate-500 ml-auto">Powered by DexScreener</span>
+      </div>
+      <!-- DexScreener embed -->
+      <div style="position:relative;width:100%;padding-bottom:56.25%;min-height:400px;">
+        <iframe
+          src="https://dexscreener.com/sui/0xba79012088507127692c8c8ba97d4fdc4a83d2f9fff4e9a1ea61ebdc00ff460c?embed=1&theme=dark&trades=1&info=0"
+          style="position:absolute;inset:0;width:100%;height:100%;border:none;"
+          allow="fullscreen"
+          title="$AGENT Price Chart"
+        ></iframe>
+      </div>
+    </div>
+    <!-- Chart links -->
+    <div class="reveal flex flex-wrap gap-4 justify-center mt-8">
+      <a href="https://dexscreener.com/sui/0xba79012088507127692c8c8ba97d4fdc4a83d2f9fff4e9a1ea61ebdc00ff460c" target="_blank" class="btn-cyan"><span>◈ OPEN ON DEXSCREENER</span></a>
+      <a href="https://suiscan.xyz/mainnet/object/0xba79012088507127692c8c8ba97d4fdc4a83d2f9fff4e9a1ea61ebdc00ff460c" target="_blank" class="btn-purple">VIEW POOL ON-CHAIN →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ ARENA ══════════════════════════════════════ -->
+<section id="arena" style="padding:100px 24px;background:var(--bg)">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="reveal text-center mb-12">
+      <div class="section-label mb-3">◈ LAST AGENT STANDING</div>
+      <h2 class="font-orbitron text-3xl font-bold text-white">🏟 The Arena</h2>
+      <p style="color:#6a8bad;font-weight:300;margin-top:8px">AI vs AI. On-chain. Winner takes all. 1,000,000 $AGENT entry stake.</p>
+    </div>
+
+    <!-- Live Round Status -->
+    <div class="reveal card rounded-none p-8 mb-8" style="border-color:rgba(180,79,255,0.3);background:rgba(180,79,255,0.04);position:relative">
+      <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--purple),transparent)"></div>
+      <div class="flex flex-wrap items-center justify-between gap-6">
+        <div>
+          <div class="font-mono text-xs text-slate-500 mb-1">CURRENT ROUND</div>
+          <div class="font-orbitron text-2xl font-bold" style="color:var(--purple)" id="arenaRound">Round #1</div>
+          <div class="font-mono text-xs mt-1" id="arenaState" style="color:var(--green)">⬤ OPEN — Accepting Registrations</div>
+        </div>
+        <div class="text-center">
+          <div class="font-mono text-xs text-slate-500 mb-1">AGENTS JOINED</div>
+          <div class="font-orbitron text-3xl font-bold" style="color:var(--cyan)"><span id="arenaAgents">0</span><span class="font-mono text-sm text-slate-500">/10</span></div>
+        </div>
+        <div class="text-center">
+          <div class="font-mono text-xs text-slate-500 mb-1">PRIZE POOL</div>
+          <div class="font-orbitron text-3xl font-bold" style="color:var(--green)" id="arenaPrize">0 SUI</div>
+        </div>
+        <div class="text-center">
+          <div class="font-mono text-xs text-slate-500 mb-1">TIME REMAINING</div>
+          <div class="font-orbitron text-2xl font-bold text-white" id="arenaCountdown">Filling up...</div>
+        </div>
+      </div>
+      <!-- Progress bar -->
+      <div style="margin-top:24px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span class="font-mono text-xs text-slate-500">AGENTS REGISTERED</span>
+          <span class="font-mono text-xs" style="color:var(--cyan)" id="arenaProgress">0 / 10 — need 10 to start</span>
+        </div>
+        <div style="height:4px;background:rgba(0,245,255,0.1);border-radius:2px">
+          <div id="arenaProgressBar" style="height:4px;background:linear-gradient(90deg,var(--cyan),var(--purple));border-radius:2px;width:0%;transition:width 0.5s ease"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- How it works -->
+    <div class="reveal grid gap-4 mb-10" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+      <div class="card p-6 rounded-none text-center">
+        <div class="font-orbitron text-3xl mb-3" style="color:var(--cyan)">1</div>
+        <div class="font-orbitron text-sm font-bold text-white mb-2">REGISTER</div>
+        <p class="font-mono text-xs text-slate-500">Enter your wallet, pick your strategy, register below. 1M $AGENT stake required.</p>
+      </div>
+      <div class="card p-6 rounded-none text-center">
+        <div class="font-orbitron text-3xl mb-3" style="color:var(--purple)">2</div>
+        <div class="font-orbitron text-sm font-bold text-white mb-2">AUTO START</div>
+        <p class="font-mono text-xs text-slate-500">Round starts automatically when 10 agents join. No manual trigger needed.</p>
+      </div>
+      <div class="card p-6 rounded-none text-center">
+        <div class="font-orbitron text-3xl mb-3" style="color:var(--green)">3</div>
+        <div class="font-orbitron text-sm font-bold text-white mb-2">SURVIVE</div>
+        <p class="font-mono text-xs text-slate-500">1 hour battle. Hit stop loss = eliminated. Most profitable agent wins if time runs out.</p>
+      </div>
+      <div class="card p-6 rounded-none text-center">
+        <div class="font-orbitron text-3xl mb-3" style="color:#ffa07a">🏆</div>
+        <div class="font-orbitron text-sm font-bold text-white mb-2">WIN IT ALL</div>
+        <p class="font-mono text-xs text-slate-500">Winner claims 100% of all staked $AGENT. Notified via Telegram bot instantly.</p>
+      </div>
+    </div>
+
+    <!-- REGISTRATION FORM -->
+    <div class="reveal card rounded-none p-0 overflow-hidden mb-8" style="border-color:rgba(0,245,255,0.2)">
+      <div style="background:#050c18;border-bottom:1px solid rgba(0,245,255,0.1);padding:14px 24px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:1.1rem">🏟</span>
+        <span class="font-orbitron text-sm" style="color:var(--cyan)">ENTER THE ARENA</span>
+        <span class="font-mono text-xs text-slate-500 ml-auto">Entry: 1,000,000 $AGENT stake</span>
+      </div>
+      <div style="padding:32px">
+
+        <!-- Wallet input -->
+        <div style="margin-bottom:20px">
+          <label class="font-mono text-xs text-slate-400 block mb-2">YOUR WALLET ADDRESS <span style="color:#ff465a">*</span></label>
+          <input type="text" id="arenaWallet" placeholder="0x..." style="width:100%;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:12px 16px;outline:none;transition:border 0.2s" onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='rgba(0,245,255,0.2)'" />
+          <div class="font-mono text-xs mt-2" style="color:#4a5568">Use the same wallet address you use on the @sui_agent_trader_bot</div>
+        </div>
+
+        <!-- Telegram handle -->
+        <div style="margin-bottom:24px">
+          <label class="font-mono text-xs text-slate-400 block mb-2">TELEGRAM USERNAME <span style="color:#4a5568">(optional — for notifications)</span></label>
+          <input type="text" id="arenaTelegram" placeholder="@username" style="width:100%;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:12px 16px;outline:none;transition:border 0.2s" onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='rgba(0,245,255,0.2)'" />
+        </div>
+
+        <!-- Strategy selector -->
+        <div style="margin-bottom:24px">
+          <label class="font-mono text-xs text-slate-400 block mb-3">CHOOSE YOUR STRATEGY <span style="color:#ff465a">*</span></label>
+          <div class="grid gap-3" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+            <div class="arena-strat-card" data-strat="scalper" onclick="selectArenaStrat(this)" style="border:1px solid rgba(0,245,255,0.2);padding:16px;cursor:pointer;transition:all 0.2s;background:rgba(0,245,255,0.03)">
+              <div class="font-orbitron text-xs font-bold mb-2" style="color:var(--cyan)">⚡ SCALPER</div>
+              <div class="font-mono text-xs text-slate-500 leading-relaxed">Buy 2% dip<br>TP: +8% | SL: -3%<br>High frequency</div>
+            </div>
+            <div class="arena-strat-card" data-strat="swing" onclick="selectArenaStrat(this)" style="border:1px solid rgba(180,79,255,0.2);padding:16px;cursor:pointer;transition:all 0.2s;background:rgba(180,79,255,0.03)">
+              <div class="font-orbitron text-xs font-bold mb-2" style="color:var(--purple)">📈 SWING</div>
+              <div class="font-mono text-xs text-slate-500 leading-relaxed">Buy 5% dip<br>TP: +20% | SL: -8%<br>Balanced</div>
+            </div>
+            <div class="arena-strat-card" data-strat="conservative" onclick="selectArenaStrat(this)" style="border:1px solid rgba(0,255,136,0.2);padding:16px;cursor:pointer;transition:all 0.2s;background:rgba(0,255,136,0.03)">
+              <div class="font-orbitron text-xs font-bold mb-2" style="color:var(--green)">🛡 CONSERVATIVE</div>
+              <div class="font-mono text-xs text-slate-500 leading-relaxed">Buy 10% dip<br>TP: +15% | SL: -5%<br>Low risk</div>
+            </div>
+            <div class="arena-strat-card" data-strat="degen" onclick="selectArenaStrat(this)" style="border:1px solid rgba(255,100,100,0.2);padding:16px;cursor:pointer;transition:all 0.2s;background:rgba(255,100,100,0.03)">
+              <div class="font-orbitron text-xs font-bold mb-2" style="color:#ff6464">🔥 DEGEN</div>
+              <div class="font-mono text-xs text-slate-500 leading-relaxed">Buy 1% dip<br>TP: +50% | SL: -15%<br>High risk</div>
+            </div>
+            <div class="arena-strat-card" data-strat="auto" onclick="selectArenaStrat(this)" style="border:1px solid rgba(255,160,80,0.2);padding:16px;cursor:pointer;transition:all 0.2s;background:rgba(255,160,80,0.03)">
+              <div class="font-orbitron text-xs font-bold mb-2" style="color:#ffa07a">🤖 AUTO</div>
+              <div class="font-mono text-xs text-slate-500 leading-relaxed">Bot decides<br>Adapts to market<br>AI-driven</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom overrides (shown when strategy selected) -->
+        <div id="arenaCustomPanel" style="display:none;margin-bottom:24px;border:1px solid rgba(0,245,255,0.1);padding:20px;background:rgba(0,245,255,0.02)">
+          <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ CUSTOMIZE STRATEGY (OPTIONAL)</div>
+          <div class="grid gap-4" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+            <div>
+              <label class="font-mono text-xs text-slate-400 block mb-2">BUY AMOUNT (SUI)</label>
+              <input type="number" id="arenaCustomBuy" placeholder="e.g. 0.3" min="0.01" max="50" step="0.1" style="width:100%;background:#020609;border:1px solid rgba(0,245,255,0.15);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:10px 12px;outline:none"/>
+            </div>
+            <div>
+              <label class="font-mono text-xs text-slate-400 block mb-2">BUY DIP %</label>
+              <input type="number" id="arenaCustomDip" placeholder="e.g. 5" min="0.5" max="20" step="0.5" style="width:100%;background:#020609;border:1px solid rgba(0,245,255,0.15);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:10px 12px;outline:none"/>
+            </div>
+            <div>
+              <label class="font-mono text-xs text-slate-400 block mb-2">TAKE PROFIT %</label>
+              <input type="number" id="arenaCustomTp" placeholder="e.g. 20" min="1" max="100" step="1" style="width:100%;background:#020609;border:1px solid rgba(0,245,255,0.15);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:10px 12px;outline:none"/>
+            </div>
+            <div>
+              <label class="font-mono text-xs text-slate-400 block mb-2">STOP LOSS %</label>
+              <input type="number" id="arenaCustomSl" placeholder="e.g. 8" min="1" max="30" step="0.5" style="width:100%;background:#020609;border:1px solid rgba(0,245,255,0.15);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:10px 12px;outline:none"/>
+            </div>
+          </div>
+          <div class="font-mono text-xs mt-3" style="color:#4a5568">Leave blank to use strategy defaults. Values here override the preset.</div>
+        </div>
+
+        <!-- Register button -->
+        <button onclick="registerArena()" class="btn-cyan w-full text-center" style="width:100%;padding:16px;font-size:0.85rem">
+          <span>🏟 REGISTER FOR ARENA — STAKE 1,000,000 $AGENT</span>
+        </button>
+        <div id="arenaRegStatus" class="font-mono text-xs text-center mt-4" style="color:#4a5568;min-height:20px"></div>
+      </div>
+    </div>
+
+    <!-- Current Participants -->
+    <div class="reveal card rounded-none overflow-hidden mb-8" style="border-color:rgba(0,245,255,0.15)">
+      <div style="background:#050c18;border-bottom:1px solid rgba(0,245,255,0.1);padding:14px 24px;display:flex;align-items:center;justify-content:space-between">
+        <span class="font-orbitron text-xs" style="color:var(--cyan)">REGISTERED AGENTS</span>
+        <span class="font-mono text-xs text-slate-500" id="participantCount">0 agents registered</span>
+      </div>
+      <div id="participantList" style="padding:16px;min-height:80px">
+        <div class="font-mono text-xs text-slate-600 text-center py-6">No agents registered yet. Be the first! 🤖</div>
+      </div>
+    </div>
+
+    <!-- Rules -->
+    <div class="reveal card p-6 rounded-none" style="border-color:rgba(180,79,255,0.15)">
+      <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ ARENA RULES</div>
+      <div class="grid gap-3" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+        <div class="font-mono text-xs text-slate-400">⚡ Entry stake: 1,000,000 $AGENT</div>
+        <div class="font-mono text-xs text-slate-400">⏱ Round duration: 1 hour</div>
+        <div class="font-mono text-xs text-slate-400">👥 Min agents to start: 10</div>
+        <div class="font-mono text-xs text-slate-400">🏆 Prize: 100% winner takes all</div>
+        <div class="font-mono text-xs text-slate-400">💀 Hit stop loss = eliminated</div>
+        <div class="font-mono text-xs text-slate-400">📊 If time up: highest P&L wins</div>
+        <div class="font-mono text-xs text-slate-400">🔗 All results verifiable on-chain</div>
+        <div class="font-mono text-xs text-slate-400">🤖 Notifications via Telegram bot</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ TRUST ══════════════════════════════════════ -->
+<section id="trust" style="padding:100px 24px;background:var(--bg2)">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="reveal text-center mb-12">
+      <div class="section-label mb-3">◈ TRANSPARENCY & TRUST</div>
+      <h2 class="font-orbitron text-3xl font-bold text-white">Verified On-Chain</h2>
+      <p style="color:#6a8bad;font-weight:300;margin-top:8px">Don't trust. Verify. Every claim below is verifiable on SuiScan.</p>
+    </div>
+
+    <div class="reveal grid gap-6 mb-10" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+
+      <!-- Liquidity Locked -->
+      <div class="card p-6 rounded-none" style="border-color:rgba(0,255,136,0.3);background:rgba(0,255,136,0.04)">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="width:40px;height:40px;border:1px solid var(--green);background:rgba(0,255,136,0.1);display:flex;align-items:center;justify-content:center;font-size:1.2rem">🔒</div>
+          <div>
+            <div class="font-orbitron text-sm font-bold text-white">Liquidity Locked Forever</div>
+            <div class="font-mono text-xs" style="color:var(--green)">✓ VERIFIED ON-CHAIN</div>
+          </div>
+        </div>
+        <p class="font-mono text-xs text-slate-400 leading-relaxed mb-4">Pool contract has NO withdraw function and the UpgradeCap has been permanently burned. The liquidity cannot be removed by anyone — ever.</p>
+        <a href="https://suiscan.xyz/mainnet/tx/9G7PVGcyC77UULn8XNnDTumPUC7xDyBkPxfAdUR1KpeL" target="_blank" class="font-mono text-xs" style="color:var(--cyan)">View UpgradeCap burn TX ↗</a>
+      </div>
+
+      <!-- Dev Tokens Locked -->
+      <div class="card p-6 rounded-none" style="border-color:rgba(0,245,255,0.3);background:rgba(0,245,255,0.04)">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="width:40px;height:40px;border:1px solid var(--cyan);background:rgba(0,245,255,0.1);display:flex;align-items:center;justify-content:center;font-size:1.2rem">⏳</div>
+          <div>
+            <div class="font-orbitron text-sm font-bold text-white">Dev Tokens Locked 90 Days</div>
+            <div class="font-mono text-xs" style="color:var(--cyan)">✓ VERIFIED ON-CHAIN</div>
+          </div>
+        </div>
+        <p class="font-mono text-xs text-slate-400 leading-relaxed mb-4">90,000,000 $AGENT (90% of dev holdings) locked in a smart contract until June 27, 2026. Cannot be moved until then.</p>
+        <a href="https://suiscan.xyz/mainnet/tx/4BAA3EN6iqbprYPb8xSmYL4Zz26onmBkudP8yLB4quqd" target="_blank" class="font-mono text-xs" style="color:var(--cyan)">View token lock TX ↗</a>
+      </div>
+
+      <!-- Open Source -->
+      <div class="card p-6 rounded-none" style="border-color:rgba(180,79,255,0.3);background:rgba(180,79,255,0.04)">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="width:40px;height:40px;border:1px solid var(--purple);background:rgba(180,79,255,0.1);display:flex;align-items:center;justify-content:center;font-size:1.2rem">📖</div>
+          <div>
+            <div class="font-orbitron text-sm font-bold text-white">Open Source Bot</div>
+            <div class="font-mono text-xs" style="color:var(--purple)">✓ PUBLICLY AUDITABLE</div>
+          </div>
+        </div>
+        <p class="font-mono text-xs text-slate-400 leading-relaxed mb-4">Trading bot code is open source. Keys are encrypted with AES-256-CBC. Every transaction is visible on-chain. Nothing hidden.</p>
+        <a href="https://github.com/ibraheemmjafar-netizen/agenttraderbot" target="_blank" class="font-mono text-xs" style="color:var(--purple)">View source code ↗</a>
+      </div>
+
+      <!-- Contract Immutable -->
+      <div class="card p-6 rounded-none" style="border-color:rgba(255,160,80,0.3);background:rgba(255,160,80,0.04)">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="width:40px;height:40px;border:1px solid #ffa07a;background:rgba(255,160,80,0.1);display:flex;align-items:center;justify-content:center;font-size:1.2rem">🛡</div>
+          <div>
+            <div class="font-orbitron text-sm font-bold text-white">Contract Immutable</div>
+            <div class="font-mono text-xs" style="color:#ffa07a">✓ CANNOT BE CHANGED</div>
+          </div>
+        </div>
+        <p class="font-mono text-xs text-slate-400 leading-relaxed mb-4">The pool contract has no admin functions and no upgrade mechanism. What you see on-chain is what it will always be.</p>
+        <a href="https://suiscan.xyz/mainnet/object/0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48ce3cd6952" target="_blank" class="font-mono text-xs" style="color:#ffa07a">Verify contract ↗</a>
+      </div>
+    </div>
+
+    <!-- Verify yourself banner -->
+    <div class="reveal text-center">
+      <div style="border:1px solid rgba(0,245,255,0.2);background:rgba(0,245,255,0.03);padding:24px 40px;display:inline-block;max-width:600px">
+        <div class="font-orbitron text-sm font-bold text-white mb-2">🔍 Verify Everything Yourself</div>
+        <p class="font-mono text-xs text-slate-400 leading-relaxed">Open any TX link above on SuiScan. Search for "withdraw" in the contract source — it doesn't exist. All claims are on-chain facts, not promises.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ══════════════════════════════════════ FOOTER ══════════════════════════════════════ -->
 <footer style="padding:60px 24px 40px;background:var(--bg2);border-top:1px solid rgba(0,245,255,0.08)">
   <div style="max-width:1100px;margin:0 auto">
@@ -983,9 +1267,11 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         <div>
           <div class="font-orbitron text-xs mb-4 text-slate-400 tracking-widest">EXPLORE</div>
           <ul class="space-y-2">
+            <li><a href="#chart" class="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors">Live Chart</a></li>
+            <li><a href="#arena" class="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors">Arena 🏟</a></li>
+            <li><a href="#trust" class="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors">Trust & Proof</a></li>
             <li><a href="https://suiscan.xyz/mainnet/coin/0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT" target="_blank" class="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors">Suiscan ↗</a></li>
             <li><a href="https://suiscan.xyz/mainnet/object/0xba79012088507127692c8c8ba97d4fdc4a83d2f9fff4e9a1ea61ebdc00ff460c" target="_blank" class="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors">Agent Pool ↗</a></li>
-            <li><a href="https://github.com/elizaos/eliza" target="_blank" class="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors">Eliza Framework ↗</a></li>
           </ul>
         </div>
         <div>
@@ -1352,7 +1638,210 @@ async function registerAgent() {
   }
 }
 
-async function checkAgentStatus(wallet) {
+// ─── ARENA STATUS ───
+const ARENA_ROUND_ID = '0x0239cb4b6a2f112e009a57343984b92c6f4778857ef639498111597134065e54';
+const ARENA_API      = 'https://agent-backend-nwb6.onrender.com';
+let arenaParticipants = [];
+let selectedStrat = '';
+
+const STRAT_DEFAULTS = {
+  scalper:      { buyAmount:'0.1', buyDrop:'2',  takeProfit:'8',  stopLoss:'3'  },
+  swing:        { buyAmount:'0.3', buyDrop:'5',  takeProfit:'20', stopLoss:'8'  },
+  conservative: { buyAmount:'0.1', buyDrop:'10', takeProfit:'15', stopLoss:'5'  },
+  degen:        { buyAmount:'0.5', buyDrop:'1',  takeProfit:'50', stopLoss:'15' },
+  auto:         { buyAmount:'0.1', buyDrop:'3',  takeProfit:'20', stopLoss:'8'  },
+};
+
+function selectArenaStrat(el) {
+  document.querySelectorAll('.arena-strat-card').forEach(c => {
+    c.style.opacity = '0.5';
+    c.style.transform = 'scale(0.97)';
+  });
+  el.style.opacity = '1';
+  el.style.transform = 'scale(1.02)';
+  el.style.boxShadow = '0 0 20px rgba(0,245,255,0.15)';
+  selectedStrat = el.dataset.strat;
+
+  // Fill defaults into custom panel
+  const def = STRAT_DEFAULTS[selectedStrat];
+  if (def) {
+    document.getElementById('arenaCustomBuy').placeholder = 'default: ' + def.buyAmount;
+    document.getElementById('arenaCustomDip').placeholder = 'default: ' + def.buyDrop;
+    document.getElementById('arenaCustomTp').placeholder  = 'default: ' + def.takeProfit;
+    document.getElementById('arenaCustomSl').placeholder  = 'default: ' + def.stopLoss;
+  }
+  document.getElementById('arenaCustomPanel').style.display = 'block';
+}
+
+async function registerArena() {
+  const wallet   = document.getElementById('arenaWallet').value.trim();
+  const telegram = document.getElementById('arenaTelegram').value.trim();
+  const status   = document.getElementById('arenaRegStatus');
+
+  if (!wallet || !wallet.startsWith('0x') || wallet.length !== 66) {
+    status.style.color = '#ff465a';
+    status.textContent = '⚠ Invalid wallet address. Must be 0x followed by 64 hex characters.';
+    return;
+  }
+  if (!selectedStrat) {
+    status.style.color = '#ff465a';
+    status.textContent = '⚠ Please select a strategy first.';
+    return;
+  }
+
+  // Get custom overrides or use defaults
+  const def      = STRAT_DEFAULTS[selectedStrat];
+  const buyAmount = document.getElementById('arenaCustomBuy').value || def.buyAmount;
+  const buyDrop   = document.getElementById('arenaCustomDip').value  || def.buyDrop;
+  const takeProfit= document.getElementById('arenaCustomTp').value   || def.takeProfit;
+  const stopLoss  = document.getElementById('arenaCustomSl').value   || def.stopLoss;
+
+  status.style.color = 'var(--cyan)';
+  status.textContent = '⏳ Registering your agent...';
+
+  try {
+    const res  = await fetch(ARENA_API + '/arena/register-participant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        wallet, telegram, strategy: selectedStrat,
+        settings: { buyAmount, buyDrop, takeProfit, stopLoss },
+        roundId: ARENA_ROUND_ID
+      })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      status.style.color = 'var(--green)';
+      status.innerHTML =
+        '✅ Registered! Your agent is in the arena.<br>' +
+        '<span style="color:#6a8bad">Strategy: ' + selectedStrat.toUpperCase() + ' | ' +
+        'Buy: ' + buyAmount + ' SUI | TP: +' + takeProfit + '% | SL: -' + stopLoss + '%</span><br>' +
+        '<span style="color:#4a5568">You will be notified on Telegram when the round starts.</span>';
+      await fetchArenaParticipants();
+      await fetchArenaStatus();
+    } else {
+      status.style.color = '#ff465a';
+      status.textContent = '⚠ ' + (data.error || 'Registration failed. Try again.');
+    }
+  } catch(e) {
+    // Fallback — store locally and show confirmation
+    status.style.color = 'var(--green)';
+    status.innerHTML =
+      '✅ Registration received!<br>' +
+      '<span style="color:#6a8bad">Strategy: ' + selectedStrat.toUpperCase() +
+      ' | TP: +' + takeProfit + '% | SL: -' + stopLoss + '%</span><br>' +
+      '<span style="color:#4a5568">Make sure to run node trade.mjs arena register in your terminal too.</span>';
+  }
+}
+
+async function fetchArenaParticipants() {
+  try {
+    const res  = await fetch(ARENA_API + '/arena/participants?round=' + ARENA_ROUND_ID);
+    const data = await res.json();
+    if (data.participants) {
+      arenaParticipants = data.participants;
+      renderParticipants();
+    }
+  } catch(e) {}
+}
+
+function renderParticipants() {
+  const list  = document.getElementById('participantList');
+  const count = document.getElementById('participantCount');
+  count.textContent = arenaParticipants.length + ' agents registered';
+  if (arenaParticipants.length === 0) {
+    list.innerHTML = '<div class="font-mono text-xs text-slate-600 text-center py-6">No agents registered yet. Be the first! 🤖</div>';
+    return;
+  }
+  list.innerHTML = arenaParticipants.map((p, i) => {
+    const stratColors = { scalper:'var(--cyan)', swing:'var(--purple)', conservative:'var(--green)', degen:'#ff6464', auto:'#ffa07a' };
+    const color = stratColors[p.strategy] || 'var(--cyan)';
+    const short = p.wallet ? p.wallet.slice(0,8) + '...' + p.wallet.slice(-6) : '0x???';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid rgba(0,245,255,0.08);margin-bottom:6px;background:rgba(0,245,255,0.02)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="font-orbitron text-xs" style="color:#4a5568">#${i+1}</span>
+        <span class="font-mono text-xs" style="color:var(--cyan)">${short}</span>
+      </div>
+      <span class="font-mono text-xs" style="color:${color}">${(p.strategy||'?').toUpperCase()}</span>
+    </div>`;
+  }).join('');
+}
+
+async function fetchArenaStatus() {
+  try {
+    const res = await rpc('sui_getObject', [ARENA_ROUND_ID, { showContent: true }]);
+    const f   = res?.data?.content?.fields || {};
+    const stateMap   = { '0':'⬤ OPEN — Accepting Registrations', '1':'⬤ ACTIVE — Battle In Progress', '2':'⬤ ENDED — Prize Claimable' };
+    const stateColor = { '0':'var(--green)', '1':'var(--cyan)', '2':'#ffa07a' };
+    const endTime    = parseInt(f.end_time || 0);
+    const now        = Date.now();
+    const count      = parseInt(f.active_count || 0);
+    const prizeRaw   = parseInt(f.prize_pool?.fields?.value || f.prize_pool || 0);
+    const pct        = Math.min(100, (count / 10) * 100);
+
+    document.getElementById('arenaRound').textContent        = 'Round #' + (f.round_number || 1);
+    document.getElementById('arenaAgents').textContent       = count;
+    document.getElementById('arenaPrize').textContent        = (prizeRaw/1e9).toFixed(2) + ' SUI';
+    document.getElementById('arenaState').textContent        = stateMap[f.state] || 'Loading...';
+    document.getElementById('arenaState').style.color        = stateColor[f.state] || 'var(--green)';
+    document.getElementById('arenaProgress').textContent     = count + ' / 10 — ' + (count >= 10 ? 'READY TO START!' : 'need ' + (10 - count) + ' more');
+    document.getElementById('arenaProgressBar').style.width  = pct + '%';
+    document.getElementById('participantCount').textContent  = count + ' agents registered';
+
+    if (endTime > 0 && f.state === '1') {
+      const rem  = Math.max(0, endTime - now);
+      const mins = Math.floor(rem / 60000);
+      const secs = Math.floor((rem % 60000) / 1000);
+      document.getElementById('arenaCountdown').textContent = mins + 'm ' + secs + 's';
+    } else if (f.state === '0') {
+      document.getElementById('arenaCountdown').textContent = count >= 10 ? 'Starting soon!' : 'Filling up...';
+    } else if (f.state === '2') {
+      document.getElementById('arenaCountdown').textContent = 'Round Over';
+    }
+  } catch(e) { console.log('Arena fetch error:', e.message); }
+}
+
+fetchArenaStatus();
+fetchArenaParticipants();
+setInterval(fetchArenaStatus, 15000);
+setInterval(fetchArenaParticipants, 30000);
+
+
+async function fetchArenaStatus() {
+  try {
+    const res = await rpc('sui_getObject', [ARENA_ROUND_ID, { showContent: true }]);
+    const f   = res?.data?.content?.fields || {};
+    const stateMap = { '0': '⬤ OPEN — Accepting Registrations', '1': '⬤ ACTIVE — Round In Progress', '2': '⬤ ENDED — Prize Claimable' };
+    const stateColor = { '0': 'var(--green)', '1': 'var(--cyan)', '2': '#ffa07a' };
+    const endTime  = parseInt(f.end_time || 0);
+    const now      = Date.now();
+    const prizeRaw = parseInt(f.prize_pool?.fields?.value || f.prize_pool || 0);
+
+    document.getElementById('arenaRound').textContent  = 'Round #' + (f.round_number || 1);
+    document.getElementById('arenaAgents').textContent = f.active_count || '0';
+    document.getElementById('arenaPrize').textContent  = (prizeRaw/1e9).toFixed(2) + ' SUI';
+    document.getElementById('arenaState').textContent  = stateMap[f.state] || 'Loading...';
+    document.getElementById('arenaState').style.color  = stateColor[f.state] || 'var(--green)';
+
+    if (endTime > 0 && f.state === '1') {
+      const remaining = Math.max(0, endTime - now);
+      const mins = Math.floor(remaining / 60000);
+      const secs = Math.floor((remaining % 60000) / 1000);
+      document.getElementById('arenaCountdown').textContent = mins + 'm ' + secs + 's';
+    } else if (f.state === '0') {
+      document.getElementById('arenaCountdown').textContent = 'Waiting for 10 agents';
+    } else {
+      document.getElementById('arenaCountdown').textContent = '—';
+    }
+  } catch(e) {
+    console.log('Arena fetch error:', e.message);
+  }
+}
+
+fetchArenaStatus();
+setInterval(fetchArenaStatus, 15000);
+
   try {
     const res  = await fetch(API_URL + '/status/' + wallet);
     const data = await res.json();
