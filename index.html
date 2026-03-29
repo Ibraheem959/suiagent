@@ -1225,7 +1225,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
             <div class="font-mono text-xs" style="color:var(--purple)">✓ PUBLICLY AUDITABLE</div>
           </div>
         </div>
-        <p class="font-mono text-xs text-slate-400 leading-relaxed mb-4">Keys are encrypted with AES-256-CBC. Keys are encrypted with AES-256-CBC. Every transaction is visible on-chain. Nothing hidden.</p>
+        <p class="font-mono text-xs text-slate-400 leading-relaxed mb-4">Trading bot code is open source. Keys are encrypted with AES-256-CBC. Every transaction is visible on-chain. Nothing hidden.</p>
         <span class="font-mono text-xs" style="color:var(--purple)">✓ Code auditable on request</span>
       </div>
 
@@ -1807,41 +1807,7 @@ fetchArenaParticipants();
 setInterval(fetchArenaStatus, 15000);
 setInterval(fetchArenaParticipants, 30000);
 
-
-async function fetchArenaStatus() {
-  try {
-    const res = await rpc('sui_getObject', [ARENA_ROUND_ID, { showContent: true }]);
-    const f   = res?.data?.content?.fields || {};
-    const stateMap = { '0': '⬤ OPEN — Accepting Registrations', '1': '⬤ ACTIVE — Round In Progress', '2': '⬤ ENDED — Prize Claimable' };
-    const stateColor = { '0': 'var(--green)', '1': 'var(--cyan)', '2': '#ffa07a' };
-    const endTime  = parseInt(f.end_time || 0);
-    const now      = Date.now();
-    const prizeRaw = parseInt(f.prize_pool?.fields?.value || f.prize_pool || 0);
-
-    document.getElementById('arenaRound').textContent  = 'Round #' + (f.round_number || 1);
-    document.getElementById('arenaAgents').textContent = f.active_count || '0';
-    document.getElementById('arenaPrize').textContent  = (prizeRaw/1e9).toFixed(2) + ' SUI';
-    document.getElementById('arenaState').textContent  = stateMap[f.state] || 'Loading...';
-    document.getElementById('arenaState').style.color  = stateColor[f.state] || 'var(--green)';
-
-    if (endTime > 0 && f.state === '1') {
-      const remaining = Math.max(0, endTime - now);
-      const mins = Math.floor(remaining / 60000);
-      const secs = Math.floor((remaining % 60000) / 1000);
-      document.getElementById('arenaCountdown').textContent = mins + 'm ' + secs + 's';
-    } else if (f.state === '0') {
-      document.getElementById('arenaCountdown').textContent = 'Waiting for 10 agents';
-    } else {
-      document.getElementById('arenaCountdown').textContent = '—';
-    }
-  } catch(e) {
-    console.log('Arena fetch error:', e.message);
-  }
-}
-
-fetchArenaStatus();
-setInterval(fetchArenaStatus, 15000);
-
+async function checkAgentStatus(wallet) {
   try {
     const res  = await fetch(API_URL + '/status/' + wallet);
     const data = await res.json();
