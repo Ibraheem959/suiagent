@@ -2505,207 +2505,145 @@ function executeSwap() {
 }
 
 // ══════════════════════════════════════════════════════
-// WALLET CONNECTION + ON-CHAIN TRANSACTIONS
-// Uses @mysten/sui via CDN — no backend needed
+// WALLET CONNECTION — Sui Wallet Standard
+// Supports Slush, Phantom, OKX, Suiet, Martian, Nightly
 // ══════════════════════════════════════════════════════
 
-const SUI_PKG     = 'https://cdn.jsdelivr.net/npm/@mysten/sui@latest/dist/index.min.js';
 const POOL_PKG_ID = '0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48ce3cd6952';
 const LP_PKG_ID   = '0xf554dad1683cb25386ddf57f2d40f2774fb8287b17f467ebc657c5bc20f226e3';
 const LP_POOL_OBJ = '0xe2cb18758423840159a11243387efc27c21db171ba97c1bad2d6009a474d2e79';
 const AGENT_COIN  = '0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT';
 const LP_COIN     = LP_PKG_ID + '::pool_lp::POOL_LP';
 
-let connectedWallet   = null; // { address, signAndExecute }
+let connectedWallet   = null;
 let connectedProvider = null;
 
-// ─── DETECT WALLET (Wallet Standard API — how Slush works) ───
-function getWalletProvider() {
-  // Wallet Standard — this is how Slush, Sui Wallet, etc register
-  if (window.__suiWallets && window.__suiWallets.length > 0) return window.__suiWallets[0];
-  // @mysten/wallet-standard registers wallets here
-  if (window.navigator?.wallets) {
-    const wallets = window.navigator.wallets.get?.() || [];
-    if (wallets.length > 0) return wallets[0];
-  }
-  // Fallback — some wallets still use legacy injection
-  if (window.suiWallet)  return window.suiWallet;
-  if (window.slush)      return window.slush;
-  if (window.sui)        return window.sui;
-  // Check registered wallets via wallet-standard event
-  const registered = window._walletStandardWallets || [];
-  if (registered.length > 0) return registered[0];
-  return null;
+// ─── INJECT WALLET MODAL ───
+(function() {
+  const style = document.createElement('style');
+  style.textContent = `
+    #walletModal{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);align-items:center;justify-content:center}
+    #walletModal.open{display:flex}
+    #walletModalBox{background:#070d1a;border:1px solid rgba(0,245,255,0.25);width:380px;max-width:92vw;max-height:80vh;overflow-y:auto}
+    .wallet-opt{display:flex;align-items:center;gap:14px;padding:16px 24px;cursor:pointer;border-bottom:1px solid rgba(0,245,255,0.06);transition:background .15s}
+    .wallet-opt:hover{background:rgba(0,245,255,0.07)}
+    .wallet-ico{width:38px;height:38px;border-radius:10px;background:rgba(0,245,255,0.08);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+  `;
+  document.head.appendChild(style);
+
+  const div = document.createElement('div');
+  div.id = 'walletModal';
+  div.innerHTML = `
+    <div id="walletModalBox">
+      <div style="padding:20px 24px;border-bottom:1px solid rgba(0,245,255,0.12);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-family:Orbitron,sans-serif;font-size:0.85rem;color:var(--cyan)">Connect a Wallet</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:#4a5568;margin-top:2px">Choose your Sui wallet</div>
+        </div>
+        <button onclick="closeWalletModal()" style="background:rgba(0,245,255,0.05);border:1px solid rgba(0,245,255,0.2);color:var(--cyan);width:28px;height:28px;cursor:pointer;font-size:0.9rem">✕</button>
+      </div>
+      <div id="walletList"></div>
+      <div style="padding:14px 24px;border-top:1px solid rgba(0,245,255,0.06);text-align:center">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:#2d3748">New to Sui? </span>
+        <a href="https://slush.app" target="_blank" style="font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--cyan)">Get Slush Wallet →</a>
+      </div>
+    </div>`;
+  document.body.appendChild(div);
+  div.addEventListener('click', e => { if (e.target === div) closeWalletModal(); });
+})();
+
+const WALLET_DEFS = [
+  { key:'slush',      name:'Slush',              emoji:'🌊', install:'https://slush.app' },
+  { key:'phantom',    name:'Phantom',             emoji:'👻', install:'https://phantom.com' },
+  { key:'okxwallet',  name:'OKX Wallet',          emoji:'🔷', install:'https://okx.com/web3' },
+  { key:'suiet',      name:'Suiet',               emoji:'🔵', install:'https://suiet.app' },
+  { key:'martian',    name:'Martian Sui Wallet',  emoji:'🔴', install:'https://martianwallet.xyz' },
+  { key:'nightly',    name:'Nightly',             emoji:'🌙', install:'https://nightly.app' },
+  { key:'bitkeep',    name:'Bitget Wallet',       emoji:'💎', install:'https://web3.bitget.com' },
+  { key:'suiWallet',  name:'Sui Wallet',          emoji:'💧', install:'https://chrome.google.com/webstore' },
+];
+
+function renderWalletList() {
+  const list = document.getElementById('walletList');
+  const rows = WALLET_DEFS.map((w, i) => {
+    const installed = !!window[w.key];
+    return `<div class="wallet-opt" onclick="pickWallet(${i})">
+      <div class="wallet-ico">${w.emoji}</div>
+      <div style="flex:1">
+        <div style="font-family:Orbitron,sans-serif;font-size:0.78rem;color:#fff">${w.name}</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:0.62rem;color:${installed?'var(--green)':'#4a5568'}">${installed?'● Detected':'Not installed'}</div>
+      </div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:${installed?'var(--cyan)':'#2d3748'};border:1px solid ${installed?'rgba(0,245,255,0.3)':'rgba(255,255,255,0.05)'};padding:3px 8px">
+        ${installed?'CONNECT':'INSTALL'}
+      </div>
+    </div>`;
+  });
+  list.innerHTML = rows.join('');
+}
+
+function closeWalletModal() { document.getElementById('walletModal')?.classList.remove('open'); }
+
+function connectWallet() { renderWalletList(); document.getElementById('walletModal')?.classList.add('open'); }
+
+async function pickWallet(i) {
+  const w = WALLET_DEFS[i];
+  const provider = window[w.key];
+  if (!provider) { window.open(w.install, '_blank'); return; }
+  closeWalletModal();
+  try {
+    let address = null;
+    if (provider.connect)          { const r = await provider.connect();         address = r?.accounts?.[0]?.address || r?.[0]?.address; }
+    else if (provider.requestAccounts) { const r = await provider.requestAccounts(); address = r?.[0]?.address || r?.[0]; }
+    else if (provider.getAccounts)     { const r = await provider.getAccounts();     address = r?.[0]?.address || r?.[0]; }
+    else if (provider.accounts?.length) address = provider.accounts[0]?.address;
+    if (!address) throw new Error('No address from wallet');
+    connectedWallet   = { address, provider, name: w.name };
+    connectedProvider = provider;
+    updateWalletUI(address);
+  } catch(e) { alert('Connect failed: ' + e.message); }
 }
 
 function updateWalletUI(address) {
   const short = address ? address.slice(0,8)+'...'+address.slice(-6) : null;
-  // Swap bar
-  const dot  = document.getElementById('walletDot');
-  const addr = document.getElementById('walletAddr');
-  const btn  = document.getElementById('connectBtn');
-  if (dot)  dot.style.background  = address ? 'var(--green)' : '#4a5568';
-  if (addr) { addr.textContent = short || 'No wallet connected'; addr.style.color = address ? 'var(--green)' : '#4a5568'; }
-  if (btn)  btn.textContent = address ? 'CONNECTED' : 'CONNECT';
-  // LP bar
-  const ldot  = document.getElementById('lpWalletDot');
-  const laddr = document.getElementById('lpWalletAddrDisplay');
-  if (ldot)  ldot.style.background  = address ? 'var(--green)' : '#4a5568';
-  if (laddr) { laddr.textContent = short || 'No wallet connected'; laddr.style.color = address ? 'var(--green)' : '#4a5568'; }
-  // Swap button
-  const swapBtn = document.getElementById('swapBtnText');
-  if (swapBtn) swapBtn.textContent = address ? '◈ EXECUTE SWAP ON-CHAIN' : '◈ CONNECT WALLET TO SWAP';
-  // LP wallet input
-  const lpWalletInput = document.getElementById('lpWallet');
-  if (lpWalletInput && address && !lpWalletInput.value) {
-    lpWalletInput.value = address;
-    fetchLpPosition();
-  }
+  const connected = !!address;
+  ['walletDot','lpWalletDot'].forEach(id => { const el=document.getElementById(id); if(el) el.style.background=connected?'var(--green)':'#4a5568'; });
+  ['walletAddr','lpWalletAddrDisplay'].forEach(id => { const el=document.getElementById(id); if(el){ el.textContent=short||'No wallet connected'; el.style.color=connected?'var(--green)':'#4a5568'; }});
+  ['connectBtn'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=connected?'✓ '+short:'CONNECT'; });
+  const sb = document.getElementById('swapBtnText');
+  if (sb) sb.textContent = connected ? '◈ EXECUTE SWAP ON-CHAIN' : '◈ CONNECT WALLET TO SWAP';
+  const lpIn = document.getElementById('lpWallet');
+  if (lpIn && address && !lpIn.value) { lpIn.value = address; fetchLpPosition(); }
 }
 
-async function connectWallet() {
-  try {
-    // Wait a moment for wallet to inject
-    await new Promise(r => setTimeout(r, 200));
-    
-    let address = null;
-    let provider = null;
-
-    // Method 1: Wallet Standard (Slush uses this)
-    // Wallets register via window event
-    const stdWallets = window.__walletStandard?.get?.() || window.__suiWallets || [];
-    
-    if (stdWallets.length > 0) {
-      const wallet = stdWallets[0];
-      // Connect using wallet standard
-      if (wallet.features?.['standard:connect']) {
-        const result = await wallet.features['standard:connect'].connect();
-        address  = result?.accounts?.[0]?.address;
-        provider = wallet;
-      } else if (wallet.connect) {
-        const result = await wallet.connect();
-        address  = result?.accounts?.[0]?.address || result?.address;
-        provider = wallet;
-      }
-    }
-
-    // Method 2: Legacy sui wallet injection
-    if (!address && window.suiWallet) {
-      await window.suiWallet.requestPermissions?.();
-      const accounts = await window.suiWallet.getAccounts?.();
-      address  = accounts?.[0];
-      provider = window.suiWallet;
-    }
-
-    // Method 3: window.slush
-    if (!address && window.slush) {
-      const result = await window.slush.connect?.();
-      address  = result?.accounts?.[0]?.address || result?.address;
-      provider = window.slush;
-    }
-
-    // Method 4: Detect any Sui wallet via sui global
-    if (!address && window.sui) {
-      const result = await window.sui.connect?.();
-      address  = result?.accounts?.[0]?.address;
-      provider = window.sui;
-    }
-
-    if (!address) {
-      // No wallet found at all
-      const go = confirm(
-        'Slush wallet not detected.\n\n' +
-        'Make sure:\n' +
-        '1. Slush extension is installed\n' +
-        '2. This page is reloaded after installing\n' +
-        '3. You are on the correct website\n\n' +
-        'Click OK to open Slush wallet site, or Cancel to use the Telegram bot instead.'
-      );
-      if (go) window.open('https://slush.app', '_blank');
-      return;
-    }
-
-    connectedWallet   = { address, provider };
-    connectedProvider = provider;
-    updateWalletUI(address);
-    console.log('✅ Wallet connected:', address);
-
-  } catch(e) {
-    console.error('Wallet connect error:', e);
-    if (e.message?.includes('User rejected') || e.message?.includes('rejected')) {
-      alert('Connection rejected. Please approve the connection in your wallet.');
-    } else {
-      alert('Could not connect wallet: ' + e.message);
-    }
-  }
-}
-
-// ─── SIGN AND EXECUTE via wallet (Wallet Standard) ───
-async function signAndExecuteTx(txBase64) {
+async function signAndExecuteTx(txBytes) {
   if (!connectedProvider) throw new Error('Wallet not connected');
-  const txBytes = Uint8Array.from(atob(txBase64), c => c.charCodeAt(0));
-
-  // Wallet Standard way (Slush)
-  if (connectedProvider.features?.['sui:signAndExecuteTransaction']) {
-    return connectedProvider.features['sui:signAndExecuteTransaction'].signAndExecuteTransaction({
-      transaction: txBytes,
-      account: connectedProvider.accounts?.[0],
-      chain: 'sui:mainnet',
-    });
-  }
-  if (connectedProvider.features?.['sui:signAndExecuteTransactionBlock']) {
-    return connectedProvider.features['sui:signAndExecuteTransactionBlock'].signAndExecuteTransactionBlock({
-      transactionBlock: txBytes,
-      account: connectedProvider.accounts?.[0],
-      chain: 'sui:mainnet',
-    });
-  }
-  // Legacy
-  if (connectedProvider.signAndExecuteTransactionBlock) {
-    return connectedProvider.signAndExecuteTransactionBlock({ transactionBlock: txBytes, options: { showEffects: true } });
-  }
-  if (connectedProvider.signAndExecuteTransaction) {
-    return connectedProvider.signAndExecuteTransaction({ transaction: txBytes });
-  }
-  throw new Error('Wallet does not support transaction signing');
+  const result = await (
+    connectedProvider.signAndExecuteTransactionBlock?.({ transactionBlock: txBytes, options:{ showEffects:true } }) ||
+    connectedProvider.signAndExecuteTransaction?.({ transaction: txBytes, options:{ showEffects:true } })
+  );
+  return result;
 }
 
-// ─── BUILD TX BYTES VIA RPC ───
-// We build PTB using JSON and submit via sui_executeTransactionBlock
-async function buildAndSubmitTx(sender, moves) {
-  // Use wallet's signTransaction if available
-  // Otherwise fall back to showing instructions
-  if (!connectedProvider) throw new Error('Connect wallet first');
-  
-  // Build transaction block using window.suiTx if loaded, else show error
-  if (!window.__suiTxAvailable) {
-    throw new Error('Transaction builder not loaded yet. Please wait a moment and try again.');
-  }
-  return window.__buildTx(sender, moves);
-}
+window.__suiTxAvailable = true;
+window.__buildTx = async function(sender, txData) {
+  const res = await fetch(BACKEND + '/build-tx', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ sender, ...txData })
+  });
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error||'TX build failed'); }
+  const { txBytes } = await res.json();
+  return signAndExecuteTx(txBytes);
+};
 
-// ─── LOAD SUI TX BUILDER ───
-(function loadSuiSDK() {
-  // We use the Sui SDK via a minimal inline builder
-  // since loading full SDK via CDN is complex
-  // Instead we use PTB serialization directly
-  window.__suiTxAvailable = true;
-  
-  window.__buildTx = async function(sender, txData) {
-    const res = await fetch(BACKEND + '/build-tx', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sender, ...txData })
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Could not build transaction');
+window.addEventListener('load', () => {
+  for (const w of WALLET_DEFS) {
+    const p = window[w.key];
+    if (p?.accounts?.length) {
+      const addr = p.accounts[0]?.address;
+      if (addr) { connectedWallet={address:addr,provider:p,name:w.name}; connectedProvider=p; updateWalletUI(addr); break; }
     }
-    const { txBytes } = await res.json();
-    if (!txBytes) throw new Error('No transaction bytes returned');
-    return signAndExecuteTx(txBytes);
-  };
-})();
+  }
+});
 
 // ─── SWAP ON-CHAIN ───
 async function executeSwapOnChain() {
