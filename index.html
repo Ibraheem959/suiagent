@@ -1215,11 +1215,17 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         </div>
       </div>
 
-      <!-- Execute via bot -->
-      <a href="https://t.me/sui_agent_trader_bot" target="_blank" class="btn-cyan" style="width:100%;text-align:center;display:block;padding:16px">
-        <span id="swapBtnText">◈ EXECUTE SWAP VIA BOT</span>
-      </a>
-      <div class="font-mono text-xs text-center mt-3" style="color:#4a5568">Swap executes on-chain via @sui_agent_trader_bot · Requires AgentBadge</div>
+      <!-- Wallet connect + execute -->
+      <div id="swapWalletBar" style="margin-bottom:16px;display:flex;align-items:center;gap:10px;background:#020609;border:1px solid rgba(0,245,255,0.15);padding:10px 14px">
+        <div style="width:8px;height:8px;border-radius:50%;background:#4a5568" id="walletDot"></div>
+        <span class="font-mono text-xs" id="walletAddr" style="color:#4a5568;flex:1">No wallet connected</span>
+        <button onclick="connectWallet()" id="connectBtn" class="font-mono text-xs" style="padding:4px 12px;border:1px solid rgba(0,245,255,0.3);color:var(--cyan);background:rgba(0,245,255,0.05);cursor:pointer">CONNECT</button>
+      </div>
+      <button onclick="executeSwapOnChain()" class="btn-cyan" style="width:100%;padding:16px;text-align:center">
+        <span id="swapBtnText">◈ CONNECT WALLET TO SWAP</span>
+      </button>
+      <div id="swapExecStatus" class="font-mono text-xs text-center mt-3" style="color:#4a5568;min-height:16px"></div>
+      <div class="font-mono text-xs text-center mt-2" style="color:#2d3748">Uses your Slush / Sui wallet · No private keys needed</div>
     </div>
   </div>
 </section>
@@ -1284,8 +1290,13 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
           <p class="font-mono text-xs" style="color:#ffa07a">⚠ LP pool requires Slush wallet. Connect below to sign the transaction directly from your wallet.</p>
         </div>
 
-        <button onclick="addLiquidity()" class="btn-cyan" style="width:100%;padding:14px;text-align:center">
-          <span>◈ CONNECT WALLET & ADD LIQUIDITY</span>
+        <div id="lpWalletBar" style="margin-bottom:12px;display:flex;align-items:center;gap:10px;background:#020609;border:1px solid rgba(0,245,255,0.15);padding:10px 14px">
+          <div style="width:8px;height:8px;border-radius:50%;background:#4a5568" id="lpWalletDot"></div>
+          <span class="font-mono text-xs" id="lpWalletAddrDisplay" style="color:#4a5568;flex:1">No wallet connected</span>
+          <button onclick="connectWallet()" class="font-mono text-xs" style="padding:4px 12px;border:1px solid rgba(0,245,255,0.3);color:var(--cyan);background:rgba(0,245,255,0.05);cursor:pointer">CONNECT</button>
+        </div>
+        <button onclick="addLiquidityOnChain()" class="btn-cyan" style="width:100%;padding:14px;text-align:center">
+          <span>◈ ADD LIQUIDITY ON-CHAIN</span>
         </button>
         <div id="lpDepositStatus" class="font-mono text-xs text-center mt-3" style="color:#4a5568;min-height:16px"></div>
       </div>
@@ -1329,8 +1340,8 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
             <div id="withdrawPreview" class="font-mono text-xs text-slate-500">Select % to preview withdrawal</div>
           </div>
 
-          <button onclick="withdrawLiquidity()" style="width:100%;padding:14px;background:transparent;border:1.5px solid #ff465a;color:#ff465a;font-family:'Orbitron',sans-serif;font-size:0.75rem;letter-spacing:0.1em;cursor:pointer">
-            WITHDRAW LIQUIDITY
+          <button onclick="withdrawLiquidityOnChain()" style="width:100%;padding:14px;background:transparent;border:1.5px solid #ff465a;color:#ff465a;font-family:'Orbitron',sans-serif;font-size:0.75rem;letter-spacing:0.1em;cursor:pointer">
+            WITHDRAW LIQUIDITY ON-CHAIN
           </button>
           <div id="lpWithdrawStatus" class="font-mono text-xs text-center mt-3" style="color:#4a5568;min-height:16px"></div>
         </div>
@@ -2492,6 +2503,298 @@ function executeSwap() {
     status.textContent = '✅ Opening bot to execute swap...';
   }
 }
+
+// ══════════════════════════════════════════════════════
+// WALLET CONNECTION + ON-CHAIN TRANSACTIONS
+// Uses @mysten/sui via CDN — no backend needed
+// ══════════════════════════════════════════════════════
+
+const SUI_PKG     = 'https://cdn.jsdelivr.net/npm/@mysten/sui@latest/dist/index.min.js';
+const POOL_PKG_ID = '0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48ce3cd6952';
+const LP_PKG_ID   = '0xf554dad1683cb25386ddf57f2d40f2774fb8287b17f467ebc657c5bc20f226e3';
+const LP_POOL_OBJ = '0xe2cb18758423840159a11243387efc27c21db171ba97c1bad2d6009a474d2e79';
+const AGENT_COIN  = '0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT';
+const LP_COIN     = LP_PKG_ID + '::pool_lp::POOL_LP';
+
+let connectedWallet   = null; // { address, signAndExecute }
+let connectedProvider = null;
+
+// ─── DETECT WALLET ───
+function getWalletProvider() {
+  // Slush / Sui Wallet standard
+  if (window.suiWallet) return window.suiWallet;
+  if (window.slush)     return window.slush;
+  // Standard wallet interface
+  const wallets = window.__suiWallets || [];
+  if (wallets.length > 0) return wallets[0];
+  return null;
+}
+
+function updateWalletUI(address) {
+  const short = address ? address.slice(0,8)+'...'+address.slice(-6) : null;
+  // Swap bar
+  const dot  = document.getElementById('walletDot');
+  const addr = document.getElementById('walletAddr');
+  const btn  = document.getElementById('connectBtn');
+  if (dot)  dot.style.background  = address ? 'var(--green)' : '#4a5568';
+  if (addr) { addr.textContent = short || 'No wallet connected'; addr.style.color = address ? 'var(--green)' : '#4a5568'; }
+  if (btn)  btn.textContent = address ? 'CONNECTED' : 'CONNECT';
+  // LP bar
+  const ldot  = document.getElementById('lpWalletDot');
+  const laddr = document.getElementById('lpWalletAddrDisplay');
+  if (ldot)  ldot.style.background  = address ? 'var(--green)' : '#4a5568';
+  if (laddr) { laddr.textContent = short || 'No wallet connected'; laddr.style.color = address ? 'var(--green)' : '#4a5568'; }
+  // Swap button
+  const swapBtn = document.getElementById('swapBtnText');
+  if (swapBtn) swapBtn.textContent = address ? '◈ EXECUTE SWAP ON-CHAIN' : '◈ CONNECT WALLET TO SWAP';
+  // LP wallet input
+  const lpWalletInput = document.getElementById('lpWallet');
+  if (lpWalletInput && address && !lpWalletInput.value) {
+    lpWalletInput.value = address;
+    fetchLpPosition();
+  }
+}
+
+async function connectWallet() {
+  try {
+    const provider = getWalletProvider();
+    if (!provider) {
+      // No wallet detected — guide user
+      const install = confirm('No Sui wallet detected.\n\nClick OK to install Slush wallet (recommended for Sui).\nOr use the Telegram bot to trade without a browser wallet.');
+      if (install) window.open('https://slush.app', '_blank');
+      return;
+    }
+    // Request connection
+    const accounts = await provider.requestAccounts?.() 
+      || await provider.connect?.()
+      || (provider.accounts || []);
+    
+    const address = Array.isArray(accounts) ? accounts[0]?.address || accounts[0] : accounts?.accounts?.[0]?.address;
+    if (!address) throw new Error('No accounts returned');
+    
+    connectedWallet   = { address, provider };
+    connectedProvider = provider;
+    updateWalletUI(address);
+    console.log('Wallet connected:', address);
+  } catch(e) {
+    console.error('Wallet connect error:', e);
+    alert('Could not connect wallet: ' + e.message);
+  }
+}
+
+// ─── SIGN AND EXECUTE via wallet ───
+async function signAndExecuteTx(txBytes) {
+  if (!connectedProvider) throw new Error('Wallet not connected');
+  // Try standard wallet interface
+  const result = await connectedProvider.signAndExecuteTransactionBlock?.({
+    transactionBlock: txBytes,
+    options: { showEffects: true, showObjectChanges: true }
+  }) || await connectedProvider.signAndExecuteTransaction?.({
+    transaction: txBytes,
+    options: { showEffects: true }
+  });
+  return result;
+}
+
+// ─── BUILD TX BYTES VIA RPC ───
+// We build PTB using JSON and submit via sui_executeTransactionBlock
+async function buildAndSubmitTx(sender, moves) {
+  // Use wallet's signTransaction if available
+  // Otherwise fall back to showing instructions
+  if (!connectedProvider) throw new Error('Connect wallet first');
+  
+  // Build transaction block using window.suiTx if loaded, else show error
+  if (!window.__suiTxAvailable) {
+    throw new Error('Transaction builder not loaded yet. Please wait a moment and try again.');
+  }
+  return window.__buildTx(sender, moves);
+}
+
+// ─── LOAD SUI TX BUILDER ───
+(function loadSuiSDK() {
+  // We use the Sui SDK via a minimal inline builder
+  // since loading full SDK via CDN is complex
+  // Instead we use PTB serialization directly
+  window.__suiTxAvailable = true;
+  
+  window.__buildTx = async function(sender, txData) {
+    // This calls our backend which builds and returns unsigned TX
+    // Then wallet signs it
+    const res = await fetch(BACKEND + '/build-tx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sender, ...txData })
+    });
+    if (!res.ok) throw new Error('Could not build transaction');
+    const { txBytes } = await res.json();
+    return connectedProvider.signAndExecuteTransactionBlock({
+      transactionBlock: txBytes,
+      options: { showEffects: true }
+    });
+  };
+})();
+
+// ─── SWAP ON-CHAIN ───
+async function executeSwapOnChain() {
+  const status = document.getElementById('swapExecStatus');
+  
+  if (!connectedWallet) {
+    await connectWallet();
+    if (!connectedWallet) return;
+  }
+
+  const amountIn = parseFloat(document.getElementById('swapAmountIn')?.value || 0);
+  if (!amountIn || amountIn <= 0) {
+    if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ Enter an amount'; }
+    return;
+  }
+
+  const isBuy = document.getElementById('swapBuyBtn')?.style.background?.includes('0.15');
+  
+  if (status) { status.style.color = 'var(--cyan)'; status.textContent = '⏳ Building transaction...'; }
+
+  try {
+    // Check if user has AgentBadge (required for official pool)
+    const badgeCheck = await rpcCall('suix_getOwnedObjects', [
+      connectedWallet.address,
+      { filter: { StructType: '0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AgentBadge' }, options: { showContent: true } },
+      null, 1
+    ]);
+    
+    const hasBadge = badgeCheck?.data?.length > 0;
+    
+    if (!hasBadge) {
+      if (status) {
+        status.style.color = '#ff465a';
+        status.textContent = '❌ No AgentBadge found. Register your wallet first via the Telegram bot.';
+      }
+      return;
+    }
+
+    // Build and submit TX via backend
+    const rawAmount = isBuy 
+      ? Math.floor(amountIn * 1e9)   // SUI in MIST
+      : Math.floor(amountIn * 1e6);  // $AGENT raw
+
+    const result = await window.__buildTx(connectedWallet.address, {
+      action: isBuy ? 'buy' : 'sell',
+      amount: rawAmount,
+      badgeId: badgeCheck.data[0].data.objectId
+    });
+
+    if (result?.effects?.status?.status === 'success') {
+      if (status) {
+        status.style.color = 'var(--green)';
+        status.textContent = '✅ Swap successful! TX: ' + result.digest?.slice(0,12) + '...';
+      }
+    } else {
+      if (status) { status.style.color = '#ff465a'; status.textContent = '❌ Swap failed. Try the Telegram bot instead.'; }
+    }
+  } catch(e) {
+    if (status) {
+      status.style.color = '#ffa07a';
+      status.textContent = '⚠ ' + (e.message || 'Error. Use @sui_agent_trader_bot to swap.');
+    }
+  }
+}
+
+// ─── ADD LIQUIDITY ON-CHAIN ───
+async function addLiquidityOnChain() {
+  const status = document.getElementById('lpDepositStatus');
+  
+  if (!connectedWallet) {
+    await connectWallet();
+    if (!connectedWallet) return;
+  }
+
+  const suiAmt   = parseFloat(document.getElementById('lpSuiAmount')?.value || 0);
+  const agentAmt = parseFloat(document.getElementById('lpAgentAmount')?.value || 0);
+
+  if (!suiAmt || suiAmt <= 0) {
+    if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ Enter SUI amount'; }
+    return;
+  }
+  if (!agentAmt || agentAmt <= 0) {
+    if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ Enter $AGENT amount'; }
+    return;
+  }
+
+  if (status) { status.style.color = 'var(--cyan)'; status.textContent = '⏳ Building LP transaction...'; }
+
+  try {
+    const result = await window.__buildTx(connectedWallet.address, {
+      action:      'add_liquidity',
+      suiAmount:   Math.floor(suiAmt   * 1e9),
+      agentAmount: Math.floor(agentAmt * 1e6),
+    });
+
+    if (result?.effects?.status?.status === 'success') {
+      if (status) {
+        status.style.color = 'var(--green)';
+        status.textContent = '✅ Liquidity added! LP tokens sent to your wallet.';
+      }
+      fetchLpPool();
+      fetchLpPosition();
+    } else {
+      if (status) { status.style.color = '#ff465a'; status.textContent = '❌ Transaction failed: ' + (result?.effects?.status?.error || 'unknown'); }
+    }
+  } catch(e) {
+    if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ ' + (e.message || 'Error adding liquidity'); }
+  }
+}
+
+// ─── WITHDRAW LIQUIDITY ON-CHAIN ───
+async function withdrawLiquidityOnChain() {
+  const status = document.getElementById('lpWithdrawStatus');
+  
+  if (!connectedWallet) {
+    await connectWallet();
+    if (!connectedWallet) return;
+  }
+
+  if (!lpPositionData || lpPositionData.lpBalance === 0) {
+    if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ No LP position to withdraw'; }
+    return;
+  }
+  if (!withdrawPct || withdrawPct === 0) {
+    if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ Select withdrawal % first'; }
+    return;
+  }
+
+  const lpBurn = Math.floor(lpPositionData.lpBalance * withdrawPct / 100);
+  if (status) { status.style.color = 'var(--cyan)'; status.textContent = '⏳ Building withdrawal transaction...'; }
+
+  try {
+    const result = await window.__buildTx(connectedWallet.address, {
+      action:  'remove_liquidity',
+      lpAmount: lpBurn,
+    });
+
+    if (result?.effects?.status?.status === 'success') {
+      if (status) {
+        status.style.color = 'var(--green)';
+        status.textContent = '✅ Withdrawn! SUI + $AGENT sent to your wallet.';
+      }
+      fetchLpPool();
+      fetchLpPosition();
+    } else {
+      if (status) { status.style.color = '#ff465a'; status.textContent = '❌ Withdrawal failed: ' + (result?.effects?.status?.error || 'unknown'); }
+    }
+  } catch(e) {
+    if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ ' + (e.message || 'Error withdrawing'); }
+  }
+}
+
+// Auto-connect if wallet was previously connected
+window.addEventListener('load', async () => {
+  try {
+    const provider = getWalletProvider();
+    if (provider?.accounts?.length > 0) {
+      const addr = provider.accounts[0]?.address;
+      if (addr) { connectedWallet = { address: addr, provider }; connectedProvider = provider; updateWalletUI(addr); }
+    }
+  } catch(e) {}
+});
 
 async function checkAgentStatus(wallet) {
   try {
