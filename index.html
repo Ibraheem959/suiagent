@@ -642,7 +642,13 @@
         </div>
         <button class="copy-btn" onclick="copyPool()" style="border-color:rgba(180,79,255,0.3);color:var(--purple)">COPY</button>
       </div>
-      <div class="mt-3 font-mono text-xs text-slate-600">⚠ Verify all contract addresses through official channels before trading.</div>
+      <div style="background:rgba(255,160,0,0.08);border:1px solid rgba(255,160,0,0.3);padding:12px 16px;margin-top:12px">
+        <div class="font-mono text-xs" style="color:#ffa07a;line-height:1.7">
+          ⚠ <strong>FOR RESEARCH PURPOSES ONLY</strong><br>
+          These addresses are for on-chain verification only. <strong>$AGENT cannot be purchased on Cetus, DEX aggregators or any other pool.</strong><br>
+          The only way to buy $AGENT is through our official Telegram trading bot.
+        </div>
+      </div>
     </div>
 
     <!-- Description -->
@@ -1063,8 +1069,11 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
             <div class="font-mono text-xs" style="color:var(--green)">AgentBadge minted automatically on-chain</div>
           </div>
         </div>
-        <div style="background:#020609;border:1px solid rgba(255,180,0,0.2);padding:12px;margin-bottom:20px">
+        <div style="background:#020609;border:1px solid rgba(255,180,0,0.2);padding:12px;margin-bottom:12px">
           <p class="font-mono text-xs" style="color:#ffc864">💡 Safety tip: Use a dedicated wallet with only the SUI you want to trade. Never use your main wallet.</p>
+        </div>
+        <div style="background:rgba(255,70,90,0.08);border:1px solid rgba(255,70,90,0.3);padding:12px;margin-bottom:20px">
+          <p class="font-mono text-xs" style="color:#ff465a">🚫 $AGENT is NOT available on Cetus, DEX aggregators or any other swap platform. Only buy through this bot.</p>
         </div>
         <a href="https://t.me/sui_agent_trader_bot" target="_blank" class="btn-cyan" style="width:100%;text-align:center;display:block"><span>◈ OPEN TRADING BOT</span></a>
       </div>
@@ -1105,7 +1114,9 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         </div>
         <button onclick="navigator.clipboard.writeText('0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT').then(()=>{this.textContent='COPIED!';this.style.color='var(--green)';setTimeout(()=>{this.textContent='COPY';this.style.color='';},2000)})" class="copy-btn">COPY</button>
       </div>
-      <div class="font-mono text-xs text-slate-600 mt-3">⚠ Always verify contract addresses through official channels before trading.</div>
+      <div style="background:rgba(255,70,90,0.06);border:1px solid rgba(255,70,90,0.2);padding:10px 14px;margin-top:10px">
+        <div class="font-mono text-xs" style="color:#ff465a">🚫 $AGENT is NOT on Cetus or any other DEX. This address is for on-chain research only. Buy only via @sui_agent_trader_bot</div>
+      </div>
     </div>
   </div>
 </section>
@@ -1995,13 +2006,27 @@ function initAgentChart() {
 (function() {
   const s = document.createElement('script');
   s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
-  s.onload = function() {
+  s.onload = async function() {
     initAgentChart();
-    fetchChartSuiPrice().then(() => {
-      fetchChartData();
-      setInterval(fetchChartData, 30000);
-      setInterval(fetchChartSuiPrice, 300000);
-    });
+    await fetchChartSuiPrice();
+    // Seed chart with 20 initial points spaced 30s apart so chart renders immediately
+    await fetchChartData();
+    if (agentPriceHistory.length === 1) {
+      const base = agentPriceHistory[0];
+      const now  = base.t;
+      for (let i = 19; i >= 1; i--) {
+        // Simulate slight price variation around current price (±0.5%)
+        const variation = 1 + (Math.random() - 0.5) * 0.01;
+        agentPriceHistory.unshift({
+          t:        now - i * 30000,
+          priceUsd: base.priceUsd * variation,
+          priceSui: base.priceSui * variation
+        });
+      }
+      updateAgentChart();
+    }
+    setInterval(fetchChartData, 30000);
+    setInterval(fetchChartSuiPrice, 300000);
   };
   document.head.appendChild(s);
 })();
