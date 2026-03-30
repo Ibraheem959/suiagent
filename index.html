@@ -391,6 +391,7 @@
   <div class="nav-links flex items-center gap-8">
     <a href="#token" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Token</a>
     <a href="#buy" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Buy</a>
+    <a href="#liquidity" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">LP</a>
     <a href="#chart" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Chart</a>
     <a href="#arena" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Arena</a>
     <a href="#trust" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Trust</a>
@@ -984,20 +985,22 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
     <div class="reveal text-center mb-12">
       <div class="section-label mb-3">◈ REAL-TIME CHART</div>
       <h2 class="font-orbitron text-3xl font-bold text-white">$AGENT Price Chart</h2>
-      <p style="color:#6a8bad;font-weight:300;margin-top:8px">Live on-chain price — direct from the $AGENT pool every 30s</p>
+      <p style="color:#6a8bad;font-weight:300;margin-top:8px">Live OHLC candles — aggregated from on-chain trade events</p>
     </div>
     <div class="reveal card rounded-none overflow-hidden" style="border-color:rgba(0,245,255,0.2)">
-      <!-- Header + range buttons -->
+      <!-- Header -->
       <div style="background:#050c18;border-bottom:1px solid rgba(0,245,255,0.1);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
         <div style="display:flex;align-items:center;gap:12px">
           <div class="dot-ripple"></div>
-          <span class="font-orbitron text-xs" style="color:var(--cyan)">$AGENT / SUI — LIVE</span>
+          <span class="font-orbitron text-xs" style="color:var(--cyan)">$AGENT / USD — LIVE CANDLES</span>
         </div>
-        <div style="display:flex;gap:6px">
-          <button onclick="setChartRange('1H')" id="chartBtn1H" class="font-mono text-xs" style="padding:4px 10px;background:rgba(0,245,255,0.05);border:1px solid rgba(0,245,255,0.2);color:var(--cyan);cursor:pointer">1H</button>
-          <button onclick="setChartRange('6H')" id="chartBtn6H" class="font-mono text-xs" style="padding:4px 10px;background:rgba(0,245,255,0.05);border:1px solid rgba(0,245,255,0.2);color:var(--cyan);cursor:pointer">6H</button>
-          <button onclick="setChartRange('24H')" id="chartBtn24H" class="font-mono text-xs" style="padding:4px 10px;background:rgba(0,245,255,0.15);border:1px solid var(--cyan);color:var(--cyan);cursor:pointer">24H</button>
-          <button onclick="setChartRange('ALL')" id="chartBtnALL" class="font-mono text-xs" style="padding:4px 10px;background:rgba(0,245,255,0.05);border:1px solid rgba(0,245,255,0.2);color:var(--cyan);cursor:pointer">ALL</button>
+        <div style="display:flex;gap:6px" id="tfButtons">
+          <button onclick="setTf('1m')"  class="tf-btn font-mono text-xs" data-tf="1m"  style="padding:4px 10px;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);cursor:pointer;background:rgba(0,245,255,0.05)">1m</button>
+          <button onclick="setTf('5m')"  class="tf-btn font-mono text-xs" data-tf="5m"  style="padding:4px 10px;border:1px solid var(--cyan);color:var(--cyan);cursor:pointer;background:rgba(0,245,255,0.15)">5m</button>
+          <button onclick="setTf('15m')" class="tf-btn font-mono text-xs" data-tf="15m" style="padding:4px 10px;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);cursor:pointer;background:rgba(0,245,255,0.05)">15m</button>
+          <button onclick="setTf('1h')"  class="tf-btn font-mono text-xs" data-tf="1h"  style="padding:4px 10px;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);cursor:pointer;background:rgba(0,245,255,0.05)">1h</button>
+          <button onclick="setTf('4h')"  class="tf-btn font-mono text-xs" data-tf="4h"  style="padding:4px 10px;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);cursor:pointer;background:rgba(0,245,255,0.05)">4h</button>
+          <button onclick="setTf('1d')"  class="tf-btn font-mono text-xs" data-tf="1d"  style="padding:4px 10px;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);cursor:pointer;background:rgba(0,245,255,0.05)">1d</button>
         </div>
       </div>
       <!-- Stats row -->
@@ -1007,6 +1010,10 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
           <div class="font-orbitron text-lg font-bold" id="chartPrice" style="color:var(--cyan)">$—</div>
         </div>
         <div style="background:#050c18;padding:14px 20px">
+          <div class="font-mono text-xs text-slate-500 mb-1">24H CHANGE</div>
+          <div class="font-orbitron text-lg font-bold" id="chartChange" style="color:var(--green)">—</div>
+        </div>
+        <div style="background:#050c18;padding:14px 20px">
           <div class="font-mono text-xs text-slate-500 mb-1">MARKET CAP</div>
           <div class="font-orbitron text-lg font-bold" id="chartMc" style="color:var(--green)">—</div>
         </div>
@@ -1014,18 +1021,12 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
           <div class="font-mono text-xs text-slate-500 mb-1">LIQUIDITY</div>
           <div class="font-orbitron text-lg font-bold" id="chartLiq" style="color:var(--purple)">—</div>
         </div>
-        <div style="background:#050c18;padding:14px 20px">
-          <div class="font-mono text-xs text-slate-500 mb-1">POOL</div>
-          <div class="font-mono text-xs font-bold" id="chartPool" style="color:#c8daf0">—</div>
-        </div>
       </div>
-      <!-- Chart canvas -->
-      <div style="background:#040810;padding:16px;position:relative;height:320px">
-        <canvas id="agentPriceChart"></canvas>
-      </div>
+      <!-- Candlestick chart -->
+      <div id="candleChart" style="background:#040810;height:360px;position:relative"></div>
       <div style="background:#050c18;padding:8px 20px;display:flex;align-items:center;justify-content:space-between">
-        <span class="font-mono text-xs text-slate-600" id="chartStatus">Fetching live data...</span>
-        <span class="font-mono text-xs text-slate-600">Updates every 30s · Sui Mainnet</span>
+        <span class="font-mono text-xs text-slate-600" id="chartStatus">Loading candles...</span>
+        <span class="font-mono text-xs text-slate-600">On-chain data · Updates every 15s</span>
       </div>
     </div>
     <div class="reveal flex flex-wrap gap-4 justify-center mt-8">
@@ -1116,6 +1117,144 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
       </div>
       <div style="background:rgba(255,70,90,0.06);border:1px solid rgba(255,70,90,0.2);padding:10px 14px;margin-top:10px">
         <div class="font-mono text-xs" style="color:#ff465a">🚫 $AGENT is NOT on Cetus or any other DEX. This address is for on-chain research only. Buy only via @sui_agent_trader_bot</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ LIQUIDITY POOL ══════════════════════════════════════ -->
+<section id="liquidity" style="padding:100px 24px;background:var(--bg)">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="reveal text-center mb-12">
+      <div class="section-label mb-3">◈ LIQUIDITY PROVISION</div>
+      <h2 class="font-orbitron text-3xl font-bold text-white">Add Liquidity</h2>
+      <p style="color:#6a8bad;font-weight:300;margin-top:8px">Deposit SUI + $AGENT — earn 50% of all trading fees automatically</p>
+    </div>
+
+    <!-- Pool stats -->
+    <div class="reveal grid gap-4 mb-8" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+      <div class="card p-6 rounded-none text-center">
+        <div class="font-mono text-xs text-slate-500 mb-2">POOL SUI</div>
+        <div class="font-orbitron text-2xl font-bold" id="lpPoolSui" style="color:var(--cyan)">—</div>
+      </div>
+      <div class="card p-6 rounded-none text-center">
+        <div class="font-mono text-xs text-slate-500 mb-2">POOL $AGENT</div>
+        <div class="font-orbitron text-2xl font-bold" id="lpPoolAgent" style="color:var(--purple)">—</div>
+      </div>
+      <div class="card p-6 rounded-none text-center">
+        <div class="font-mono text-xs text-slate-500 mb-2">FEE TO LPs</div>
+        <div class="font-orbitron text-2xl font-bold" style="color:var(--green)">0.15%</div>
+      </div>
+      <div class="card p-6 rounded-none text-center">
+        <div class="font-mono text-xs text-slate-500 mb-2">TOTAL LP TOKENS</div>
+        <div class="font-orbitron text-2xl font-bold" id="lpTotal" style="color:#ffa07a">—</div>
+      </div>
+    </div>
+
+    <div class="reveal grid gap-6" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+
+      <!-- Deposit panel -->
+      <div class="card p-8 rounded-none" style="border-color:rgba(0,245,255,0.2)">
+        <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ ADD LIQUIDITY</div>
+
+        <div style="margin-bottom:16px">
+          <label class="font-mono text-xs text-slate-400 block mb-2">YOUR WALLET ADDRESS</label>
+          <input type="text" id="lpWallet" placeholder="0x..." style="width:100%;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:10px 14px;outline:none" oninput="fetchLpPosition()"/>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div>
+            <label class="font-mono text-xs text-slate-400 block mb-2">SUI AMOUNT</label>
+            <input type="number" id="lpSuiAmount" placeholder="e.g. 10" min="0.1" step="0.1" oninput="calcLpPreview()" style="width:100%;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:10px 14px;outline:none"/>
+          </div>
+          <div>
+            <label class="font-mono text-xs text-slate-400 block mb-2">$AGENT AMOUNT</label>
+            <input type="number" id="lpAgentAmount" placeholder="auto" min="0" step="1000" oninput="calcLpPreview()" style="width:100%;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:10px 14px;outline:none"/>
+          </div>
+        </div>
+
+        <div id="lpPreview" style="display:none;background:#020609;border:1px solid rgba(0,245,255,0.1);padding:12px;margin-bottom:16px">
+          <div class="font-mono text-xs text-slate-500 mb-2">DEPOSIT PREVIEW</div>
+          <div class="font-mono text-xs" style="color:var(--cyan)" id="lpPreviewText">—</div>
+        </div>
+
+        <div style="background:rgba(255,160,0,0.08);border:1px solid rgba(255,160,0,0.2);padding:10px 14px;margin-bottom:16px">
+          <p class="font-mono text-xs" style="color:#ffa07a">⚠ LP pool requires Slush wallet. Connect below to sign the transaction directly from your wallet.</p>
+        </div>
+
+        <button onclick="addLiquidity()" class="btn-cyan" style="width:100%;padding:14px;text-align:center">
+          <span>◈ CONNECT WALLET & ADD LIQUIDITY</span>
+        </button>
+        <div id="lpDepositStatus" class="font-mono text-xs text-center mt-3" style="color:#4a5568;min-height:16px"></div>
+      </div>
+
+      <!-- Position + withdraw panel -->
+      <div class="card p-8 rounded-none" style="border-color:rgba(180,79,255,0.2)">
+        <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ YOUR POSITION</div>
+
+        <div id="lpNoPosition" style="text-align:center;padding:20px 0">
+          <div class="font-mono text-xs text-slate-600">Enter your wallet address on the left to see your LP position</div>
+        </div>
+
+        <div id="lpPosition" style="display:none">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+            <div style="background:#020609;padding:12px;border:1px solid rgba(180,79,255,0.1)">
+              <div class="font-mono text-xs text-slate-500 mb-1">LP TOKENS</div>
+              <div class="font-orbitron text-lg font-bold" id="posLp" style="color:var(--purple)">0</div>
+            </div>
+            <div style="background:#020609;padding:12px;border:1px solid rgba(180,79,255,0.1)">
+              <div class="font-mono text-xs text-slate-500 mb-1">POOL SHARE</div>
+              <div class="font-orbitron text-lg font-bold" id="posShare" style="color:var(--purple)">0%</div>
+            </div>
+            <div style="background:#020609;padding:12px;border:1px solid rgba(0,245,255,0.1)">
+              <div class="font-mono text-xs text-slate-500 mb-1">SUI VALUE</div>
+              <div class="font-orbitron text-lg font-bold" id="posSui" style="color:var(--cyan)">0</div>
+            </div>
+            <div style="background:#020609;padding:12px;border:1px solid rgba(0,245,255,0.1)">
+              <div class="font-mono text-xs text-slate-500 mb-1">$AGENT VALUE</div>
+              <div class="font-orbitron text-lg font-bold" id="posAgent" style="color:var(--cyan)">0</div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:16px">
+            <label class="font-mono text-xs text-slate-400 block mb-2">WITHDRAW AMOUNT</label>
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+              <button onclick="setWithdrawPct(25)"  class="font-mono text-xs" style="flex:1;padding:6px;border:1px solid rgba(255,70,90,0.3);color:#ff465a;background:transparent;cursor:pointer">25%</button>
+              <button onclick="setWithdrawPct(50)"  class="font-mono text-xs" style="flex:1;padding:6px;border:1px solid rgba(255,70,90,0.3);color:#ff465a;background:transparent;cursor:pointer">50%</button>
+              <button onclick="setWithdrawPct(75)"  class="font-mono text-xs" style="flex:1;padding:6px;border:1px solid rgba(255,70,90,0.3);color:#ff465a;background:transparent;cursor:pointer">75%</button>
+              <button onclick="setWithdrawPct(100)" class="font-mono text-xs" style="flex:1;padding:6px;border:1px solid rgba(255,70,90,0.3);color:#ff465a;background:transparent;cursor:pointer">MAX</button>
+            </div>
+            <div id="withdrawPreview" class="font-mono text-xs text-slate-500">Select % to preview withdrawal</div>
+          </div>
+
+          <button onclick="withdrawLiquidity()" style="width:100%;padding:14px;background:transparent;border:1.5px solid #ff465a;color:#ff465a;font-family:'Orbitron',sans-serif;font-size:0.75rem;letter-spacing:0.1em;cursor:pointer">
+            WITHDRAW LIQUIDITY
+          </button>
+          <div id="lpWithdrawStatus" class="font-mono text-xs text-center mt-3" style="color:#4a5568;min-height:16px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- How LP works -->
+    <div class="reveal card p-8 rounded-none mt-8" style="border-color:rgba(0,245,255,0.1)">
+      <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ HOW LP WORKS</div>
+      <div class="grid gap-6" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+        <div>
+          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--cyan)">1. DEPOSIT</div>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">Add equal value of SUI + $AGENT. You receive LP tokens representing your share of the pool.</p>
+        </div>
+        <div>
+          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--green)">2. EARN FEES</div>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">Every trade pays 0.3% fee. 50% goes to LP providers automatically — no claiming needed. Fees compound in the pool.</p>
+        </div>
+        <div>
+          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--purple)">3. WITHDRAW ANYTIME</div>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">Burn your LP tokens anytime to receive your proportional share of SUI + $AGENT including all fees earned.</p>
+        </div>
+        <div>
+          <div class="font-orbitron text-sm font-bold mb-2" style="color:#ffa07a">⚠ RISK</div>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">Impermanent loss risk — if $AGENT price moves significantly vs SUI, you may receive more of one and less of the other than you deposited.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -1885,151 +2024,206 @@ fetchArenaParticipants();
 setInterval(fetchArenaStatus, 15000);
 setInterval(fetchArenaParticipants, 30000);
 
-// ─── CUSTOM PRICE CHART ───
-let agentPriceHistory = [];
-let agentSuiUsd = 1.78;
-let agentChart  = null;
-let chartRange  = '24H';
-
-async function fetchChartSuiPrice() {
-  try {
-    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=sui&vs_currencies=usd');
-    const d = await r.json();
-    if (d?.sui?.usd) agentSuiUsd = d.sui.usd;
-  } catch(e) {}
-}
+// ─── CANDLESTICK CHART (lightweight-charts from backend) ───
+const BACKEND = 'https://agent-backend-nwb6.onrender.com';
+let lwChart       = null;
+let candleSeries  = null;
+let currentTf     = '5m';
+let chartSuiUsd   = 1.78;
+let lpPoolData    = null;
 
 function fmtUsdChart(n) {
-  if (n >= 1e6) return '$'+(n/1e6).toFixed(2)+'M';
-  if (n >= 1e3) return '$'+(n/1e3).toFixed(1)+'K';
-  if (n < 0.001) return '$'+n.toFixed(10);
-  return '$'+n.toFixed(8);
+  if (n === 0 || isNaN(n)) return '$—';
+  if (n < 0.00001) return '$' + n.toFixed(12);
+  if (n < 0.001)   return '$' + n.toFixed(10);
+  return '$' + n.toFixed(8);
 }
-function fmtShortChart(n) {
-  if (n >= 1e6) return '$'+(n/1e6).toFixed(2)+'M';
-  if (n >= 1e3) return '$'+(n/1e3).toFixed(1)+'K';
-  return '$'+n.toFixed(2);
+function fmtShort(n) {
+  if (n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+  return '$' + n.toFixed(2);
 }
 
-function setChartRange(r) {
-  chartRange = r;
-  ['1H','6H','24H','ALL'].forEach(x => {
-    const b = document.getElementById('chartBtn'+x);
-    if (!b) return;
-    b.style.background   = x === r ? 'rgba(0,245,255,0.15)' : 'rgba(0,245,255,0.05)';
-    b.style.borderColor  = x === r ? 'var(--cyan)' : 'rgba(0,245,255,0.2)';
+function setTf(tf) {
+  currentTf = tf;
+  document.querySelectorAll('.tf-btn').forEach(b => {
+    const active = b.dataset.tf === tf;
+    b.style.background   = active ? 'rgba(0,245,255,0.15)' : 'rgba(0,245,255,0.05)';
+    b.style.borderColor  = active ? 'var(--cyan)' : 'rgba(0,245,255,0.2)';
   });
-  updateAgentChart();
+  loadCandles();
 }
 
-function getFilteredChartData() {
-  const now = Date.now();
-  const ranges = { '1H':3600000, '6H':21600000, '24H':86400000, 'ALL':Infinity };
-  const cutoff = now - (ranges[chartRange] || Infinity);
-  return agentPriceHistory.filter(p => p.t >= cutoff);
-}
-
-function updateAgentChart() {
-  const filtered = getFilteredChartData();
-  if (!agentChart || filtered.length === 0) return;
-  const labels = filtered.map(p => {
-    const d = new Date(p.t);
-    return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
-  });
-  const prices = filtered.map(p => p.priceUsd);
-  const isUp   = prices[prices.length-1] >= prices[0];
-  const color  = isUp ? '#00ff88' : '#ff465a';
-  agentChart.data.labels = labels;
-  agentChart.data.datasets[0].data = prices;
-  agentChart.data.datasets[0].borderColor = color;
-  agentChart.data.datasets[0].backgroundColor = color + '18';
-  agentChart.update('none');
-}
-
-async function fetchChartData() {
+async function loadCandles() {
   try {
-    const poolObj = await rpc('sui_getObject', [POOL_ID, { showContent: true }]);
-    const pf      = poolObj?.data?.content?.fields || {};
-    const suiRaw  = parseInt(pf.sui_reserve?.fields?.balance   || pf.sui_reserve   || 0);
-    const agRaw   = parseInt(pf.agent_reserve?.fields?.balance || pf.agent_reserve || 0);
-    if (agRaw === 0 || suiRaw === 0) return;
-    const priceSui = (suiRaw/1e9)/(agRaw/1e6);
-    const priceUsd = priceSui * agentSuiUsd;
-    const mc  = 1_000_000_000 * priceUsd;
-    const liq = (suiRaw/1e9) * agentSuiUsd * 2;
-    const el  = id => document.getElementById(id);
-    if (el('chartPrice')) el('chartPrice').textContent = fmtUsdChart(priceUsd);
-    if (el('chartMc'))    el('chartMc').textContent    = fmtShortChart(mc);
-    if (el('chartLiq'))   el('chartLiq').textContent   = fmtShortChart(liq);
-    if (el('chartPool'))  el('chartPool').textContent  = (suiRaw/1e9).toFixed(1)+' SUI / '+(agRaw/1e6).toFixed(0)+'M $AGENT';
-    agentPriceHistory.push({ t: Date.now(), priceUsd, priceSui });
-    if (agentPriceHistory.length > 500) agentPriceHistory.shift();
-    updateAgentChart();
-    const cs = el('chartStatus');
-    if (cs) cs.textContent = 'Last updated: '+new Date().toLocaleTimeString()+' · '+agentPriceHistory.length+' points';
+    const cs = document.getElementById('chartStatus');
+    if (cs) cs.textContent = 'Loading...';
+    const res  = await fetch(BACKEND + '/candles?tf=' + currentTf + '&limit=300');
+    const data = await res.json();
+    if (!data.candles || data.candles.length === 0) {
+      if (cs) cs.textContent = 'No trade data yet — be the first to trade!';
+      return;
+    }
+    // Format for lightweight-charts: {time, open, high, low, close}
+    const formatted = data.candles.map(c => ({
+      time:  Math.floor(c.t / 1000), // seconds
+      open:  c.o, high: c.h, low: c.l, close: c.c
+    }));
+    if (candleSeries) candleSeries.setData(formatted);
+
+    // Update price display from last candle
+    const last  = data.candles[data.candles.length - 1];
+    const first = data.candles[0];
+    const chgPct = first.o > 0 ? ((last.c - first.o) / first.o * 100) : 0;
+    const el = id => document.getElementById(id);
+    if (el('chartPrice'))  el('chartPrice').textContent  = fmtUsdChart(last.c);
+    if (el('chartChange')) {
+      el('chartChange').textContent = (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%';
+      el('chartChange').style.color = chgPct >= 0 ? 'var(--green)' : '#ff465a';
+    }
+    if (cs) cs.textContent = 'Last updated: ' + new Date().toLocaleTimeString() + ' · ' + data.candles.length + ' candles';
   } catch(e) {
     const cs = document.getElementById('chartStatus');
     if (cs) cs.textContent = 'Retrying...';
   }
 }
 
-function initAgentChart() {
-  const canvas = document.getElementById('agentPriceChart');
-  if (!canvas || !window.Chart) return;
-  agentChart = new window.Chart(canvas.getContext('2d'), {
-    type: 'line',
-    data: { labels: [], datasets: [{
-      label: '$AGENT', data: [],
-      borderColor: '#00ff88', backgroundColor: '#00ff8818',
-      borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 3,
-      fill: true, tension: 0.3,
-    }]},
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { intersect: false, mode: 'index' },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#070d1a', borderColor: 'rgba(0,245,255,0.2)', borderWidth: 1,
-          titleColor: '#00f5ff', bodyColor: '#c8daf0',
-          callbacks: { label: ctx => '$'+ctx.parsed.y.toFixed(12) }
-        }
-      },
-      scales: {
-        x: { ticks: { maxTicksLimit: 8, font: { size: 10, family: 'Share Tech Mono' }, color: '#4a5568', maxRotation: 0 }, grid: { color: 'rgba(0,245,255,0.05)' } },
-        y: { ticks: { font: { size: 10, family: 'Share Tech Mono' }, color: '#4a5568', callback: v => '$'+v.toFixed(10) }, grid: { color: 'rgba(0,245,255,0.05)' } }
-      }
-    }
-  });
+async function fetchChartStats() {
+  try {
+    const [poolRes, priceRes] = await Promise.all([
+      fetch(BACKEND + '/pool'),
+      fetch('https://api.coingecko.com/api/v3/simple/price?ids=sui&vs_currencies=usd')
+    ]);
+    const pool  = await poolRes.json();
+    const price = await priceRes.json();
+    chartSuiUsd = price?.sui?.usd || chartSuiUsd;
+    const priceSui = pool.price || 0;
+    const priceUsd = priceSui * chartSuiUsd;
+    const mc  = 1_000_000_000 * priceUsd;
+    const liq = (pool.suiReserve / 1e9) * chartSuiUsd * 2;
+    const el  = id => document.getElementById(id);
+    if (el('chartMc'))  el('chartMc').textContent  = fmtShort(mc);
+    if (el('chartLiq')) el('chartLiq').textContent = fmtShort(liq);
+  } catch(e) {}
 }
 
+function initCandleChart() {
+  const container = document.getElementById('candleChart');
+  if (!container || !window.LightweightCharts) return;
+  lwChart = window.LightweightCharts.createChart(container, {
+    width:  container.clientWidth,
+    height: 360,
+    layout: { background: { color: '#040810' }, textColor: '#4a5568' },
+    grid:   { vertLines: { color: 'rgba(0,245,255,0.05)' }, horzLines: { color: 'rgba(0,245,255,0.05)' } },
+    crosshair: { mode: 1 },
+    rightPriceScale: { borderColor: 'rgba(0,245,255,0.1)' },
+    timeScale: { borderColor: 'rgba(0,245,255,0.1)', timeVisible: true, secondsVisible: false },
+  });
+  candleSeries = lwChart.addCandlestickSeries({
+    upColor:          '#00ff88',
+    downColor:        '#ff465a',
+    borderUpColor:    '#00ff88',
+    borderDownColor:  '#ff465a',
+    wickUpColor:      '#00ff88',
+    wickDownColor:    '#ff465a',
+  });
+  window.addEventListener('resize', () => {
+    if (lwChart) lwChart.applyOptions({ width: container.clientWidth });
+  });
+  loadCandles();
+  setInterval(loadCandles, 15000);
+  fetchChartStats();
+  setInterval(fetchChartStats, 30000);
+}
+
+// Load lightweight-charts library
 (function() {
   const s = document.createElement('script');
-  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
-  s.onload = async function() {
-    initAgentChart();
-    await fetchChartSuiPrice();
-    // Seed chart with 20 initial points spaced 30s apart so chart renders immediately
-    await fetchChartData();
-    if (agentPriceHistory.length === 1) {
-      const base = agentPriceHistory[0];
-      const now  = base.t;
-      for (let i = 19; i >= 1; i--) {
-        // Simulate slight price variation around current price (±0.5%)
-        const variation = 1 + (Math.random() - 0.5) * 0.01;
-        agentPriceHistory.unshift({
-          t:        now - i * 30000,
-          priceUsd: base.priceUsd * variation,
-          priceSui: base.priceSui * variation
-        });
-      }
-      updateAgentChart();
-    }
-    setInterval(fetchChartData, 30000);
-    setInterval(fetchChartSuiPrice, 300000);
-  };
+  s.src = 'https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js';
+  s.onload = initCandleChart;
   document.head.appendChild(s);
 })();
+
+// ─── LP POOL ───
+let lpPositionData = null;
+let withdrawPct    = 0;
+
+async function fetchLpPool() {
+  try {
+    const res  = await fetch(BACKEND + '/lp/pool');
+    lpPoolData = await res.json();
+    if (lpPoolData.error) return;
+    const el = id => document.getElementById(id);
+    if (el('lpPoolSui'))   el('lpPoolSui').textContent   = (lpPoolData.suiReserve / 1e9).toFixed(2) + ' SUI';
+    if (el('lpPoolAgent')) el('lpPoolAgent').textContent = (lpPoolData.agentReserve / 1e6).toFixed(0) + ' $AGENT';
+    if (el('lpTotal'))     el('lpTotal').textContent     = lpPoolData.lpTotal?.toLocaleString() || '—';
+  } catch(e) { console.log('LP pool not deployed yet'); }
+}
+
+async function fetchLpPosition() {
+  const wallet = document.getElementById('lpWallet')?.value?.trim();
+  if (!wallet || !wallet.startsWith('0x') || wallet.length !== 66) return;
+  try {
+    const res       = await fetch(BACKEND + '/lp/position/' + wallet);
+    lpPositionData  = await res.json();
+    const el        = id => document.getElementById(id);
+    if (lpPositionData.lpBalance > 0) {
+      if (el('lpNoPosition')) el('lpNoPosition').style.display = 'none';
+      if (el('lpPosition'))   el('lpPosition').style.display   = 'block';
+      if (el('posLp'))        el('posLp').textContent          = lpPositionData.lpBalance.toLocaleString();
+      if (el('posShare'))     el('posShare').textContent       = lpPositionData.sharePct + '%';
+      if (el('posSui'))       el('posSui').textContent         = (lpPositionData.suiValue / 1e9).toFixed(4) + ' SUI';
+      if (el('posAgent'))     el('posAgent').textContent       = (lpPositionData.agentValue / 1e6).toFixed(0) + ' $AGENT';
+    } else {
+      if (el('lpNoPosition')) el('lpNoPosition').innerHTML = '<div class="font-mono text-xs text-slate-600">No LP position found for this wallet.</div>';
+    }
+  } catch(e) {}
+}
+
+function calcLpPreview() {
+  const sui   = parseFloat(document.getElementById('lpSuiAmount')?.value || 0);
+  const agent = parseFloat(document.getElementById('lpAgentAmount')?.value || 0);
+  if (!sui || !lpPoolData) return;
+
+  // Auto-fill agent based on pool ratio
+  if (sui > 0 && lpPoolData.suiReserve > 0 && !agent) {
+    const ratio    = lpPoolData.agentReserve / lpPoolData.suiReserve;
+    const autoAgent = (sui * 1e9) * ratio / 1e6;
+    document.getElementById('lpAgentAmount').placeholder = autoAgent.toFixed(0);
+  }
+
+  const preview = document.getElementById('lpPreview');
+  const text    = document.getElementById('lpPreviewText');
+  if (preview && text && sui > 0) {
+    preview.style.display = 'block';
+    text.textContent = `Depositing ${sui} SUI + ${agent || '?'} $AGENT
+Fees earned: 0.15% of all trades in your share`;
+  }
+}
+
+function setWithdrawPct(pct) {
+  withdrawPct = pct;
+  if (!lpPositionData) return;
+  const lpAmount  = Math.floor(lpPositionData.lpBalance * pct / 100);
+  const suiOut    = Math.floor(lpPositionData.suiValue   * pct / 100 / 1e9 * 1000) / 1000;
+  const agentOut  = Math.floor(lpPositionData.agentValue * pct / 100 / 1e6);
+  const el        = document.getElementById('withdrawPreview');
+  if (el) el.textContent = `Withdraw ${pct}%: ~${suiOut} SUI + ~${agentOut} $AGENT`;
+}
+
+async function addLiquidity() {
+  const status = document.getElementById('lpDepositStatus');
+  if (status) { status.style.color = 'var(--cyan)'; status.textContent = '⚠ LP pool deployment in progress. Check back soon!'; }
+}
+
+async function withdrawLiquidity() {
+  const status = document.getElementById('lpWithdrawStatus');
+  if (status) { status.style.color = 'var(--cyan)'; status.textContent = '⚠ LP pool deployment in progress. Check back soon!'; }
+}
+
+fetchLpPool();
+setInterval(fetchLpPool, 30000);
 
 async function checkAgentStatus(wallet) {
   try {
