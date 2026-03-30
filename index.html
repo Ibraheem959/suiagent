@@ -2552,53 +2552,118 @@ let connectedProvider = null;
   div.addEventListener('click', e => { if (e.target === div) closeWalletModal(); });
 })();
 
-const WALLET_DEFS = [
-  { key:'slush',      name:'Slush',              emoji:'🌊', install:'https://slush.app' },
-  { key:'phantom',    name:'Phantom',             emoji:'👻', install:'https://phantom.com' },
-  { key:'okxwallet',  name:'OKX Wallet',          emoji:'🔷', install:'https://okx.com/web3' },
-  { key:'suiet',      name:'Suiet',               emoji:'🔵', install:'https://suiet.app' },
-  { key:'martian',    name:'Martian Sui Wallet',  emoji:'🔴', install:'https://martianwallet.xyz' },
-  { key:'nightly',    name:'Nightly',             emoji:'🌙', install:'https://nightly.app' },
-  { key:'bitkeep',    name:'Bitget Wallet',       emoji:'💎', install:'https://web3.bitget.com' },
-  { key:'suiWallet',  name:'Sui Wallet',          emoji:'💧', install:'https://chrome.google.com/webstore' },
+// ─── WALLET STANDARD REGISTRY ───
+// Wallets register via window dispatchEvent('wallet-standard:register-wallet')
+const WALLET_STANDARD_WALLETS = []; // populated by wallet extensions
+
+const FALLBACK_WALLETS = [
+  { name:'Slush',              emoji:'🌊', install:'https://slush.app',                   keys:['$__slush__$','slush'] },
+  { name:'Phantom',            emoji:'👻', install:'https://phantom.com',                 keys:['phantom','$phantom'] },
+  { name:'OKX Wallet',         emoji:'🔷', install:'https://okx.com/web3',                keys:['okxwallet','$okxwallet'] },
+  { name:'Suiet',              emoji:'🔵', install:'https://suiet.app',                   keys:['suiet'] },
+  { name:'Martian Sui Wallet', emoji:'🔴', install:'https://martianwallet.xyz',           keys:['martian','$martian'] },
+  { name:'Nightly',            emoji:'🌙', install:'https://nightly.app',                 keys:['nightly','$nightly'] },
+  { name:'Bitget Wallet',      emoji:'💎', install:'https://web3.bitget.com',             keys:['bitkeep','$bitkeep'] },
+  { name:'Sui Wallet',         emoji:'💧', install:'https://chromewebstore.google.com',   keys:['suiWallet','$suiWallet'] },
 ];
 
+// Listen for Wallet Standard registrations
+(function() {
+  function handleWalletRegister(event) {
+    const wallet = event.detail;
+    if (!wallet?.name) return;
+    if (!WALLET_STANDARD_WALLETS.find(w => w.name === wallet.name)) {
+      WALLET_STANDARD_WALLETS.push(wallet);
+    }
+  }
+  window.addEventListener('wallet-standard:register-wallet', handleWalletRegister);
+  // Also check existing registered wallets
+  if (window.__walletStandardWallets) {
+    window.__walletStandardWallets.forEach(w => WALLET_STANDARD_WALLETS.push(w));
+  }
+})();
+
+function getDetectedWallets() {
+  const detected = [];
+  // 1. Wallet Standard registered wallets (Slush, Nightly, etc use this)
+  for (const w of WALLET_STANDARD_WALLETS) {
+    detected.push({ name: w.name, emoji: getWalletEmoji(w.name), provider: w, isStandard: true });
+  }
+  // 2. Fallback window object detection
+  for (const fw of FALLBACK_WALLETS) {
+    if (detected.find(d => d.name === fw.name)) continue; // already found via standard
+    const provider = fw.keys.map(k => window[k]).find(Boolean);
+    if (provider) {
+      detected.push({ name: fw.name, emoji: fw.emoji, provider, isStandard: false });
+    }
+  }
+  return detected;
+}
+
+function getWalletEmoji(name) {
+  const map = { 'Slush':'🌊','Phantom':'👻','OKX Wallet':'🔷','Suiet':'🔵','Martian':'🔴','Nightly':'🌙','Bitget':'💎','Sui Wallet':'💧' };
+  for (const [k,v] of Object.entries(map)) { if (name.toLowerCase().includes(k.toLowerCase())) return v; }
+  return '💼';
+}
+
 function renderWalletList() {
-  const list = document.getElementById('walletList');
-  const rows = WALLET_DEFS.map((w, i) => {
-    const installed = !!window[w.key];
-    return `<div class="wallet-opt" onclick="pickWallet(${i})">
-      <div class="wallet-ico">${w.emoji}</div>
-      <div style="flex:1">
-        <div style="font-family:Orbitron,sans-serif;font-size:0.78rem;color:#fff">${w.name}</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:0.62rem;color:${installed?'var(--green)':'#4a5568'}">${installed?'● Detected':'Not installed'}</div>
-      </div>
-      <div style="font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:${installed?'var(--cyan)':'#2d3748'};border:1px solid ${installed?'rgba(0,245,255,0.3)':'rgba(255,255,255,0.05)'};padding:3px 8px">
-        ${installed?'CONNECT':'INSTALL'}
-      </div>
-    </div>`;
-  });
-  list.innerHTML = rows.join('');
+  const list     = document.getElementById('walletList');
+  const detected = getDetectedWallets();
+  // Show detected first, then undetected fallbacks
+  const detectedNames = new Set(detected.map(d => d.name));
+  const undetected = FALLBACK_WALLETS.filter(w => !detectedNames.has(w.name));
+  
+  const rows = [
+    ...detected.map((w, i) => `
+      <div class="wallet-opt" onclick="pickWalletObj(${i}, true)">
+        <div class="wallet-ico">${w.emoji}</div>
+        <div style="flex:1">
+          <div style="font-family:Orbitron,sans-serif;font-size:0.78rem;color:#fff">${w.name}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:0.62rem;color:var(--green)">● Detected</div>
+        </div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--cyan);border:1px solid rgba(0,245,255,0.3);padding:3px 8px">CONNECT</div>
+      </div>`),
+    ...(detected.length > 0 && undetected.length > 0 ? ['<div style="padding:8px 24px;font-family:Share Tech Mono,monospace;font-size:0.6rem;color:#2d3748;border-bottom:1px solid rgba(0,245,255,0.05)">MORE WALLETS</div>'] : []),
+    ...undetected.map((w, i) => `
+      <div class="wallet-opt" onclick="window.open('${w.install}','_blank')">
+        <div class="wallet-ico">${w.emoji}</div>
+        <div style="flex:1">
+          <div style="font-family:Orbitron,sans-serif;font-size:0.78rem;color:#fff">${w.name}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:0.62rem;color:#4a5568">Not installed</div>
+        </div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:#2d3748;border:1px solid rgba(255,255,255,0.05);padding:3px 8px">INSTALL</div>
+      </div>`),
+  ];
+  list.innerHTML = rows.join('') || '<div style="padding:24px;text-align:center;font-family:Share Tech Mono,monospace;font-size:0.75rem;color:#4a5568">No wallets detected.<br><br><a href="https://slush.app" target="_blank" style="color:var(--cyan)">Install Slush →</a></div>';
+  window.__detectedWallets = detected;
 }
 
 function closeWalletModal() { document.getElementById('walletModal')?.classList.remove('open'); }
-
 function connectWallet() { renderWalletList(); document.getElementById('walletModal')?.classList.add('open'); }
 
-async function pickWallet(i) {
-  const w = WALLET_DEFS[i];
-  const provider = window[w.key];
-  if (!provider) { window.open(w.install, '_blank'); return; }
+async function pickWalletObj(i, isDetected) {
+  const wallets = window.__detectedWallets || [];
+  const w = wallets[i];
+  if (!w) return;
   closeWalletModal();
   try {
     let address = null;
-    if (provider.connect)          { const r = await provider.connect();         address = r?.accounts?.[0]?.address || r?.[0]?.address; }
-    else if (provider.requestAccounts) { const r = await provider.requestAccounts(); address = r?.[0]?.address || r?.[0]; }
-    else if (provider.getAccounts)     { const r = await provider.getAccounts();     address = r?.[0]?.address || r?.[0]; }
-    else if (provider.accounts?.length) address = provider.accounts[0]?.address;
-    if (!address) throw new Error('No address from wallet');
-    connectedWallet   = { address, provider, name: w.name };
-    connectedProvider = provider;
+    const p = w.provider;
+    if (w.isStandard) {
+      // Wallet Standard connect
+      const accounts = await p.features?.['standard:connect']?.connect?.() 
+        || await p.connect?.();
+      address = accounts?.accounts?.[0]?.address || p.accounts?.[0]?.address;
+    } else {
+      // Legacy connect
+      if (p.connect)               { const r = await p.connect();         address = r?.accounts?.[0]?.address || r?.[0]?.address; }
+      else if (p.requestAccounts)  { const r = await p.requestAccounts(); address = r?.[0]?.address || r?.[0]; }
+      else if (p.getAccounts)      { const r = await p.getAccounts();     address = r?.[0]?.address || r?.[0]; }
+      else if (p.accounts?.length)   address = p.accounts[0]?.address;
+    }
+    if (!address) throw new Error('No address returned');
+    connectedWallet   = { address, provider: p, name: w.name, isStandard: w.isStandard };
+    connectedProvider = p;
     updateWalletUI(address);
   } catch(e) { alert('Connect failed: ' + e.message); }
 }
@@ -2617,11 +2682,19 @@ function updateWalletUI(address) {
 
 async function signAndExecuteTx(txBytes) {
   if (!connectedProvider) throw new Error('Wallet not connected');
-  const result = await (
-    connectedProvider.signAndExecuteTransactionBlock?.({ transactionBlock: txBytes, options:{ showEffects:true } }) ||
-    connectedProvider.signAndExecuteTransaction?.({ transaction: txBytes, options:{ showEffects:true } })
+  const p = connectedProvider;
+  // Wallet Standard method
+  if (connectedWallet?.isStandard) {
+    const feat = p.features?.['sui:signAndExecuteTransaction'] || p.features?.['sui:signAndExecuteTransactionBlock'];
+    if (feat?.signAndExecuteTransaction) return feat.signAndExecuteTransaction({ transaction: txBytes, options:{ showEffects:true } });
+    if (feat?.signAndExecuteTransactionBlock) return feat.signAndExecuteTransactionBlock({ transactionBlock: txBytes, options:{ showEffects:true } });
+  }
+  // Legacy methods
+  return (
+    p.signAndExecuteTransactionBlock?.({ transactionBlock: txBytes, options:{ showEffects:true } }) ||
+    p.signAndExecuteTransaction?.({ transaction: txBytes, options:{ showEffects:true } }) ||
+    p.signTransaction?.({ transaction: txBytes })
   );
-  return result;
 }
 
 window.__suiTxAvailable = true;
@@ -2636,13 +2709,21 @@ window.__buildTx = async function(sender, txData) {
 };
 
 window.addEventListener('load', () => {
-  for (const w of WALLET_DEFS) {
-    const p = window[w.key];
-    if (p?.accounts?.length) {
-      const addr = p.accounts[0]?.address;
-      if (addr) { connectedWallet={address:addr,provider:p,name:w.name}; connectedProvider=p; updateWalletUI(addr); break; }
+  // Check Wallet Standard wallets first
+  setTimeout(() => {
+    for (const w of WALLET_STANDARD_WALLETS) {
+      const addr = w.accounts?.[0]?.address;
+      if (addr) { connectedWallet={address:addr,provider:w,name:w.name,isStandard:true}; connectedProvider=w; updateWalletUI(addr); return; }
     }
-  }
+    // Fallback window wallets
+    for (const fw of FALLBACK_WALLETS) {
+      const p = fw.keys.map(k=>window[k]).find(Boolean);
+      if (p?.accounts?.length) {
+        const addr = p.accounts[0]?.address;
+        if (addr) { connectedWallet={address:addr,provider:p,name:fw.name}; connectedProvider=p; updateWalletUI(addr); return; }
+      }
+    }
+  }, 500); // wait 500ms for wallets to register
 });
 
 // ─── SWAP ON-CHAIN ───
