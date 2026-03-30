@@ -391,6 +391,7 @@
   <div class="nav-links flex items-center gap-8">
     <a href="#token" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Token</a>
     <a href="#buy" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Buy</a>
+    <a href="#swap" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Swap</a>
     <a href="#liquidity" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">LP</a>
     <a href="#chart" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Chart</a>
     <a href="#arena" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Arena</a>
@@ -1079,6 +1080,37 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         <a href="https://t.me/sui_agent_trader_bot" target="_blank" class="btn-cyan" style="width:100%;text-align:center;display:block"><span>◈ OPEN TRADING BOT</span></a>
       </div>
 
+      <!-- Quick Swap Widget -->
+      <div class="card p-8 rounded-none" style="border-color:rgba(0,255,136,0.2);background:rgba(0,255,136,0.02)">
+        <div style="display:inline-block;background:rgba(0,255,136,0.1);border:1px solid var(--green);padding:3px 12px;font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--green);letter-spacing:0.1em;margin-bottom:16px">QUICK SWAP — SITE</div>
+        <div class="font-orbitron text-xl font-bold text-white mb-2">⚡ Swap via Bot API</div>
+        <p class="font-mono text-xs text-slate-500 leading-relaxed mb-6">Enter your registered wallet and swap $AGENT directly. Requires an active AgentBadge.</p>
+
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button onclick="setSwapMode('buy')" id="swapBuyBtn" class="font-orbitron text-xs" style="flex:1;padding:10px;background:rgba(0,255,136,0.15);border:1px solid var(--green);color:var(--green);cursor:pointer">▲ BUY $AGENT</button>
+          <button onclick="setSwapMode('sell')" id="swapSellBtn" class="font-orbitron text-xs" style="flex:1;padding:10px;background:transparent;border:1px solid rgba(255,70,90,0.3);color:#ff465a;cursor:pointer">▼ SELL $AGENT</button>
+        </div>
+
+        <div style="margin-bottom:12px">
+          <label class="font-mono text-xs text-slate-400 block mb-2" id="swapInputLabel">SUI AMOUNT TO SPEND</label>
+          <input type="number" id="swapAmount" placeholder="0.1" min="0.001" step="0.1" oninput="calcSwapPreview()" style="width:100%;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:0.9rem;padding:12px 14px;outline:none"/>
+        </div>
+
+        <div id="swapPreviewBox" style="background:#020609;border:1px solid rgba(0,245,255,0.1);padding:12px;margin-bottom:12px;display:none">
+          <div class="font-mono text-xs text-slate-500 mb-1">YOU RECEIVE ~</div>
+          <div class="font-orbitron text-xl font-bold" id="swapPreviewOut" style="color:var(--green)">—</div>
+          <div class="font-mono text-xs text-slate-600 mt-1">Price impact: <span id="swapImpact">—</span></div>
+        </div>
+
+        <input type="text" id="swapWallet" placeholder="Your wallet 0x..." style="width:100%;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:0.75rem;padding:10px 14px;outline:none;margin-bottom:12px"/>
+
+        <button onclick="executeSwap()" id="swapBtn" class="btn-cyan" style="width:100%;padding:14px;text-align:center">
+          <span id="swapBtnText">◈ OPEN BOT TO SWAP</span>
+        </button>
+        <div id="swapStatus" class="font-mono text-xs text-center mt-3" style="color:#4a5568;min-height:16px"></div>
+        <div class="font-mono text-xs text-slate-600 mt-2 text-center">Swaps execute via @sui_agent_trader_bot — badge required</div>
+      </div>
+
       <!-- Option 2 — Eliza Agent -->
       <div class="card p-8 rounded-none" style="border-color:rgba(180,79,255,0.2);background:rgba(180,79,255,0.02)">
         <div style="display:inline-block;background:rgba(180,79,255,0.1);border:1px solid var(--purple);padding:3px 12px;font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--purple);letter-spacing:0.1em;margin-bottom:16px">ADVANCED — FULL AGENT</div>
@@ -1118,6 +1150,76 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
       <div style="background:rgba(255,70,90,0.06);border:1px solid rgba(255,70,90,0.2);padding:10px 14px;margin-top:10px">
         <div class="font-mono text-xs" style="color:#ff465a">🚫 $AGENT is NOT on Cetus or any other DEX. This address is for on-chain research only. Buy only via @sui_agent_trader_bot</div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ SWAP ══════════════════════════════════════ -->
+<section id="swap" style="padding:80px 24px;background:var(--bg2)">
+  <div style="max-width:600px;margin:0 auto">
+    <div class="reveal text-center mb-10">
+      <div class="section-label mb-3">◈ TRADE</div>
+      <h2 class="font-orbitron text-3xl font-bold text-white">Swap $AGENT</h2>
+      <p style="color:#6a8bad;font-weight:300;margin-top:8px">Get a live quote from the on-chain pool. Execute via the Telegram bot.</p>
+    </div>
+
+    <div class="reveal card rounded-none p-8" style="border-color:rgba(0,245,255,0.2)">
+      <!-- Buy/Sell toggle -->
+      <div style="display:flex;gap:0;margin-bottom:24px;border:1px solid rgba(0,245,255,0.2)">
+        <button id="swapBuyBtn" onclick="setSwapType('buy')" class="font-orbitron text-xs" style="flex:1;padding:12px;background:rgba(0,255,136,0.15);border:none;color:var(--green);cursor:pointer;letter-spacing:0.1em">⬆ BUY $AGENT</button>
+        <button id="swapSellBtn" onclick="setSwapType('sell')" class="font-orbitron text-xs" style="flex:1;padding:12px;background:transparent;border:none;color:#4a5568;cursor:pointer;letter-spacing:0.1em">⬇ SELL $AGENT</button>
+      </div>
+
+      <!-- Input -->
+      <div style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <label class="font-mono text-xs text-slate-400" id="swapInputLabel">YOU PAY (SUI)</label>
+          <span class="font-mono text-xs text-slate-500" id="swapInputBal">—</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <input type="number" id="swapAmountIn" placeholder="0.0" min="0" step="0.1"
+            oninput="fetchSwapQuote()"
+            style="flex:1;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:1rem;padding:14px 16px;outline:none"/>
+          <div class="font-orbitron text-sm" style="padding:14px 16px;background:rgba(0,245,255,0.08);border:1px solid rgba(0,245,255,0.2);color:var(--cyan);min-width:70px;text-align:center" id="swapInToken">SUI</div>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div style="text-align:center;margin:8px 0;font-size:1.2rem;color:var(--cyan)">↕</div>
+
+      <!-- Output -->
+      <div style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <label class="font-mono text-xs text-slate-400" id="swapOutputLabel">YOU RECEIVE ($AGENT)</label>
+          <span class="font-mono text-xs" style="color:var(--green)" id="swapPriceImpact"></span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div id="swapAmountOut" style="flex:1;background:#020609;border:1px solid rgba(0,255,136,0.15);color:var(--green);font-family:'Share Tech Mono',monospace;font-size:1rem;padding:14px 16px;min-height:52px">—</div>
+          <div class="font-orbitron text-sm" style="padding:14px 16px;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.15);color:var(--green);min-width:70px;text-align:center" id="swapOutToken">$AGENT</div>
+        </div>
+      </div>
+
+      <!-- Quote details -->
+      <div id="swapDetails" style="display:none;background:#020609;border:1px solid rgba(0,245,255,0.08);padding:12px 16px;margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span class="font-mono text-xs text-slate-500">Rate</span>
+          <span class="font-mono text-xs" style="color:var(--cyan)" id="swapRate">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span class="font-mono text-xs text-slate-500">Fee (0.3%)</span>
+          <span class="font-mono text-xs text-slate-400" id="swapFee">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span class="font-mono text-xs text-slate-500">Price impact</span>
+          <span class="font-mono text-xs" id="swapImpact" style="color:var(--green)">—</span>
+        </div>
+      </div>
+
+      <!-- Execute via bot -->
+      <a href="https://t.me/sui_agent_trader_bot" target="_blank" class="btn-cyan" style="width:100%;text-align:center;display:block;padding:16px">
+        <span id="swapBtnText">◈ EXECUTE SWAP VIA BOT</span>
+      </a>
+      <div class="font-mono text-xs text-center mt-3" style="color:#4a5568">Swap executes on-chain via @sui_agent_trader_bot · Requires AgentBadge</div>
     </div>
   </div>
 </section>
@@ -2024,18 +2126,31 @@ fetchArenaParticipants();
 setInterval(fetchArenaStatus, 15000);
 setInterval(fetchArenaParticipants, 30000);
 
-// ─── CANDLESTICK CHART (lightweight-charts from backend) ───
-const BACKEND = 'https://agent-backend-nwb6.onrender.com';
-let lwChart       = null;
-let candleSeries  = null;
-let currentTf     = '5m';
-let chartSuiUsd   = 1.78;
-let lpPoolData    = null;
+// ─── CHART + LP — direct from chain, no backend dependency ───
+const BACKEND   = 'https://agent-backend-nwb6.onrender.com';
+const SUI_NODE  = 'https://fullnode.mainnet.sui.io:443';
+const LP_POOL_ID_SITE = '0xe2cb18758423840159a11243387efc27c21db171ba97c1bad2d6009a474d2e79';
+const LP_PKG_SITE     = '0xf554dad1683cb25386ddf57f2d40f2774fb8287b17f467ebc657c5bc20f226e3';
+const LP_COIN_TYPE    = LP_PKG_SITE + '::pool_lp::POOL_LP';
+
+let lwChart      = null;
+let candleSeries = null;
+let currentTf    = '5m';
+let chartSuiUsd  = 1.78;
+let lpPoolData   = null;
+let lpPositionData = null;
+let withdrawPct  = 0;
+
+// Candle store built from on-chain events
+const TF_MS = { '1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000 };
+const candleStore = {};
+Object.keys(TF_MS).forEach(tf => candleStore[tf] = new Map());
+let lastEventCursor = null;
 
 function fmtUsdChart(n) {
-  if (n === 0 || isNaN(n)) return '$—';
-  if (n < 0.00001) return '$' + n.toFixed(12);
-  if (n < 0.001)   return '$' + n.toFixed(10);
+  if (!n || isNaN(n)) return '$—';
+  if (n < 0.000001) return '$' + n.toFixed(12);
+  if (n < 0.001)    return '$' + n.toFixed(10);
   return '$' + n.toFixed(8);
 }
 function fmtShort(n) {
@@ -2045,63 +2160,138 @@ function fmtShort(n) {
   return '$' + n.toFixed(2);
 }
 
+async function rpcCall(method, params) {
+  const r = await fetch(SUI_NODE, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc:'2.0', id:1, method, params })
+  });
+  return (await r.json()).result;
+}
+
+function updateCandle(tf, ts, priceUsd, vol) {
+  const tfMs   = TF_MS[tf];
+  const bucket = Math.floor(ts / tfMs) * tfMs;
+  const store  = candleStore[tf];
+  if (!store.has(bucket)) {
+    store.set(bucket, { t:bucket, o:priceUsd, h:priceUsd, l:priceUsd, c:priceUsd, v:vol });
+  } else {
+    const c = store.get(bucket);
+    c.h = Math.max(c.h, priceUsd);
+    c.l = Math.min(c.l, priceUsd);
+    c.c = priceUsd;
+    c.v += vol;
+  }
+  if (store.size > 500) store.delete(Math.min(...store.keys()));
+}
+
+async function fetchChartSuiPrice() {
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=sui&vs_currencies=usd');
+    const d = await r.json();
+    if (d?.sui?.usd) chartSuiUsd = d.sui.usd;
+  } catch(e) {}
+}
+
+async function seedCandlesFromChain() {
+  try {
+    const cs = document.getElementById('chartStatus');
+    if (cs) cs.textContent = 'Loading trade history...';
+    let cursor = null;
+    let total  = 0;
+    const POOL_PKG = '0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48ce3cd6952';
+    for (let page = 0; page < 20; page++) {
+      const events = await rpcCall('suix_queryEvents', [{
+        MoveModule: { package: POOL_PKG, module: 'pool' }
+      }, cursor, 50, false]);
+      if (!events?.data?.length) break;
+      for (const e of events.data) {
+        const f     = e.parsedJson || {};
+        const isBuy = e.type?.includes('TokensBought');
+        const suiIn    = parseInt(f.sui_in    || f.sui_out  || 0);
+        const agentAmt = parseInt(f.agent_out || f.agent_in || 0);
+        if (!agentAmt) continue;
+        const priceSui = (suiIn/1e9) / (agentAmt/1e6);
+        const priceUsd = priceSui * chartSuiUsd;
+        const ts       = parseInt(e.timestampMs || Date.now());
+        const vol      = suiIn / 1e9;
+        Object.keys(TF_MS).forEach(tf => updateCandle(tf, ts, priceUsd, vol));
+        total++;
+      }
+      cursor = events.nextCursor;
+      if (!events.hasNextPage) break;
+    }
+    lastEventCursor = cursor;
+    if (cs) cs.textContent = 'Loaded ' + total + ' trades · Updates every 15s';
+    renderCandles();
+  } catch(e) {
+    const cs = document.getElementById('chartStatus');
+    if (cs) cs.textContent = 'Could not load trade history';
+  }
+}
+
+async function pollNewCandles() {
+  try {
+    const POOL_PKG = '0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48ce3cd6952';
+    const events = await rpcCall('suix_queryEvents', [{
+      MoveModule: { package: POOL_PKG, module: 'pool' }
+    }, lastEventCursor, 10, false]);
+    if (!events?.data?.length) return;
+    for (const e of events.data) {
+      const f     = e.parsedJson || {};
+      const suiIn    = parseInt(f.sui_in    || f.sui_out  || 0);
+      const agentAmt = parseInt(f.agent_out || f.agent_in || 0);
+      if (!agentAmt) continue;
+      const priceSui = (suiIn/1e9) / (agentAmt/1e6);
+      const priceUsd = priceSui * chartSuiUsd;
+      const ts       = parseInt(e.timestampMs || Date.now());
+      Object.keys(TF_MS).forEach(tf => updateCandle(tf, ts, priceUsd, suiIn/1e9));
+    }
+    if (events.data.length > 0) lastEventCursor = events.nextCursor;
+    renderCandles();
+  } catch(e) {}
+}
+
+function renderCandles() {
+  const store = candleStore[currentTf];
+  if (!candleSeries || store.size === 0) return;
+  const sorted = [...store.values()].sort((a,b) => a.t - b.t);
+  const formatted = sorted.map(c => ({
+    time: Math.floor(c.t / 1000),
+    open: c.o, high: c.h, low: c.l, close: c.c
+  }));
+  candleSeries.setData(formatted);
+  // Update stats
+  const last  = sorted[sorted.length - 1];
+  const first = sorted[0];
+  const chgPct = first?.o > 0 ? ((last.c - first.o) / first.o * 100) : 0;
+  const el = id => document.getElementById(id);
+  if (el('chartPrice'))  el('chartPrice').textContent  = fmtUsdChart(last.c);
+  if (el('chartChange')) {
+    el('chartChange').textContent = (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%';
+    el('chartChange').style.color = chgPct >= 0 ? 'var(--green)' : '#ff465a';
+  }
+}
+
 function setTf(tf) {
   currentTf = tf;
   document.querySelectorAll('.tf-btn').forEach(b => {
     const active = b.dataset.tf === tf;
-    b.style.background   = active ? 'rgba(0,245,255,0.15)' : 'rgba(0,245,255,0.05)';
-    b.style.borderColor  = active ? 'var(--cyan)' : 'rgba(0,245,255,0.2)';
+    b.style.background  = active ? 'rgba(0,245,255,0.15)' : 'rgba(0,245,255,0.05)';
+    b.style.borderColor = active ? 'var(--cyan)' : 'rgba(0,245,255,0.2)';
   });
-  loadCandles();
-}
-
-async function loadCandles() {
-  try {
-    const cs = document.getElementById('chartStatus');
-    if (cs) cs.textContent = 'Loading...';
-    const res  = await fetch(BACKEND + '/candles?tf=' + currentTf + '&limit=300');
-    const data = await res.json();
-    if (!data.candles || data.candles.length === 0) {
-      if (cs) cs.textContent = 'No trade data yet — be the first to trade!';
-      return;
-    }
-    // Format for lightweight-charts: {time, open, high, low, close}
-    const formatted = data.candles.map(c => ({
-      time:  Math.floor(c.t / 1000), // seconds
-      open:  c.o, high: c.h, low: c.l, close: c.c
-    }));
-    if (candleSeries) candleSeries.setData(formatted);
-
-    // Update price display from last candle
-    const last  = data.candles[data.candles.length - 1];
-    const first = data.candles[0];
-    const chgPct = first.o > 0 ? ((last.c - first.o) / first.o * 100) : 0;
-    const el = id => document.getElementById(id);
-    if (el('chartPrice'))  el('chartPrice').textContent  = fmtUsdChart(last.c);
-    if (el('chartChange')) {
-      el('chartChange').textContent = (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%';
-      el('chartChange').style.color = chgPct >= 0 ? 'var(--green)' : '#ff465a';
-    }
-    if (cs) cs.textContent = 'Last updated: ' + new Date().toLocaleTimeString() + ' · ' + data.candles.length + ' candles';
-  } catch(e) {
-    const cs = document.getElementById('chartStatus');
-    if (cs) cs.textContent = 'Retrying...';
-  }
+  renderCandles();
 }
 
 async function fetchChartStats() {
   try {
-    const [poolRes, priceRes] = await Promise.all([
-      fetch(BACKEND + '/pool'),
-      fetch('https://api.coingecko.com/api/v3/simple/price?ids=sui&vs_currencies=usd')
-    ]);
-    const pool  = await poolRes.json();
-    const price = await priceRes.json();
-    chartSuiUsd = price?.sui?.usd || chartSuiUsd;
-    const priceSui = pool.price || 0;
+    const poolObj = await rpcCall('sui_getObject', [POOL_ID, { showContent: true }]);
+    const pf = poolObj?.data?.content?.fields || {};
+    const sui   = parseInt(pf.sui_reserve?.fields?.balance   || pf.sui_reserve   || 0);
+    const agent = parseInt(pf.agent_reserve?.fields?.balance || pf.agent_reserve || 0);
+    const priceSui = agent > 0 ? (sui/1e9)/(agent/1e6) : 0;
     const priceUsd = priceSui * chartSuiUsd;
     const mc  = 1_000_000_000 * priceUsd;
-    const liq = (pool.suiReserve / 1e9) * chartSuiUsd * 2;
+    const liq = (sui/1e9) * chartSuiUsd * 2;
     const el  = id => document.getElementById(id);
     if (el('chartMc'))  el('chartMc').textContent  = fmtShort(mc);
     if (el('chartLiq')) el('chartLiq').textContent = fmtShort(liq);
@@ -2121,23 +2311,22 @@ function initCandleChart() {
     timeScale: { borderColor: 'rgba(0,245,255,0.1)', timeVisible: true, secondsVisible: false },
   });
   candleSeries = lwChart.addCandlestickSeries({
-    upColor:          '#00ff88',
-    downColor:        '#ff465a',
-    borderUpColor:    '#00ff88',
-    borderDownColor:  '#ff465a',
-    wickUpColor:      '#00ff88',
-    wickDownColor:    '#ff465a',
+    upColor: '#00ff88', downColor: '#ff465a',
+    borderUpColor: '#00ff88', borderDownColor: '#ff465a',
+    wickUpColor: '#00ff88', wickDownColor: '#ff465a',
   });
   window.addEventListener('resize', () => {
     if (lwChart) lwChart.applyOptions({ width: container.clientWidth });
   });
-  loadCandles();
-  setInterval(loadCandles, 15000);
-  fetchChartStats();
-  setInterval(fetchChartStats, 30000);
+  fetchChartSuiPrice().then(() => {
+    seedCandlesFromChain();
+    setInterval(pollNewCandles, 15000);
+    setInterval(fetchChartStats, 30000);
+    setInterval(fetchChartSuiPrice, 300000);
+    fetchChartStats();
+  });
 }
 
-// Load lightweight-charts library
 (function() {
   const s = document.createElement('script');
   s.src = 'https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js';
@@ -2145,36 +2334,41 @@ function initCandleChart() {
   document.head.appendChild(s);
 })();
 
-// ─── LP POOL ───
-let lpPositionData = null;
-let withdrawPct    = 0;
-
+// ─── LP POOL — direct from chain ───
 async function fetchLpPool() {
   try {
-    const res  = await fetch(BACKEND + '/lp/pool');
-    lpPoolData = await res.json();
-    if (lpPoolData.error) return;
+    const obj = await rpcCall('sui_getObject', [LP_POOL_ID_SITE, { showContent: true }]);
+    const f   = obj?.data?.content?.fields || {};
+    const sui   = parseInt(f.sui_reserve?.fields?.balance   || f.sui_reserve   || 0);
+    const agent = parseInt(f.agent_reserve?.fields?.balance || f.agent_reserve || 0);
+    const lptot = parseInt(f.lp_total || 0);
+    lpPoolData  = { suiReserve: sui, agentReserve: agent, lpTotal: lptot };
     const el = id => document.getElementById(id);
-    if (el('lpPoolSui'))   el('lpPoolSui').textContent   = (lpPoolData.suiReserve / 1e9).toFixed(2) + ' SUI';
-    if (el('lpPoolAgent')) el('lpPoolAgent').textContent = (lpPoolData.agentReserve / 1e6).toFixed(0) + ' $AGENT';
-    if (el('lpTotal'))     el('lpTotal').textContent     = lpPoolData.lpTotal?.toLocaleString() || '—';
-  } catch(e) { console.log('LP pool not deployed yet'); }
+    if (el('lpPoolSui'))   el('lpPoolSui').textContent   = (sui/1e9).toFixed(2) + ' SUI';
+    if (el('lpPoolAgent')) el('lpPoolAgent').textContent = (agent/1e6).toFixed(0) + ' $AGENT';
+    if (el('lpTotal'))     el('lpTotal').textContent     = lptot.toLocaleString() || '0';
+  } catch(e) { console.log('LP fetch error:', e.message); }
 }
 
 async function fetchLpPosition() {
   const wallet = document.getElementById('lpWallet')?.value?.trim();
   if (!wallet || !wallet.startsWith('0x') || wallet.length !== 66) return;
   try {
-    const res       = await fetch(BACKEND + '/lp/position/' + wallet);
-    lpPositionData  = await res.json();
-    const el        = id => document.getElementById(id);
-    if (lpPositionData.lpBalance > 0) {
+    const balRes = await rpcCall('suix_getBalance', [wallet, LP_COIN_TYPE]);
+    const userLp = parseInt(balRes?.totalBalance || 0);
+    const el     = id => document.getElementById(id);
+    if (userLp > 0 && lpPoolData) {
+      const lptot    = lpPoolData.lpTotal || userLp;
+      const suiVal   = Math.floor(userLp * lpPoolData.suiReserve   / lptot);
+      const agentVal = Math.floor(userLp * lpPoolData.agentReserve / lptot);
+      const sharePct = (userLp / lptot * 100).toFixed(4);
+      lpPositionData = { lpBalance: userLp, suiValue: suiVal, agentValue: agentVal, sharePct };
       if (el('lpNoPosition')) el('lpNoPosition').style.display = 'none';
       if (el('lpPosition'))   el('lpPosition').style.display   = 'block';
-      if (el('posLp'))        el('posLp').textContent          = lpPositionData.lpBalance.toLocaleString();
-      if (el('posShare'))     el('posShare').textContent       = lpPositionData.sharePct + '%';
-      if (el('posSui'))       el('posSui').textContent         = (lpPositionData.suiValue / 1e9).toFixed(4) + ' SUI';
-      if (el('posAgent'))     el('posAgent').textContent       = (lpPositionData.agentValue / 1e6).toFixed(0) + ' $AGENT';
+      if (el('posLp'))        el('posLp').textContent   = userLp.toLocaleString();
+      if (el('posShare'))     el('posShare').textContent = sharePct + '%';
+      if (el('posSui'))       el('posSui').textContent   = (suiVal/1e9).toFixed(4) + ' SUI';
+      if (el('posAgent'))     el('posAgent').textContent = (agentVal/1e6).toFixed(0) + ' $AGENT';
     } else {
       if (el('lpNoPosition')) el('lpNoPosition').innerHTML = '<div class="font-mono text-xs text-slate-600">No LP position found for this wallet.</div>';
     }
@@ -2183,47 +2377,121 @@ async function fetchLpPosition() {
 
 function calcLpPreview() {
   const sui   = parseFloat(document.getElementById('lpSuiAmount')?.value || 0);
-  const agent = parseFloat(document.getElementById('lpAgentAmount')?.value || 0);
-  if (!sui || !lpPoolData) return;
-
-  // Auto-fill agent based on pool ratio
-  if (sui > 0 && lpPoolData.suiReserve > 0 && !agent) {
-    const ratio    = lpPoolData.agentReserve / lpPoolData.suiReserve;
-    const autoAgent = (sui * 1e9) * ratio / 1e6;
-    document.getElementById('lpAgentAmount').placeholder = autoAgent.toFixed(0);
-  }
-
+  if (!sui || !lpPoolData?.suiReserve) return;
+  const ratio     = lpPoolData.agentReserve / lpPoolData.suiReserve;
+  const autoAgent = (sui * 1e9) * ratio / 1e6;
+  const agentEl   = document.getElementById('lpAgentAmount');
+  if (agentEl && !agentEl.value) agentEl.placeholder = autoAgent.toFixed(0);
   const preview = document.getElementById('lpPreview');
   const text    = document.getElementById('lpPreviewText');
-  if (preview && text && sui > 0) {
+  if (preview && text) {
     preview.style.display = 'block';
-    text.textContent = `Depositing ${sui} SUI + ${agent || '?'} $AGENT
-Fees earned: 0.15% of all trades in your share`;
+    const agent = parseFloat(agentEl?.value || autoAgent);
+    text.textContent = 'Depositing ' + sui + ' SUI + ' + agent.toFixed(0) + ' $AGENT';
   }
 }
 
 function setWithdrawPct(pct) {
   withdrawPct = pct;
   if (!lpPositionData) return;
-  const lpAmount  = Math.floor(lpPositionData.lpBalance * pct / 100);
-  const suiOut    = Math.floor(lpPositionData.suiValue   * pct / 100 / 1e9 * 1000) / 1000;
-  const agentOut  = Math.floor(lpPositionData.agentValue * pct / 100 / 1e6);
-  const el        = document.getElementById('withdrawPreview');
-  if (el) el.textContent = `Withdraw ${pct}%: ~${suiOut} SUI + ~${agentOut} $AGENT`;
+  const suiOut   = (lpPositionData.suiValue   * pct / 100 / 1e9).toFixed(4);
+  const agentOut = Math.floor(lpPositionData.agentValue * pct / 100 / 1e6);
+  const el = document.getElementById('withdrawPreview');
+  if (el) el.textContent = 'Withdraw ' + pct + '%: ~' + suiOut + ' SUI + ~' + agentOut + ' $AGENT';
 }
 
 async function addLiquidity() {
   const status = document.getElementById('lpDepositStatus');
-  if (status) { status.style.color = 'var(--cyan)'; status.textContent = '⚠ LP pool deployment in progress. Check back soon!'; }
+  if (status) {
+    status.style.color = 'var(--cyan)';
+    status.textContent = '⏳ Use the Telegram bot to add liquidity — /lp command coming soon!';
+  }
 }
 
 async function withdrawLiquidity() {
   const status = document.getElementById('lpWithdrawStatus');
-  if (status) { status.style.color = 'var(--cyan)'; status.textContent = '⚠ LP pool deployment in progress. Check back soon!'; }
+  if (status) {
+    status.style.color = 'var(--cyan)';
+    status.textContent = '⏳ Use the Telegram bot to withdraw liquidity — /lp command coming soon!';
+  }
 }
 
 fetchLpPool();
 setInterval(fetchLpPool, 30000);
+
+// ─── SWAP WIDGET ───
+let swapMode = 'buy';
+
+function setSwapMode(mode) {
+  swapMode = mode;
+  const buyBtn  = document.getElementById('swapBuyBtn');
+  const sellBtn = document.getElementById('swapSellBtn');
+  const label   = document.getElementById('swapInputLabel');
+  if (mode === 'buy') {
+    if (buyBtn)  { buyBtn.style.background  = 'rgba(0,255,136,0.15)'; buyBtn.style.borderColor  = 'var(--green)'; }
+    if (sellBtn) { sellBtn.style.background = 'transparent';           sellBtn.style.borderColor = 'rgba(255,70,90,0.3)'; }
+    if (label)   label.textContent = 'SUI AMOUNT TO SPEND';
+  } else {
+    if (sellBtn) { sellBtn.style.background  = 'rgba(255,70,90,0.15)'; sellBtn.style.borderColor = '#ff465a'; }
+    if (buyBtn)  { buyBtn.style.background   = 'transparent';           buyBtn.style.borderColor  = 'rgba(0,255,136,0.3)'; }
+    if (label)   label.textContent = '$AGENT AMOUNT TO SELL';
+  }
+  calcSwapPreview();
+}
+
+async function calcSwapPreview() {
+  const amount  = parseFloat(document.getElementById('swapAmount')?.value || 0);
+  const preview = document.getElementById('swapPreviewBox');
+  const outEl   = document.getElementById('swapPreviewOut');
+  const impEl   = document.getElementById('swapImpact');
+  if (!amount || amount <= 0) { if (preview) preview.style.display = 'none'; return; }
+  try {
+    const poolObj = await rpcCall('sui_getObject', [POOL_ID, { showContent: true }]);
+    const pf      = poolObj?.data?.content?.fields || {};
+    const suiRes  = parseInt(pf.sui_reserve?.fields?.balance   || pf.sui_reserve   || 0);
+    const agRes   = parseInt(pf.agent_reserve?.fields?.balance || pf.agent_reserve || 0);
+    if (!suiRes || !agRes) return;
+
+    let amtOut, impact;
+    if (swapMode === 'buy') {
+      const suiIn   = Math.floor(amount * 1e9);
+      const feeAdj  = suiIn * 0.997; // 0.3% fee
+      amtOut  = feeAdj * agRes / (suiRes + feeAdj);
+      impact  = (suiIn / suiRes * 100).toFixed(2);
+      if (outEl) outEl.textContent = (amtOut/1e6).toFixed(0) + ' $AGENT';
+    } else {
+      const agIn    = Math.floor(amount * 1e6);
+      const suiOut  = agIn * suiRes / (agRes + agIn);
+      const feeAdj  = suiOut * 0.997;
+      amtOut  = feeAdj;
+      impact  = (agIn / agRes * 100).toFixed(2);
+      if (outEl) outEl.textContent = (amtOut/1e9).toFixed(4) + ' SUI';
+    }
+    if (impEl) impEl.textContent = impact + '%';
+    if (preview) preview.style.display = 'block';
+  } catch(e) {}
+}
+
+function executeSwap() {
+  const status = document.getElementById('swapStatus');
+  const amount = document.getElementById('swapAmount')?.value;
+  const wallet = document.getElementById('swapWallet')?.value?.trim();
+
+  if (!amount || parseFloat(amount) <= 0) {
+    if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ Enter an amount first'; }
+    return;
+  }
+
+  // Open bot with deep link
+  const action = swapMode === 'buy' ? 'buy' : 'sell';
+  const botUrl = 'https://t.me/sui_agent_trader_bot?start=' + action + '_' + amount;
+  window.open(botUrl, '_blank');
+
+  if (status) {
+    status.style.color = 'var(--green)';
+    status.textContent = '✅ Opening bot to execute swap...';
+  }
+}
 
 async function checkAgentStatus(wallet) {
   try {
