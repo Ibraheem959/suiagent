@@ -2519,14 +2519,22 @@ const LP_COIN     = LP_PKG_ID + '::pool_lp::POOL_LP';
 let connectedWallet   = null; // { address, signAndExecute }
 let connectedProvider = null;
 
-// ─── DETECT WALLET ───
+// ─── DETECT WALLET (Wallet Standard API — how Slush works) ───
 function getWalletProvider() {
-  // Slush / Sui Wallet standard
-  if (window.suiWallet) return window.suiWallet;
-  if (window.slush)     return window.slush;
-  // Standard wallet interface
-  const wallets = window.__suiWallets || [];
-  if (wallets.length > 0) return wallets[0];
+  // Wallet Standard — this is how Slush, Sui Wallet, etc register
+  if (window.__suiWallets && window.__suiWallets.length > 0) return window.__suiWallets[0];
+  // @mysten/wallet-standard registers wallets here
+  if (window.navigator?.wallets) {
+    const wallets = window.navigator.wallets.get?.() || [];
+    if (wallets.length > 0) return wallets[0];
+  }
+  // Fallback — some wallets still use legacy injection
+  if (window.suiWallet)  return window.suiWallet;
+  if (window.slush)      return window.slush;
+  if (window.sui)        return window.sui;
+  // Check registered wallets via wallet-standard event
+  const registered = window._walletStandardWallets || [];
+  if (registered.length > 0) return registered[0];
   return null;
 }
 
@@ -2557,43 +2565,109 @@ function updateWalletUI(address) {
 
 async function connectWallet() {
   try {
-    const provider = getWalletProvider();
-    if (!provider) {
-      // No wallet detected — guide user
-      const install = confirm('No Sui wallet detected.\n\nClick OK to install Slush wallet (recommended for Sui).\nOr use the Telegram bot to trade without a browser wallet.');
-      if (install) window.open('https://slush.app', '_blank');
+    // Wait a moment for wallet to inject
+    await new Promise(r => setTimeout(r, 200));
+    
+    let address = null;
+    let provider = null;
+
+    // Method 1: Wallet Standard (Slush uses this)
+    // Wallets register via window event
+    const stdWallets = window.__walletStandard?.get?.() || window.__suiWallets || [];
+    
+    if (stdWallets.length > 0) {
+      const wallet = stdWallets[0];
+      // Connect using wallet standard
+      if (wallet.features?.['standard:connect']) {
+        const result = await wallet.features['standard:connect'].connect();
+        address  = result?.accounts?.[0]?.address;
+        provider = wallet;
+      } else if (wallet.connect) {
+        const result = await wallet.connect();
+        address  = result?.accounts?.[0]?.address || result?.address;
+        provider = wallet;
+      }
+    }
+
+    // Method 2: Legacy sui wallet injection
+    if (!address && window.suiWallet) {
+      await window.suiWallet.requestPermissions?.();
+      const accounts = await window.suiWallet.getAccounts?.();
+      address  = accounts?.[0];
+      provider = window.suiWallet;
+    }
+
+    // Method 3: window.slush
+    if (!address && window.slush) {
+      const result = await window.slush.connect?.();
+      address  = result?.accounts?.[0]?.address || result?.address;
+      provider = window.slush;
+    }
+
+    // Method 4: Detect any Sui wallet via sui global
+    if (!address && window.sui) {
+      const result = await window.sui.connect?.();
+      address  = result?.accounts?.[0]?.address;
+      provider = window.sui;
+    }
+
+    if (!address) {
+      // No wallet found at all
+      const go = confirm(
+        'Slush wallet not detected.\n\n' +
+        'Make sure:\n' +
+        '1. Slush extension is installed\n' +
+        '2. This page is reloaded after installing\n' +
+        '3. You are on the correct website\n\n' +
+        'Click OK to open Slush wallet site, or Cancel to use the Telegram bot instead.'
+      );
+      if (go) window.open('https://slush.app', '_blank');
       return;
     }
-    // Request connection
-    const accounts = await provider.requestAccounts?.() 
-      || await provider.connect?.()
-      || (provider.accounts || []);
-    
-    const address = Array.isArray(accounts) ? accounts[0]?.address || accounts[0] : accounts?.accounts?.[0]?.address;
-    if (!address) throw new Error('No accounts returned');
-    
+
     connectedWallet   = { address, provider };
     connectedProvider = provider;
     updateWalletUI(address);
-    console.log('Wallet connected:', address);
+    console.log('✅ Wallet connected:', address);
+
   } catch(e) {
     console.error('Wallet connect error:', e);
-    alert('Could not connect wallet: ' + e.message);
+    if (e.message?.includes('User rejected') || e.message?.includes('rejected')) {
+      alert('Connection rejected. Please approve the connection in your wallet.');
+    } else {
+      alert('Could not connect wallet: ' + e.message);
+    }
   }
 }
 
-// ─── SIGN AND EXECUTE via wallet ───
-async function signAndExecuteTx(txBytes) {
+// ─── SIGN AND EXECUTE via wallet (Wallet Standard) ───
+async function signAndExecuteTx(txBase64) {
   if (!connectedProvider) throw new Error('Wallet not connected');
-  // Try standard wallet interface
-  const result = await connectedProvider.signAndExecuteTransactionBlock?.({
-    transactionBlock: txBytes,
-    options: { showEffects: true, showObjectChanges: true }
-  }) || await connectedProvider.signAndExecuteTransaction?.({
-    transaction: txBytes,
-    options: { showEffects: true }
-  });
-  return result;
+  const txBytes = Uint8Array.from(atob(txBase64), c => c.charCodeAt(0));
+
+  // Wallet Standard way (Slush)
+  if (connectedProvider.features?.['sui:signAndExecuteTransaction']) {
+    return connectedProvider.features['sui:signAndExecuteTransaction'].signAndExecuteTransaction({
+      transaction: txBytes,
+      account: connectedProvider.accounts?.[0],
+      chain: 'sui:mainnet',
+    });
+  }
+  if (connectedProvider.features?.['sui:signAndExecuteTransactionBlock']) {
+    return connectedProvider.features['sui:signAndExecuteTransactionBlock'].signAndExecuteTransactionBlock({
+      transactionBlock: txBytes,
+      account: connectedProvider.accounts?.[0],
+      chain: 'sui:mainnet',
+    });
+  }
+  // Legacy
+  if (connectedProvider.signAndExecuteTransactionBlock) {
+    return connectedProvider.signAndExecuteTransactionBlock({ transactionBlock: txBytes, options: { showEffects: true } });
+  }
+  if (connectedProvider.signAndExecuteTransaction) {
+    return connectedProvider.signAndExecuteTransaction({ transaction: txBytes });
+  }
+  throw new Error('Wallet does not support transaction signing');
 }
 
 // ─── BUILD TX BYTES VIA RPC ───
@@ -2618,19 +2692,18 @@ async function buildAndSubmitTx(sender, moves) {
   window.__suiTxAvailable = true;
   
   window.__buildTx = async function(sender, txData) {
-    // This calls our backend which builds and returns unsigned TX
-    // Then wallet signs it
     const res = await fetch(BACKEND + '/build-tx', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sender, ...txData })
     });
-    if (!res.ok) throw new Error('Could not build transaction');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Could not build transaction');
+    }
     const { txBytes } = await res.json();
-    return connectedProvider.signAndExecuteTransactionBlock({
-      transactionBlock: txBytes,
-      options: { showEffects: true }
-    });
+    if (!txBytes) throw new Error('No transaction bytes returned');
+    return signAndExecuteTx(txBytes);
   };
 })();
 
@@ -2785,15 +2858,34 @@ async function withdrawLiquidityOnChain() {
   }
 }
 
-// Auto-connect if wallet was previously connected
+// Auto-connect if wallet was previously connected (Wallet Standard)
 window.addEventListener('load', async () => {
+  await new Promise(r => setTimeout(r, 500)); // wait for wallet injection
   try {
-    const provider = getWalletProvider();
-    if (provider?.accounts?.length > 0) {
-      const addr = provider.accounts[0]?.address;
-      if (addr) { connectedWallet = { address: addr, provider }; connectedProvider = provider; updateWalletUI(addr); }
+    // Listen for wallet standard registration
+    window.addEventListener('wallet-standard:register-wallet', (e) => {
+      const wallet = e.detail?.wallet;
+      if (wallet) {
+        if (!window.__suiWallets) window.__suiWallets = [];
+        window.__suiWallets.push(wallet);
+        console.log('Wallet registered:', wallet.name);
+        // Auto-connect if already authorized
+        if (wallet.accounts?.length > 0) {
+          connectedWallet   = { address: wallet.accounts[0].address, provider: wallet };
+          connectedProvider = wallet;
+          updateWalletUI(wallet.accounts[0].address);
+        }
+      }
+    });
+    // Check already registered wallets
+    const existing = window.__suiWallets || [];
+    if (existing.length > 0 && existing[0].accounts?.length > 0) {
+      const addr = existing[0].accounts[0].address;
+      connectedWallet   = { address: addr, provider: existing[0] };
+      connectedProvider = existing[0];
+      updateWalletUI(addr);
     }
-  } catch(e) {}
+  } catch(e) { console.log('Auto-connect:', e.message); }
 });
 
 async function checkAgentStatus(wallet) {
