@@ -2338,29 +2338,37 @@ function initCandleChart() {
   });
 }
 
-// Load wallet-standard SDK so getWallets() works for ALL wallets including Slush
+// Load wallet-standard + Slush wallet
+// wallet-standard UMD exposes window.walletStandard
+// slush-wallet UMD exposes window.slushWallet
 (function() {
-  const s = document.createElement('script');
-  s.src = 'https://unpkg.com/@mysten/wallet-standard@latest/dist/index.js';
-  s.onload = function() {
-    // getWallets is now available
-    if (window['@mysten/wallet-standard']?.getWallets) {
-      window.__suiWalletStandard = window['@mysten/wallet-standard'];
-    } else if (window.walletStandard?.getWallets) {
-      window.__suiWalletStandard = window.walletStandard;
+  // Step 1: load wallet-standard
+  const s1 = document.createElement('script');
+  s1.src = 'https://unpkg.com/@mysten/wallet-standard@0.10.4/dist/index.umd.js';
+  s1.onload = function() {
+    // UMD bundle exposes as window.walletStandard
+    if (window.walletStandard?.getWallets) {
+      window.__walletStandardGetWallets = window.walletStandard.getWallets;
+      console.log('✅ wallet-standard loaded, wallets:', window.walletStandard.getWallets().get().map(w=>w.name));
     }
-    // Also register Slush web wallet
+    // Step 2: load + register Slush web wallet
     const s2 = document.createElement('script');
-    s2.src = 'https://unpkg.com/@mysten/slush-wallet@latest/dist/index.js';
+    s2.src = 'https://unpkg.com/@mysten/slush-wallet@0.2.4/dist/index.umd.js';
     s2.onload = function() {
       try {
-        const sw = window['@mysten/slush-wallet'] || window.slushWallet;
-        if (sw?.registerSlushWallet) sw.registerSlushWallet('$AGENT — SUI AGENT');
-      } catch(e) {}
+        // UMD bundle exposes window.slushWallet
+        const sw = window.slushWallet;
+        if (sw?.registerSlushWallet) {
+          sw.registerSlushWallet('$AGENT — SUI AGENT');
+          console.log('✅ Slush web wallet registered');
+        }
+      } catch(e) { console.log('Slush register error:', e.message); }
     };
+    s2.onerror = () => console.log('Slush wallet CDN failed');
     document.head.appendChild(s2);
   };
-  document.head.appendChild(s);
+  s1.onerror = () => console.log('wallet-standard CDN failed');
+  document.head.appendChild(s1);
 })();
 
 (function() {
@@ -2595,18 +2603,21 @@ function getWalletEmoji(name) {
   return '💼';
 }
 
-// Use getWallets() from wallet-standard to detect ALL installed wallets
+// Use getWallets() from wallet-standard to detect ALL installed wallets including Slush
 function getDetectedWallets() {
   const detected = [];
   try {
-    // getWallets is injected by @mysten/wallet-standard
-    if (window.__suiWalletStandard?.getWallets) {
-      const wallets = window.__suiWalletStandard.getWallets().get();
+    // Use the wallet-standard getWallets API
+    const getWalletsFn = window.__walletStandardGetWallets
+      || window.walletStandard?.getWallets
+      || window['@mysten/wallet-standard']?.getWallets;
+    if (getWalletsFn) {
+      const wallets = getWalletsFn().get();
       for (const w of wallets) {
         detected.push({ name: w.name, emoji: getWalletEmoji(w.name), provider: w, isStandard: true });
       }
     }
-  } catch(e) {}
+  } catch(e) { console.log('wallet-standard detect error:', e); }
   // Also check legacy window objects
   const legacyKeys = { phantom: 'Phantom', okxwallet: 'OKX Wallet', suiet: 'Suiet', martian: 'Martian Sui Wallet', nightly: 'Nightly' };
   for (const [key, name] of Object.entries(legacyKeys)) {
@@ -2693,17 +2704,29 @@ function updateWalletUI(address) {
 async function signAndExecuteTx(txBytes) {
   if (!connectedProvider) throw new Error('Wallet not connected');
   const p = connectedProvider;
-  // Wallet Standard method
-  if (connectedWallet?.isStandard) {
-    const feat = p.features?.['sui:signAndExecuteTransaction'] || p.features?.['sui:signAndExecuteTransactionBlock'];
-    if (feat?.signAndExecuteTransaction) return feat.signAndExecuteTransaction({ transaction: txBytes, options:{ showEffects:true } });
-    if (feat?.signAndExecuteTransactionBlock) return feat.signAndExecuteTransactionBlock({ transactionBlock: txBytes, options:{ showEffects:true } });
+  // Decode base64 to Uint8Array if needed
+  let txData = txBytes;
+  if (typeof txBytes === 'string') {
+    const bin = atob(txBytes);
+    txData = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) txData[i] = bin.charCodeAt(i);
   }
-  // Legacy methods
+  // Wallet Standard method (Slush, Nightly, etc)
+  if (connectedWallet?.isStandard) {
+    const feat = p.features?.['sui:signAndExecuteTransaction']
+      || p.features?.['sui:signAndExecuteTransactionBlock'];
+    if (feat?.signAndExecuteTransaction) {
+      return feat.signAndExecuteTransaction({ transaction: txData, options:{ showEffects:true } });
+    }
+    if (feat?.signAndExecuteTransactionBlock) {
+      return feat.signAndExecuteTransactionBlock({ transactionBlock: txData, options:{ showEffects:true } });
+    }
+  }
+  // Legacy wallet methods (Phantom, OKX)
   return (
-    p.signAndExecuteTransactionBlock?.({ transactionBlock: txBytes, options:{ showEffects:true } }) ||
-    p.signAndExecuteTransaction?.({ transaction: txBytes, options:{ showEffects:true } }) ||
-    p.signTransaction?.({ transaction: txBytes })
+    p.signAndExecuteTransactionBlock?.({ transactionBlock: txData, options:{ showEffects:true } }) ||
+    p.signAndExecuteTransaction?.({ transaction: txData, options:{ showEffects:true } }) ||
+    p.signTransaction?.({ transaction: txData })
   );
 }
 
