@@ -2568,7 +2568,10 @@ async function calcSwapPreview() {
     }
     if (impEl) impEl.textContent = impact + '%';
     if (preview) preview.style.display = 'block';
-  } catch(e) {  fetchSwapQuote();
+  } catch(e) {
+    console.log('Preview error:', e.message);
+  }
+
 }
 
 
