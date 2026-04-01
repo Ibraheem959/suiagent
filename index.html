@@ -1178,7 +1178,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         </div>
         <div style="display:flex;gap:8px">
           <input type="number" id="swapAmountIn" placeholder="0.0" min="0" step="0.1"
-            oninput="fetchSwapQuote()"
+            oninput="calcSwapPreview()"
             style="flex:1;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:1rem;padding:14px 16px;outline:none"/>
           <div class="font-orbitron text-sm" style="padding:14px 16px;background:rgba(0,245,255,0.08);border:1px solid rgba(0,245,255,0.2);color:var(--cyan);min-width:70px;text-align:center" id="swapInToken">SUI</div>
         </div>
@@ -1358,11 +1358,11 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         </div>
         <div>
           <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--green)">2. EARN FEES</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">Every trade pays 0.3% fee. 50% goes to LP providers automatically — no claiming needed. Fees compound in the pool.</p>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">Every trade pays 0.3% fee. 0.15% goes to LP providers automatically — no claiming needed. Fees compound in the pool reserves, so your LP tokens become worth more over time.</p>
         </div>
         <div>
           <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--purple)">3. WITHDRAW ANYTIME</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">Burn your LP tokens anytime to receive your proportional share of SUI + $AGENT including all fees earned.</p>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">Burn your LP tokens anytime to receive your proportional share of the pool — which includes your original deposit PLUS all fees earned since you added liquidity.</p>
         </div>
         <div>
           <div class="font-orbitron text-sm font-bold mb-2" style="color:#ffa07a">⚠ RISK</div>
@@ -2494,6 +2494,9 @@ function setSwapMode(mode) {
   calcSwapPreview();
 }
 
+// Alias for the dedicated swap section
+function setSwapType(type) { setSwapMode(type); }
+
 async function calcSwapPreview() {
   const amount  = parseFloat(document.getElementById('swapAmount')?.value || 0);
   const preview = document.getElementById('swapPreviewBox');
@@ -2722,13 +2725,29 @@ async function pickWalletObj(i) {
 function updateWalletUI(address) {
   const short = address ? address.slice(0,8)+'...'+address.slice(-6) : null;
   const connected = !!address;
-  ['walletDot','lpWalletDot'].forEach(id => { const el=document.getElementById(id); if(el) el.style.background=connected?'var(--green)':'#4a5568'; });
-  ['walletAddr','lpWalletAddrDisplay'].forEach(id => { const el=document.getElementById(id); if(el){ el.textContent=short||'No wallet connected'; el.style.color=connected?'var(--green)':'#4a5568'; }});
-  ['connectBtn'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=connected?'✓ '+short:'CONNECT'; });
-  const sb = document.getElementById('swapBtnText');
-  if (sb) sb.textContent = connected ? '◈ EXECUTE SWAP ON-CHAIN' : '◈ CONNECT WALLET TO SWAP';
+  // Update all wallet indicators
+  ['walletDot','lpWalletDot'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.background = connected ? 'var(--green)' : '#4a5568';
+  });
+  ['walletAddr','lpWalletAddrDisplay'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = short || 'No wallet connected'; el.style.color = connected ? 'var(--green)' : '#4a5568'; }
+  });
+  // Update all connect buttons
+  document.querySelectorAll('#connectBtn, .connect-wallet-btn').forEach(el => {
+    el.textContent = connected ? '✓ ' + short : 'CONNECT';
+  });
+  // Update ALL swap button texts
+  document.querySelectorAll('#swapBtnText').forEach(el => {
+    el.textContent = connected ? '◈ EXECUTE SWAP ON-CHAIN' : '◈ CONNECT WALLET TO SWAP';
+  });
+  // Auto-fill LP wallet field
   const lpIn = document.getElementById('lpWallet');
   if (lpIn && address && !lpIn.value) { lpIn.value = address; fetchLpPosition(); }
+  // Show/hide connected state on LP add button
+  const lpAddBtn = document.querySelector('#lpDepositStatus');
+  if (lpAddBtn && connected) lpAddBtn.textContent = '';
 }
 
 async function signAndExecuteTx(txBytes) {
@@ -2805,7 +2824,7 @@ async function executeSwapOnChain() {
     return;
   }
 
-  const isBuy = document.getElementById('swapBuyBtn')?.style.background?.includes('0.15');
+  const isBuy = (typeof swapMode !== 'undefined') ? swapMode === 'buy' : true;
   
   if (status) { status.style.color = 'var(--cyan)'; status.textContent = '⏳ Building transaction...'; }
 
@@ -2941,6 +2960,27 @@ async function withdrawLiquidityOnChain() {
   }
 }
 
+
+// ─── CLAIM LP FEES (admin only) ───
+async function claimLpFees() {
+  const status = document.getElementById('lpFeeStatus');
+  if (status) { status.style.color = 'var(--cyan)'; status.textContent = '⏳ Claiming fees...'; }
+  try {
+    const res = await fetch(BACKEND + '/lp/claim-fees', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminKey: 'agent-admin-2026' })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (status) { status.style.color = 'var(--green)'; status.textContent = '✅ Fees claimed! TX: ' + data.txDigest?.slice(0,12) + '...'; }
+    } else {
+      if (status) { status.style.color = '#ff465a'; status.textContent = '❌ ' + (data.error || 'Failed'); }
+    }
+  } catch(e) {
+    if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ ' + e.message; }
+  }
+}
 // Auto-connect if wallet was previously connected (Wallet Standard)
 window.addEventListener('load', async () => {
   await new Promise(r => setTimeout(r, 500)); // wait for wallet injection
