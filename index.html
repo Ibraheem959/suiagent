@@ -1219,7 +1219,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
       <div id="swapWalletBar" style="margin-bottom:16px;display:flex;align-items:center;gap:10px;background:#020609;border:1px solid rgba(0,245,255,0.15);padding:10px 14px">
         <div style="width:8px;height:8px;border-radius:50%;background:#4a5568" id="walletDot"></div>
         <span class="font-mono text-xs" id="walletAddr" style="color:#4a5568;flex:1">No wallet connected</span>
-        <button onclick="connectWallet()" id="connectBtn" class="font-mono text-xs" style="padding:4px 12px;border:1px solid rgba(0,245,255,0.3);color:var(--cyan);background:rgba(0,245,255,0.05);cursor:pointer">CONNECT</button>
+        <button onclick="connectedWallet ? disconnectWallet() : connectWallet()" id="connectBtn" class="font-mono text-xs" style="padding:4px 12px;border:1px solid rgba(0,245,255,0.3);color:var(--cyan);background:rgba(0,245,255,0.05);cursor:pointer">CONNECT</button>
       </div>
       <button onclick="executeSwapOnChain()" class="btn-cyan" style="width:100%;padding:16px;text-align:center">
         <span id="swapBtnText">◈ CONNECT WALLET TO SWAP</span>
@@ -2420,6 +2420,14 @@ window.__walletStandardGetWallets = function() {
 })();
 
 
+// Load lightweight-charts for candlestick chart
+(function() {
+  const s = document.createElement('script');
+  s.src = 'https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js';
+  s.onload = initCandleChart;
+  document.head.appendChild(s);
+})();
+
 // ─── LP POOL — direct from chain ───
 async function fetchLpPool() {
   try {
@@ -2755,6 +2763,21 @@ async function pickWalletObj(i) {
   }
 }
 
+function disconnectWallet() {
+  connectedWallet   = null;
+  connectedProvider = null;
+  updateWalletUI(null);
+  // Also clear LP wallet field
+  const lpIn = document.getElementById('lpWallet');
+  if (lpIn) { lpIn.value = ''; }
+  // Reset position display
+  const lpPos = document.getElementById('lpPosition');
+  const lpNo  = document.getElementById('lpNoPosition');
+  if (lpPos) lpPos.style.display = 'none';
+  if (lpNo)  { lpNo.style.display = 'block'; lpNo.innerHTML = '<div class="font-mono text-xs text-slate-600">Enter your wallet address on the left to see your LP position</div>'; }
+  console.log('Wallet disconnected');
+}
+
 function updateWalletUI(address) {
   const short = address ? address.slice(0,8)+'...'+address.slice(-6) : null;
   const connected = !!address;
@@ -2769,7 +2792,9 @@ function updateWalletUI(address) {
   });
   // Update all connect buttons
   document.querySelectorAll('#connectBtn, .connect-wallet-btn').forEach(el => {
-    el.textContent = connected ? '✓ ' + short : 'CONNECT';
+    el.textContent = connected ? 'DISCONNECT' : 'CONNECT';
+    el.style.color = connected ? '#ff465a' : 'var(--cyan)';
+    el.style.borderColor = connected ? 'rgba(255,70,90,0.3)' : 'rgba(0,245,255,0.3)';
   });
   // Update ALL swap button texts
   document.querySelectorAll('#swapBtnText').forEach(el => {
