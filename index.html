@@ -2388,6 +2388,37 @@ window.__walletStandardGetWallets = function() {
   };
 };
 
+// ─── LOAD SUI SDK + WALLET STANDARD via ES modules ───
+// This gives us Transaction builder + wallet detection in plain HTML
+(function() {
+  const m = document.createElement('script');
+  m.type = 'module';
+  m.textContent = `
+    (async () => {
+      try {
+        // Load wallet-standard — detects all installed wallets incl Slush
+        const ws = await import('https://esm.sh/@mysten/wallet-standard@0.20.1');
+        window.__walletStandardGetWallets = ws.getWallets;
+        window.__walletStandardWallets = ws.getWallets().get();
+        console.log('✅ Wallets detected:', ws.getWallets().get().map(w=>w.name));
+      } catch(e) { console.warn('wallet-standard load failed:', e.message); }
+      try {
+        // Register Slush web wallet so it appears even without extension
+        const sw = await import('https://esm.sh/@mysten/slush-wallet@0.2.8');
+        sw.registerSlushWallet('$AGENT — SUI AGENT');
+        console.log('✅ Slush web wallet registered');
+      } catch(e) { console.warn('Slush register skipped:', e.message); }
+      try {
+        // Load Transaction builder — needed to build TXs for wallet signing
+        const sui = await import('https://esm.sh/@mysten/sui@1.21.0/transactions');
+        window.__SuiTransaction = sui.Transaction;
+        console.log('✅ Sui Transaction builder loaded');
+      } catch(e) { console.warn('Sui Transaction load failed:', e.message); }
+    })();
+  `;
+  document.head.appendChild(m);
+})();
+
 
 // ─── LP POOL — direct from chain ───
 async function fetchLpPool() {
@@ -2436,13 +2467,15 @@ function calcLpPreview() {
   const ratio     = lpPoolData.agentReserve / lpPoolData.suiReserve;
   const autoAgent = (sui * 1e9) * ratio / 1e6;
   const agentEl   = document.getElementById('lpAgentAmount');
-  if (agentEl && !agentEl.value) agentEl.placeholder = autoAgent.toFixed(0);
+  // Auto-fill the $AGENT amount based on current pool ratio
+  if (agentEl) {
+    agentEl.value = autoAgent.toFixed(0);
+  }
   const preview = document.getElementById('lpPreview');
   const text    = document.getElementById('lpPreviewText');
   if (preview && text) {
     preview.style.display = 'block';
-    const agent = parseFloat(agentEl?.value || autoAgent);
-    text.textContent = 'Depositing ' + sui + ' SUI + ' + agent.toFixed(0) + ' $AGENT';
+    text.textContent = 'Depositing ' + sui + ' SUI + ' + autoAgent.toFixed(0) + ' $AGENT';
   }
 }
 
@@ -2750,48 +2783,128 @@ function updateWalletUI(address) {
   if (lpAddBtn && connected) lpAddBtn.textContent = '';
 }
 
-async function signAndExecuteTx(txBytes) {
+async function signAndExecuteTx(tx) {
   if (!connectedProvider || !connectedWallet) throw new Error('Wallet not connected');
   const p = connectedProvider;
-  // Decode base64 -> Uint8Array
-  let txData = txBytes;
-  if (typeof txBytes === 'string') {
-    const bin = atob(txBytes);
-    txData = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) txData[i] = bin.charCodeAt(i);
-  }
   const account = p.accounts?.[0] || { address: connectedWallet.address };
+
   if (connectedWallet.isStandard) {
+    // Wallet Standard — pass Transaction object directly (what wallets expect)
     const execFeat = p.features?.['sui:signAndExecuteTransaction'];
     if (execFeat?.signAndExecuteTransaction) {
-      return execFeat.signAndExecuteTransaction({ transaction: txData, account, chain: 'sui:mainnet', options:{ showEffects:true } });
+      return execFeat.signAndExecuteTransaction({
+        transaction: tx, account, chain: 'sui:mainnet',
+        options: { showEffects: true }
+      });
     }
+    // Older wallets fallback
     const blockFeat = p.features?.['sui:signAndExecuteTransactionBlock'];
     if (blockFeat?.signAndExecuteTransactionBlock) {
-      return blockFeat.signAndExecuteTransactionBlock({ transactionBlock: txData, account, options:{ showEffects:true } });
-    }
-    const signFeat = p.features?.['sui:signTransaction'];
-    if (signFeat?.signTransaction) {
-      const { bytes, signature } = await signFeat.signTransaction({ transaction: txData, account, chain: 'sui:mainnet' });
-      return rpcCall('sui_executeTransactionBlock', [bytes, [signature], { showEffects:true }, 'WaitForLocalExecution']);
+      return blockFeat.signAndExecuteTransactionBlock({
+        transactionBlock: tx, account,
+        options: { showEffects: true }
+      });
     }
   }
+  // Legacy wallets
   const sui = p?.sui || p;
   return (
-    sui.signAndExecuteTransactionBlock?.({ transactionBlock: txData, options:{ showEffects:true } }) ||
-    sui.signAndExecuteTransaction?.({ transaction: txData, options:{ showEffects:true } })
+    sui.signAndExecuteTransactionBlock?.({ transactionBlock: tx, options:{ showEffects:true } }) ||
+    sui.signAndExecuteTransaction?.({ transaction: tx, options:{ showEffects:true } })
   );
 }
 
-window.__suiTxAvailable = true;
+// Build Transaction objects client-side using @mysten/sui
+// Then sign via wallet — no bytes needed
 window.__buildTx = async function(sender, txData) {
-  const res = await fetch(BACKEND + '/build-tx', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ sender, ...txData })
-  });
-  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error||'TX build failed'); }
-  const { txBytes } = await res.json();
-  return signAndExecuteTx(txBytes);
+  const Transaction = window.__SuiTransaction;
+  if (!Transaction) throw new Error('Sui SDK not loaded yet. Please wait a moment and try again.');
+
+  const tx = new Transaction();
+  tx.setSender(sender);
+
+  const LP_PKG   = '0xf554dad1683cb25386ddf57f2d40f2774fb8287b17f467ebc657c5bc20f226e3';
+  const LP_POOL  = '0xe2cb18758423840159a11243387efc27c21db171ba97c1bad2d6009a474d2e79';
+  const POOL_PKG = '0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48ce3cd6952';
+  const POOL     = '0xba79012088507127692c8c8ba97d4fdc4a83d2f9fff4e9a1ea61ebdc00ff460c';
+  const REG      = '0x63af8f92c3988601b889a543615b0984ebabbfa420d8b38b2461751f8c05194f';
+  const CLK      = '0x0000000000000000000000000000000000000000000000000000000000000006';
+  const COIN_T   = '0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT';
+  const LP_COIN  = LP_PKG + '::pool_lp::POOL_LP';
+
+  if (txData.action === 'buy') {
+    const { amount, badgeId } = txData;
+    // Check if LP pool has liquidity for 50/50 split
+    const lpRes = lpPoolData?.suiReserve || 0;
+    if (lpRes > 1_000_000_000) {
+      const half1 = Math.floor(amount / 2);
+      const half2 = amount - half1;
+      const [c1] = tx.splitCoins(tx.gas, [half1]);
+      const [c2] = tx.splitCoins(tx.gas, [half2]);
+      const [o1] = tx.moveCall({ target: `${POOL_PKG}::pool::buy_agent_verified`, arguments: [tx.object(POOL), tx.object(badgeId), tx.object(REG), c1, tx.pure.u64(0), tx.object(CLK)] });
+      const [o2] = tx.moveCall({ target: `${LP_PKG}::pool_lp::buy_agent`, arguments: [tx.object(LP_POOL), c2, tx.pure.u64(0), tx.object(CLK)] });
+      tx.transferObjects([o1, o2], sender);
+    } else {
+      const [coin] = tx.splitCoins(tx.gas, [amount]);
+      const [out]  = tx.moveCall({ target: `${POOL_PKG}::pool::buy_agent_verified`, arguments: [tx.object(POOL), tx.object(badgeId), tx.object(REG), coin, tx.pure.u64(0), tx.object(CLK)] });
+      tx.transferObjects([out], sender);
+    }
+    tx.setGasBudget(20_000_000);
+
+  } else if (txData.action === 'sell') {
+    const { amount, badgeId } = txData;
+    // Get user's $AGENT coins
+    const coinsRes = await rpcCall('suix_getCoins', [sender, COIN_T, null, 50]);
+    const coins = coinsRes?.data || [];
+    if (!coins.length) throw new Error('No $AGENT coins found');
+    const primary = tx.object(coins[0].coinObjectId);
+    if (coins.length > 1) tx.mergeCoins(primary, coins.slice(1).map(c => tx.object(c.coinObjectId)));
+    const lpRes = lpPoolData?.suiReserve || 0;
+    if (lpRes > 1_000_000_000) {
+      const half1 = Math.floor(amount / 2);
+      const half2 = amount - half1;
+      const [a1] = tx.splitCoins(primary, [half1]);
+      const [a2] = tx.splitCoins(primary, [half2]);
+      const [s1] = tx.moveCall({ target: `${POOL_PKG}::pool::sell_agent_verified`, arguments: [tx.object(POOL), tx.object(badgeId), tx.object(REG), a1, tx.pure.u64(0), tx.object(CLK)] });
+      const [s2] = tx.moveCall({ target: `${LP_PKG}::pool_lp::sell_agent`, arguments: [tx.object(LP_POOL), a2, tx.pure.u64(0), tx.object(CLK)] });
+      tx.transferObjects([s1, s2], sender);
+    } else {
+      const [aCoin] = tx.splitCoins(primary, [amount]);
+      const [sCoin] = tx.moveCall({ target: `${POOL_PKG}::pool::sell_agent_verified`, arguments: [tx.object(POOL), tx.object(badgeId), tx.object(REG), aCoin, tx.pure.u64(0), tx.object(CLK)] });
+      tx.transferObjects([sCoin], sender);
+    }
+    tx.setGasBudget(20_000_000);
+
+  } else if (txData.action === 'add_liquidity') {
+    const { suiAmount, agentAmount } = txData;
+    const coinsRes = await rpcCall('suix_getCoins', [sender, COIN_T, null, 50]);
+    const coins = coinsRes?.data || [];
+    if (!coins.length) throw new Error('No $AGENT coins found');
+    const [suiCoin]   = tx.splitCoins(tx.gas, [suiAmount]);
+    const primaryAg   = tx.object(coins[0].coinObjectId);
+    if (coins.length > 1) tx.mergeCoins(primaryAg, coins.slice(1).map(c => tx.object(c.coinObjectId)));
+    const [agentCoin] = tx.splitCoins(primaryAg, [agentAmount]);
+    const [lpOut]     = tx.moveCall({ target: `${LP_PKG}::pool_lp::add_liquidity`, arguments: [tx.object(LP_POOL), suiCoin, agentCoin, tx.pure.u64(0), tx.object(CLK)] });
+    tx.transferObjects([lpOut], sender);
+    tx.setGasBudget(20_000_000);
+
+  } else if (txData.action === 'remove_liquidity') {
+    const { lpAmount } = txData;
+    const lpCoinsRes = await rpcCall('suix_getCoins', [sender, LP_COIN, null, 50]);
+    const lpCoins = lpCoinsRes?.data || [];
+    if (!lpCoins.length) throw new Error('No LP tokens found');
+    const primaryLp = tx.object(lpCoins[0].coinObjectId);
+    if (lpCoins.length > 1) tx.mergeCoins(primaryLp, lpCoins.slice(1).map(c => tx.object(c.coinObjectId)));
+    const [lpCoin] = tx.splitCoins(primaryLp, [lpAmount]);
+    const [suiOut, agentOut] = tx.moveCall({ target: `${LP_PKG}::pool_lp::remove_liquidity`, arguments: [tx.object(LP_POOL), lpCoin, tx.pure.u64(0), tx.pure.u64(0), tx.object(CLK)] });
+    tx.transferObjects([suiOut, agentOut], sender);
+    tx.setGasBudget(20_000_000);
+
+  } else {
+    throw new Error('Unknown action: ' + txData.action);
+  }
+
+  return signAndExecuteTx(tx);
 };
 
 window.addEventListener('load', () => {
@@ -3030,3 +3143,49 @@ document.getElementById('regWallet').addEventListener('blur', function() {
 </script>
 </body>
 </html>
+// Dedicated swap section quote — reads swapAmountIn, updates swapAmountOut
+async function fetchSwapQuote() {
+  const amount  = parseFloat(document.getElementById('swapAmountIn')?.value || 0);
+  const isBuy   = (typeof swapMode !== 'undefined') ? swapMode === 'buy' : true;
+  const detailEl = document.getElementById('swapDetails');
+  const outEl    = document.getElementById('swapAmountOut');
+  const rateEl   = document.getElementById('swapRate');
+  const feeEl    = document.getElementById('swapFee');
+  const impEl    = document.getElementById('swapImpact');
+
+  if (!amount || amount <= 0) {
+    if (outEl) outEl.textContent = '—';
+    if (detailEl) detailEl.style.display = 'none';
+    return;
+  }
+  try {
+    const poolObj = await rpcCall('sui_getObject', [POOL_ID, { showContent: true }]);
+    const pf      = poolObj?.data?.content?.fields || {};
+    const suiRes  = parseInt(pf.sui_reserve?.fields?.balance   || pf.sui_reserve   || 0);
+    const agRes   = parseInt(pf.agent_reserve?.fields?.balance || pf.agent_reserve || 0);
+    if (!suiRes || !agRes) return;
+
+    let amtOut, impact, rate;
+    if (isBuy) {
+      const suiIn  = Math.floor(amount * 1e9);
+      const feeAdj = suiIn * 0.997;
+      amtOut  = feeAdj * agRes / (suiRes + feeAdj);
+      impact  = (suiIn / suiRes * 100).toFixed(2);
+      rate    = (amtOut / 1e6 / amount).toFixed(0) + ' $AGENT per SUI';
+      if (outEl) outEl.textContent = (amtOut/1e6).toLocaleString(undefined,{maximumFractionDigits:0}) + ' $AGENT';
+    } else {
+      const agIn   = Math.floor(amount * 1e6);
+      const suiOut = agIn * suiRes / (agRes + agIn);
+      amtOut  = suiOut * 0.997;
+      impact  = (agIn / agRes * 100).toFixed(2);
+      rate    = (amount / (amtOut/1e9)).toFixed(0) + ' $AGENT per SUI';
+      if (outEl) outEl.textContent = (amtOut/1e9).toFixed(4) + ' SUI';
+    }
+    if (rateEl) rateEl.textContent = rate;
+    if (feeEl)  feeEl.textContent  = '0.3%';
+    if (impEl)  impEl.textContent  = impact + '%';
+    if (impEl)  impEl.style.color  = parseFloat(impact) > 5 ? '#ff465a' : 'var(--green)';
+    if (detailEl) detailEl.style.display = 'block';
+  } catch(e) { console.log('Quote error:', e.message); }
+}
+
