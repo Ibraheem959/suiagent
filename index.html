@@ -1178,7 +1178,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         </div>
         <div style="display:flex;gap:8px">
           <input type="number" id="swapAmountIn" placeholder="0.0" min="0" step="0.1"
-            oninput="calcSwapPreview()"
+            oninput="fetchSwapQuote()"
             style="flex:1;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:1rem;padding:14px 16px;outline:none"/>
           <div class="font-orbitron text-sm" style="padding:14px 16px;background:rgba(0,245,255,0.08);border:1px solid rgba(0,245,255,0.2);color:var(--cyan);min-width:70px;text-align:center" id="swapInToken">SUI</div>
         </div>
@@ -2568,8 +2568,9 @@ async function calcSwapPreview() {
     }
     if (impEl) impEl.textContent = impact + '%';
     if (preview) preview.style.display = 'block';
-  } catch(e) {}
+  } catch(e) {  fetchSwapQuote();
 }
+
 
 function executeSwap() {
   const status = document.getElementById('swapStatus');
@@ -2659,24 +2660,55 @@ function getWalletEmoji(name) {
 }
 
 // Use getWallets() from wallet-standard to detect ALL installed wallets
+function normalizeWalletName(name) {
+  // Normalize wallet names to avoid duplicates
+  const n = name.toLowerCase();
+  if (n.includes('slush'))   return 'Slush';
+  if (n.includes('phantom')) return 'Phantom';
+  if (n.includes('okx'))     return 'OKX Wallet';
+  if (n.includes('suiet'))   return 'Suiet';
+  if (n.includes('martian')) return 'Martian Sui Wallet';
+  if (n.includes('nightly')) return 'Nightly';
+  if (n.includes('bitget') || n.includes('bitkeep')) return 'Bitget Wallet';
+  if (n.includes('metamask')) return 'MetaMask'; // MetaMask doesn't support Sui natively
+  return name;
+}
+
 function getDetectedWallets() {
   const detected = [];
+  const seenNames = new Set();
+
+  function addWallet(name, provider, isStandard) {
+    const normalized = normalizeWalletName(name);
+    // Skip MetaMask — it does not support Sui
+    if (normalized === 'MetaMask') return;
+    if (seenNames.has(normalized)) return;
+    seenNames.add(normalized);
+    detected.push({ name: normalized, emoji: getWalletEmoji(normalized), provider, isStandard });
+  }
+
+  // 1. Wallet Standard wallets (Slush extension, Nightly, etc)
   try {
-    // getWallets is injected by @mysten/wallet-standard
     if (window.__walletStandardGetWallets) {
-      const wallets = window.__walletStandardGetWallets().get();
-      for (const w of wallets) {
-        detected.push({ name: w.name, emoji: getWalletEmoji(w.name), provider: w, isStandard: true });
+      for (const w of window.__walletStandardGetWallets().get()) {
+        addWallet(w.name, w, true);
       }
     }
   } catch(e) {}
-  // Also check legacy window objects
-  const legacyKeys = { phantom: 'Phantom', okxwallet: 'OKX Wallet', suiet: 'Suiet', martian: 'Martian Sui Wallet', nightly: 'Nightly' };
+
+  // 2. Legacy window object wallets — only Sui-compatible ones
+  const legacyKeys = {
+    okxwallet: 'OKX Wallet',
+    suiet:     'Suiet',
+    martian:   'Martian Sui Wallet',
+    nightly:   'Nightly',
+  };
   for (const [key, name] of Object.entries(legacyKeys)) {
-    if (window[key] && !detected.find(d => d.name === name)) {
-      detected.push({ name, emoji: getWalletEmoji(name), provider: window[key], isStandard: false });
-    }
+    if (window[key]) addWallet(name, window[key], false);
   }
+  // Phantom has sui sub-object
+  if (window.phantom?.sui) addWallet('Phantom', window.phantom.sui, false);
+
   return detected;
 }
 
@@ -2742,8 +2774,14 @@ async function pickWalletObj(i) {
     if (w.isStandard) {
       const connectFeat = p.features?.['standard:connect'];
       if (!connectFeat) throw new Error(w.name + ' missing standard:connect');
-      await connectFeat.connect();
-      address = p.accounts?.[0]?.address;
+      // Try to disconnect first so user can pick a different account
+      try {
+        const discFeat = p.features?.['standard:disconnect'];
+        if (discFeat?.disconnect) await discFeat.disconnect();
+      } catch(e) {}
+      // Connect fresh — wallet will show account picker
+      const result = await connectFeat.connect();
+      address = result?.accounts?.[0]?.address || p.accounts?.[0]?.address;
       if (!address) throw new Error('No accounts — approve in wallet popup');
     } else {
       const sui = p?.sui || p;
@@ -2842,8 +2880,18 @@ async function signAndExecuteTx(tx) {
 // Build Transaction objects client-side using @mysten/sui
 // Then sign via wallet — no bytes needed
 window.__buildTx = async function(sender, txData) {
-  const Transaction = window.__SuiTransaction;
-  if (!Transaction) throw new Error('Sui SDK not loaded yet. Please wait a moment and try again.');
+  // Wait for Transaction builder to load (async esm.sh import)
+  let Transaction = window.__SuiTransaction;
+  if (!Transaction) {
+    // Wait up to 5 seconds for esm.sh module to load
+    let waited = 0;
+    while (!window.__SuiTransaction && waited < 5000) {
+      await new Promise(r => setTimeout(r, 300));
+      waited += 300;
+    }
+    Transaction = window.__SuiTransaction;
+    if (!Transaction) throw new Error('Sui SDK failed to load. Check your internet connection and try again.');
+  }
 
   const tx = new Transaction();
   tx.setSender(sender);
