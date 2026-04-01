@@ -2067,13 +2067,19 @@ async function registerArena() {
 
 async function fetchArenaParticipants() {
   try {
-    const res  = await fetch(ARENA_API + '/arena/participants?round=' + ARENA_ROUND_ID);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout
+    const res  = await fetch(ARENA_API + '/arena/participants?round=' + ARENA_ROUND_ID, { signal: controller.signal });
+    clearTimeout(timeout);
     const data = await res.json();
     if (data.participants) {
       arenaParticipants = data.participants;
       renderParticipants();
     }
-  } catch(e) {}
+  } catch(e) {
+    // Backend may be sleeping (Render free tier) — silently ignore
+    console.log('Arena participants: backend waking up...');
+  }
 }
 
 function renderParticipants() {
@@ -2338,45 +2344,50 @@ function initCandleChart() {
   });
 }
 
-// Load wallet-standard + Slush wallet
-// wallet-standard UMD exposes window.walletStandard
-// slush-wallet UMD exposes window.slushWallet
-(function() {
-  // Step 1: load wallet-standard
-  const s1 = document.createElement('script');
-  s1.src = 'https://unpkg.com/@mysten/wallet-standard@0.10.4/dist/index.umd.js';
-  s1.onload = function() {
-    // UMD bundle exposes as window.walletStandard
-    if (window.walletStandard?.getWallets) {
-      window.__walletStandardGetWallets = window.walletStandard.getWallets;
-      console.log('✅ wallet-standard loaded, wallets:', window.walletStandard.getWallets().get().map(w=>w.name));
-    }
-    // Step 2: load + register Slush web wallet
-    const s2 = document.createElement('script');
-    s2.src = 'https://unpkg.com/@mysten/slush-wallet@0.2.4/dist/index.umd.js';
-    s2.onload = function() {
-      try {
-        // UMD bundle exposes window.slushWallet
-        const sw = window.slushWallet;
-        if (sw?.registerSlushWallet) {
-          sw.registerSlushWallet('$AGENT — SUI AGENT');
-          console.log('✅ Slush web wallet registered');
-        }
-      } catch(e) { console.log('Slush register error:', e.message); }
-    };
-    s2.onerror = () => console.log('Slush wallet CDN failed');
-    document.head.appendChild(s2);
-  };
-  s1.onerror = () => console.log('wallet-standard CDN failed');
-  document.head.appendChild(s1);
-})();
+// ─── WALLET DETECTION — no CDN needed ───
+// Wallets (Slush, Phantom, OKX, Nightly etc) register themselves via
+// window dispatchEvent('wallet-standard:register-wallet') when extension loads.
+// We listen for that event + check existing registrations.
 
 (function() {
-  const s = document.createElement('script');
-  s.src = 'https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js';
-  s.onload = initCandleChart;
-  document.head.appendChild(s);
+  // Collect wallets that register via Wallet Standard event
+  const registered = [];
+
+  function handleRegister(event) {
+    const callback = event.detail;
+    if (typeof callback !== 'function') return;
+    // Wallet Standard: event.detail is a callback that receives a { register } object
+    callback({
+      register: function(wallet) {
+        if (!registered.find(w => w.name === wallet.name)) {
+          registered.push(wallet);
+          console.log('✅ Wallet registered:', wallet.name);
+        }
+      }
+    });
+  }
+
+  window.addEventListener('wallet-standard:register-wallet', handleRegister);
+  window.__walletStandardWallets = registered;
+
+  // Also try window.navigator.wallets if available (newer browsers)
+  if (window.navigator?.wallets) {
+    try {
+      const wallets = window.navigator.wallets.get?.() || [];
+      wallets.forEach(w => {
+        if (!registered.find(r => r.name === w.name)) registered.push(w);
+      });
+    } catch(e) {}
+  }
 })();
+
+// getWallets polyfill — returns registered wallets
+window.__walletStandardGetWallets = function() {
+  return {
+    get: () => window.__walletStandardWallets || []
+  };
+};
+
 
 // ─── LP POOL — direct from chain ───
 async function fetchLpPool() {
@@ -2603,21 +2614,18 @@ function getWalletEmoji(name) {
   return '💼';
 }
 
-// Use getWallets() from wallet-standard to detect ALL installed wallets including Slush
+// Use getWallets() from wallet-standard to detect ALL installed wallets
 function getDetectedWallets() {
   const detected = [];
   try {
-    // Use the wallet-standard getWallets API
-    const getWalletsFn = window.__walletStandardGetWallets
-      || window.walletStandard?.getWallets
-      || window['@mysten/wallet-standard']?.getWallets;
-    if (getWalletsFn) {
-      const wallets = getWalletsFn().get();
+    // getWallets is injected by @mysten/wallet-standard
+    if (window.__walletStandardGetWallets) {
+      const wallets = window.__walletStandardGetWallets().get();
       for (const w of wallets) {
         detected.push({ name: w.name, emoji: getWalletEmoji(w.name), provider: w, isStandard: true });
       }
     }
-  } catch(e) { console.log('wallet-standard detect error:', e); }
+  } catch(e) {}
   // Also check legacy window objects
   const legacyKeys = { phantom: 'Phantom', okxwallet: 'OKX Wallet', suiet: 'Suiet', martian: 'Martian Sui Wallet', nightly: 'Nightly' };
   for (const [key, name] of Object.entries(legacyKeys)) {
@@ -2664,29 +2672,51 @@ function renderWalletList() {
 }
 
 function closeWalletModal() { document.getElementById('walletModal')?.classList.remove('open'); }
-function connectWallet() { renderWalletList(); document.getElementById('walletModal')?.classList.add('open'); }
+async function connectWallet() {
+  // If wallet-standard not loaded yet, wait up to 3 seconds
+  if (!window.__walletStandardGetWallets) {
+    const list = document.getElementById('walletList');
+    if (list) list.innerHTML = '<div style="padding:20px;text-align:center;font-family:Share Tech Mono,monospace;font-size:0.75rem;color:var(--cyan)">⏳ Loading wallets...</div>';
+    document.getElementById('walletModal')?.classList.add('open');
+    let waited = 0;
+    while (!window.__walletStandardGetWallets && waited < 3000) {
+      await new Promise(r => setTimeout(r, 200));
+      waited += 200;
+    }
+  }
+  renderWalletList();
+  document.getElementById('walletModal')?.classList.add('open');
+}
 
 async function pickWalletObj(i) {
   const w = (window.__detectedWallets || [])[i];
   if (!w) return;
   closeWalletModal();
+  const p = w.provider;
   try {
     let address = null;
-    const p = w.provider;
     if (w.isStandard) {
-      const r = await p.features?.['standard:connect']?.connect?.();
-      address  = r?.accounts?.[0]?.address || p.accounts?.[0]?.address;
+      const connectFeat = p.features?.['standard:connect'];
+      if (!connectFeat) throw new Error(w.name + ' missing standard:connect');
+      await connectFeat.connect();
+      address = p.accounts?.[0]?.address;
+      if (!address) throw new Error('No accounts — approve in wallet popup');
     } else {
-      if (p.connect)              { const r = await p.connect();         address = r?.accounts?.[0]?.address || r?.[0]?.address; }
-      else if (p.requestAccounts) { const r = await p.requestAccounts(); address = r?.[0]?.address || r?.[0]; }
-      else if (p.getAccounts)     { const r = await p.getAccounts();     address = r?.[0]?.address || r?.[0]; }
-      else if (p.accounts?.length)  address = p.accounts[0]?.address;
+      const sui = p?.sui || p;
+      if (sui.connect)              { const r = await sui.connect();         address = r?.accounts?.[0]?.address || r?.publicKey?.toString(); }
+      else if (sui.requestAccounts) { const r = await sui.requestAccounts(); address = r?.[0]?.address || r?.[0]; }
+      else if (sui.getAccounts)     { const r = await sui.getAccounts();     address = r?.[0]?.address || r?.[0]; }
+      else if (sui.accounts?.length)  address = sui.accounts[0]?.address;
     }
-    if (!address) throw new Error('No address returned');
+    if (!address) throw new Error('No address returned from ' + w.name);
     connectedWallet   = { address, provider: p, name: w.name, isStandard: w.isStandard };
     connectedProvider = p;
     updateWalletUI(address);
-  } catch(e) { alert('Connect failed: ' + e.message); }
+    console.log('✅ Connected:', w.name, address);
+  } catch(e) {
+    console.error('Connect error:', e);
+    alert('Could not connect ' + w.name + ':\n' + e.message);
+  }
 }
 
 function updateWalletUI(address) {
@@ -2702,31 +2732,35 @@ function updateWalletUI(address) {
 }
 
 async function signAndExecuteTx(txBytes) {
-  if (!connectedProvider) throw new Error('Wallet not connected');
+  if (!connectedProvider || !connectedWallet) throw new Error('Wallet not connected');
   const p = connectedProvider;
-  // Decode base64 to Uint8Array if needed
+  // Decode base64 -> Uint8Array
   let txData = txBytes;
   if (typeof txBytes === 'string') {
     const bin = atob(txBytes);
     txData = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) txData[i] = bin.charCodeAt(i);
   }
-  // Wallet Standard method (Slush, Nightly, etc)
-  if (connectedWallet?.isStandard) {
-    const feat = p.features?.['sui:signAndExecuteTransaction']
-      || p.features?.['sui:signAndExecuteTransactionBlock'];
-    if (feat?.signAndExecuteTransaction) {
-      return feat.signAndExecuteTransaction({ transaction: txData, options:{ showEffects:true } });
+  const account = p.accounts?.[0] || { address: connectedWallet.address };
+  if (connectedWallet.isStandard) {
+    const execFeat = p.features?.['sui:signAndExecuteTransaction'];
+    if (execFeat?.signAndExecuteTransaction) {
+      return execFeat.signAndExecuteTransaction({ transaction: txData, account, chain: 'sui:mainnet', options:{ showEffects:true } });
     }
-    if (feat?.signAndExecuteTransactionBlock) {
-      return feat.signAndExecuteTransactionBlock({ transactionBlock: txData, options:{ showEffects:true } });
+    const blockFeat = p.features?.['sui:signAndExecuteTransactionBlock'];
+    if (blockFeat?.signAndExecuteTransactionBlock) {
+      return blockFeat.signAndExecuteTransactionBlock({ transactionBlock: txData, account, options:{ showEffects:true } });
+    }
+    const signFeat = p.features?.['sui:signTransaction'];
+    if (signFeat?.signTransaction) {
+      const { bytes, signature } = await signFeat.signTransaction({ transaction: txData, account, chain: 'sui:mainnet' });
+      return rpcCall('sui_executeTransactionBlock', [bytes, [signature], { showEffects:true }, 'WaitForLocalExecution']);
     }
   }
-  // Legacy wallet methods (Phantom, OKX)
+  const sui = p?.sui || p;
   return (
-    p.signAndExecuteTransactionBlock?.({ transactionBlock: txData, options:{ showEffects:true } }) ||
-    p.signAndExecuteTransaction?.({ transaction: txData, options:{ showEffects:true } }) ||
-    p.signTransaction?.({ transaction: txData })
+    sui.signAndExecuteTransactionBlock?.({ transactionBlock: txData, options:{ showEffects:true } }) ||
+    sui.signAndExecuteTransaction?.({ transaction: txData, options:{ showEffects:true } })
   );
 }
 
