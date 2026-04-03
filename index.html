@@ -2029,32 +2029,58 @@ async function fetchArenaStatus() {
       new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000))
     ]);
     const f   = res?.data?.content?.fields || {};
+
+    // State can be number or string — normalize to string
+    const stateRaw = String(f.state ?? '0');
     const stateMap   = { '0':'⬤ OPEN — Accepting Registrations', '1':'⬤ ACTIVE — Battle In Progress', '2':'⬤ ENDED — Prize Claimable' };
     const stateColor = { '0':'var(--green)', '1':'var(--cyan)', '2':'#ffa07a' };
-    const endTime    = parseInt(f.end_time || 0);
-    const now        = Date.now();
-    const count      = parseInt(f.active_count || 0);
-    const prizeRaw   = parseInt(f.prize_pool?.fields?.value || f.prize_pool || 0);
-    const pct        = Math.min(100, (count / 10) * 100);
 
-    document.getElementById('arenaRound').textContent        = 'Round #' + (f.round_number || 1);
-    document.getElementById('arenaAgents').textContent       = count;
-    document.getElementById('arenaPrize').textContent        = (prizeRaw/1_000_000).toFixed(0) + ' $AGENT';
-    document.getElementById('arenaState').textContent        = stateMap[f.state] || 'Loading...';
-    document.getElementById('arenaState').style.color        = stateColor[f.state] || 'var(--green)';
-    document.getElementById('arenaProgress').textContent     = count + ' / 10 — ' + (count >= 10 ? 'READY TO START!' : 'need ' + (10 - count) + ' more');
-    document.getElementById('arenaProgressBar').style.width  = pct + '%';
-    document.getElementById('participantCount').textContent  = count + ' agents registered';
+    const endTime  = parseInt(f.end_time || 0);
+    const now      = Date.now();
+    const count    = parseInt(f.active_count || 0);
+    const isEnded  = stateRaw === '2' || f.prize_claimed === true || (endTime > 0 && now > endTime + 60000);
+    const isActive = stateRaw === '1' && !isEnded;
 
-    if (endTime > 0 && f.state === '1') {
+    // Prize pool — try multiple field paths
+    const prizeRaw = parseInt(
+      f.prize_pool?.fields?.value ||
+      f.prize_pool?.value ||
+      f.prize_pool ||
+      0
+    );
+
+    const pct = Math.min(100, (count / 10) * 100);
+
+    document.getElementById('arenaRound').textContent    = 'Round #' + (f.round_number || 1);
+    document.getElementById('arenaAgents').textContent   = count;
+    document.getElementById('arenaPrize').textContent    = prizeRaw > 0
+      ? (prizeRaw / 1_000_000).toFixed(0) + ' $AGENT'
+      : (count * 200_000).toLocaleString() + ' $AGENT'; // estimate: 200K per agent
+    document.getElementById('arenaState').textContent    = stateMap[stateRaw] || ('⬤ State: ' + stateRaw);
+    document.getElementById('arenaState').style.color    = stateColor[stateRaw] || 'var(--green)';
+    document.getElementById('arenaProgressBar').style.width = pct + '%';
+
+    // Progress text — show correct message based on state
+    if (isEnded) {
+      document.getElementById('arenaProgress').textContent    = count + ' / 10 — Round ended';
+      document.getElementById('arenaCountdown').textContent   = 'Round Over ✅';
+      document.getElementById('arenaCountdown').style.color   = '#ffa07a';
+      document.getElementById('participantCount').textContent = count + ' agents participated';
+    } else if (isActive) {
       const rem  = Math.max(0, endTime - now);
       const mins = Math.floor(rem / 60000);
       const secs = Math.floor((rem % 60000) / 1000);
-      document.getElementById('arenaCountdown').textContent = mins + 'm ' + secs + 's';
-    } else if (f.state === '0') {
-      document.getElementById('arenaCountdown').textContent = count >= 10 ? 'Starting soon!' : 'Filling up...';
-    } else if (f.state === '2') {
-      document.getElementById('arenaCountdown').textContent = 'Round Over';
+      document.getElementById('arenaProgress').textContent    = count + ' / 10 — Battle in progress!';
+      document.getElementById('arenaCountdown').textContent   = rem > 0 ? mins + 'm ' + secs + 's' : 'Ending...';
+      document.getElementById('arenaCountdown').style.color   = 'var(--cyan)';
+      document.getElementById('participantCount').textContent = count + ' agents competing';
+    } else {
+      // Open state
+      const need = Math.max(0, 10 - count);
+      document.getElementById('arenaProgress').textContent    = count + ' / 10 — ' + (need === 0 ? 'Starting soon!' : 'Need ' + need + ' more');
+      document.getElementById('arenaCountdown').textContent   = count >= 10 ? 'Starting soon!' : 'Filling up...';
+      document.getElementById('arenaCountdown').style.color   = 'var(--green)';
+      document.getElementById('participantCount').textContent = count + ' agents registered';
     }
   } catch(e) { console.log('Arena fetch error:', e.message); }
 }
