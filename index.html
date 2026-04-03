@@ -1822,7 +1822,10 @@ function fmtUsdShort(n) {
 
 async function fetchSuiPrice() {
   try {
-    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=sui&vs_currencies=usd');
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 5000);
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=sui&vs_currencies=usd', { signal: ctrl.signal });
+    clearTimeout(t);
     const data = await res.json();
     return data?.sui?.usd || 0;
   } catch(e) { return 0; }
@@ -1831,9 +1834,10 @@ async function fetchSuiPrice() {
 async function updatePriceBar() {
   try {
     const LP_POOL_PRICE = '0xe2cb18758423840159a11243387efc27c21db171ba97c1bad2d6009a474d2e79';
+    const timeout = ms => new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms));
     const [poolObj, lpObj] = await Promise.all([
-      rpc('sui_getObject', [POOL_ID, { showContent: true }]),
-      rpc('sui_getObject', [LP_POOL_PRICE, { showContent: true }]).catch(() => null),
+      Promise.race([rpc('sui_getObject', [POOL_ID, { showContent: true }]), timeout(8000)]),
+      Promise.race([rpc('sui_getObject', [LP_POOL_PRICE, { showContent: true }]), timeout(8000)]).catch(() => null),
     ]);
     const pf = poolObj?.data?.content?.fields || {};
     // Add LP pool reserves to liquidity display
@@ -1922,11 +1926,15 @@ async function registerAgent() {
   status.style.color = 'var(--cyan)';
   status.textContent = '⏳ Submitting registration... minting your AgentBadge on-chain...';
   try {
+    const regCtrl = new AbortController();
+    const regT = setTimeout(() => regCtrl.abort(), 15000);
     const res  = await fetch(API_URL + '/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ wallet, skillHash: skill || null })
+      body: JSON.stringify({ wallet, skillHash: skill || null }),
+      signal: regCtrl.signal
     });
+    clearTimeout(regT);
     const data = await res.json();
     if (data.success) {
       const short = data.badgeId ? data.badgeId.slice(0,8)+'...'+data.badgeId.slice(-6) : 'N/A';
@@ -1963,88 +1971,11 @@ const STRAT_DEFAULTS = {
   auto:         { buyAmount:'0.1', buyDrop:'3',  takeProfit:'20', stopLoss:'8'  },
 };
 
-function selectArenaStrat(el) {
-  document.querySelectorAll('.arena-strat-card').forEach(c => {
-    c.style.opacity = '0.5';
-    c.style.transform = 'scale(0.97)';
-  });
-  el.style.opacity = '1';
-  el.style.transform = 'scale(1.02)';
-  el.style.boxShadow = '0 0 20px rgba(0,245,255,0.15)';
-  selectedStrat = el.dataset.strat;
+// function selectArenaStrat(el) removed - HTML elements not present
 
-  // Fill defaults into custom panel
-  const def = STRAT_DEFAULTS[selectedStrat];
-  if (def) {
-    document.getElementById('arenaCustomBuy').placeholder = 'default: ' + def.buyAmount;
-    document.getElementById('arenaCustomDip').placeholder = 'default: ' + def.buyDrop;
-    document.getElementById('arenaCustomTp').placeholder  = 'default: ' + def.takeProfit;
-    document.getElementById('arenaCustomSl').placeholder  = 'default: ' + def.stopLoss;
-  }
-  document.getElementById('arenaCustomPanel').style.display = 'block';
-}
 
-async function registerArena() {
-  const wallet   = document.getElementById('arenaWallet').value.trim();
-  const telegram = document.getElementById('arenaTelegram').value.trim();
-  const status   = document.getElementById('arenaRegStatus');
+// async function registerArena() removed - HTML elements not present
 
-  if (!wallet || !wallet.startsWith('0x') || wallet.length !== 66) {
-    status.style.color = '#ff465a';
-    status.textContent = '⚠ Invalid wallet address. Must be 0x followed by 64 hex characters.';
-    return;
-  }
-  if (!selectedStrat) {
-    status.style.color = '#ff465a';
-    status.textContent = '⚠ Please select a strategy first.';
-    return;
-  }
-
-  // Get custom overrides or use defaults
-  const def      = STRAT_DEFAULTS[selectedStrat];
-  const buyAmount = document.getElementById('arenaCustomBuy').value || def.buyAmount;
-  const buyDrop   = document.getElementById('arenaCustomDip').value  || def.buyDrop;
-  const takeProfit= document.getElementById('arenaCustomTp').value   || def.takeProfit;
-  const stopLoss  = document.getElementById('arenaCustomSl').value   || def.stopLoss;
-
-  status.style.color = 'var(--cyan)';
-  status.textContent = '⏳ Registering your agent...';
-
-  try {
-    const res  = await fetch(ARENA_API + '/arena/register-participant', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        wallet, telegram, strategy: selectedStrat,
-        settings: { buyAmount, buyDrop, takeProfit, stopLoss },
-        roundId: ARENA_ROUND_ID
-      })
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      status.style.color = 'var(--green)';
-      status.innerHTML =
-        '✅ Registered! Your agent is in the arena.<br>' +
-        '<span style="color:#6a8bad">Strategy: ' + selectedStrat.toUpperCase() + ' | ' +
-        'Buy: ' + buyAmount + ' SUI | TP: +' + takeProfit + '% | SL: -' + stopLoss + '%</span><br>' +
-        '<span style="color:#4a5568">You will be notified on Telegram when the round starts.</span>';
-      await fetchArenaParticipants();
-      await fetchArenaStatus();
-    } else {
-      status.style.color = '#ff465a';
-      status.textContent = '⚠ ' + (data.error || 'Registration failed. Try again.');
-    }
-  } catch(e) {
-    // Fallback — store locally and show confirmation
-    status.style.color = 'var(--green)';
-    status.innerHTML =
-      '✅ Registration received!<br>' +
-      '<span style="color:#6a8bad">Strategy: ' + selectedStrat.toUpperCase() +
-      ' | TP: +' + takeProfit + '% | SL: -' + stopLoss + '%</span><br>' +
-      '<span style="color:#4a5568">Make sure to run node trade.mjs arena register in your terminal too.</span>';
-  }
-}
 
 async function fetchArenaParticipants() {
   try {
@@ -2079,21 +2010,24 @@ function renderParticipants() {
     const isElim  = p.eliminated;
     // Only show strategy after elimination
     const stratDisplay = isElim ? `<span style="color:${color};font-size:0.6rem">${(p.strategy||'?').toUpperCase()}</span>` : '<span style="color:#4a5568;font-size:0.6rem">HIDDEN</span>';
-    return \`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid \${isElim ? 'rgba(255,70,90,0.2)' : 'rgba(0,245,255,0.08)'};margin-bottom:6px;background:\${isElim ? 'rgba(255,70,90,0.03)' : 'rgba(0,245,255,0.02)'};opacity:\${isElim ? '0.6' : '1'}">
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid \${isElim ? 'rgba(255,70,90,0.2)' : 'rgba(0,245,255,0.08)'};margin-bottom:6px;background:\${isElim ? 'rgba(255,70,90,0.03)' : 'rgba(0,245,255,0.02)'};opacity:\${isElim ? '0.6' : '1'}">
       <div style="display:flex;align-items:center;gap:12px">
         <span class="font-orbitron text-xs" style="color:#4a5568">#\${i+1}</span>
         <span class="font-mono text-xs" style="color:var(--cyan)">\${short}</span>
         \${isElim ? '<span style="font-family:Share Tech Mono,monospace;font-size:0.6rem;color:#ff465a;border:1px solid rgba(255,70,90,0.3);padding:1px 6px">💀 ELIMINATED</span>' : '<span style="font-family:Share Tech Mono,monospace;font-size:0.6rem;color:var(--green);border:1px solid rgba(0,255,136,0.3);padding:1px 6px">⬤ ALIVE</span>'}
       </div>
       \${stratDisplay}
-    </div>\`;
+    </div>`;
   }).join('');
 }
 
 
 async function fetchArenaStatus() {
   try {
-    const res = await rpc('sui_getObject', [ARENA_ROUND_ID, { showContent: true }]);
+    const res = await Promise.race([
+      rpc('sui_getObject', [ARENA_ROUND_ID, { showContent: true }]),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000))
+    ]);
     const f   = res?.data?.content?.fields || {};
     const stateMap   = { '0':'⬤ OPEN — Accepting Registrations', '1':'⬤ ACTIVE — Battle In Progress', '2':'⬤ ENDED — Prize Claimable' };
     const stateColor = { '0':'var(--green)', '1':'var(--cyan)', '2':'#ffa07a' };
