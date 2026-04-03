@@ -2798,11 +2798,15 @@ async function pickWalletObj(i) {
   }
 }
 
-function disconnectWallet() {
+function clearWalletSession() {
+  // Clear any wallet session state
   connectedWallet   = null;
   connectedProvider = null;
-  // Clear persisted wallet
   try { localStorage.removeItem('suiagent_wallet'); } catch(e) {}
+}
+
+function disconnectWallet() {
+  clearWalletSession();
   updateWalletUI(null);
   const lpIn = document.getElementById('lpWallet');
   if (lpIn) { lpIn.value = ''; }
@@ -2810,7 +2814,6 @@ function disconnectWallet() {
   const lpNo  = document.getElementById('lpNoPosition');
   if (lpPos) lpPos.style.display = 'none';
   if (lpNo)  { lpNo.style.display = 'block'; lpNo.innerHTML = '<div class="font-mono text-xs text-slate-600">Enter your wallet address on the left to see your LP position</div>'; }
-  clearWalletSession();
   console.log('Wallet disconnected');
 }
 
@@ -2991,20 +2994,7 @@ window.__buildTx = async function(sender, txData) {
   return signAndExecuteTx(tx);
 };
 
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    const detected = getDetectedWallets();
-    for (const w of detected) {
-      const addr = w.provider?.accounts?.[0]?.address;
-      if (addr) {
-        connectedWallet={address:addr,provider:w.provider,name:w.name,isStandard:w.isStandard};
-        connectedProvider=w.provider;
-        updateWalletUI(addr);
-        return;
-      }
-    }
-  }, 800);
-});
+);
 
 // ─── SWAP ON-CHAIN ───
 async function executeSwapOnChain() {
@@ -3256,9 +3246,6 @@ document.getElementById('regWallet').addEventListener('blur', function() {
   const val = this.value.trim();
   if (val && val.startsWith('0x') && val.length === 66) checkAgentStatus(val);
 });
-</script>
-</body>
-</html>
 // Dedicated swap section quote — reads swapAmountIn, updates swapAmountOut
 async function fetchSwapQuote() {
   const amount  = parseFloat(document.getElementById('swapAmountIn')?.value || 0);
@@ -3305,3 +3292,6 @@ async function fetchSwapQuote() {
   } catch(e) { console.log('Quote error:', e.message); }
 }
 
+</script>
+</body>
+</html>
