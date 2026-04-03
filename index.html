@@ -2496,19 +2496,36 @@ let swapMode = 'buy';
 
 function setSwapMode(mode) {
   swapMode = mode;
-  const buyBtn  = document.getElementById('swapBuyBtn');
-  const sellBtn = document.getElementById('swapSellBtn');
-  const label   = document.getElementById('swapInputLabel');
+  const buyBtn     = document.getElementById('swapBuyBtn');
+  const sellBtn    = document.getElementById('swapSellBtn');
+  const inLabel    = document.getElementById('swapInputLabel');
+  const outLabel   = document.getElementById('swapOutputLabel');
+  const inToken    = document.getElementById('swapInToken');
+  const outToken   = document.getElementById('swapOutToken');
+  const amtOut     = document.getElementById('swapAmountOut');
+
   if (mode === 'buy') {
-    if (buyBtn)  { buyBtn.style.background  = 'rgba(0,255,136,0.15)'; buyBtn.style.borderColor  = 'var(--green)'; }
-    if (sellBtn) { sellBtn.style.background = 'transparent';           sellBtn.style.borderColor = 'rgba(255,70,90,0.3)'; }
-    if (label)   label.textContent = 'SUI AMOUNT TO SPEND';
+    if (buyBtn)   { buyBtn.style.background  = 'rgba(0,255,136,0.15)'; buyBtn.style.borderColor  = 'var(--green)'; }
+    if (sellBtn)  { sellBtn.style.background = 'transparent';           sellBtn.style.borderColor = 'rgba(255,70,90,0.3)'; }
+    if (inLabel)  inLabel.textContent  = 'YOU PAY (SUI)';
+    if (outLabel) outLabel.textContent = 'YOU RECEIVE ($AGENT)';
+    if (inToken)  { inToken.textContent  = 'SUI';    inToken.style.color  = 'var(--cyan)'; }
+    if (outToken) { outToken.textContent = '$AGENT'; outToken.style.color = 'var(--green)'; }
+    if (amtOut)   amtOut.style.color = 'var(--green)';
   } else {
-    if (sellBtn) { sellBtn.style.background  = 'rgba(255,70,90,0.15)'; sellBtn.style.borderColor = '#ff465a'; }
-    if (buyBtn)  { buyBtn.style.background   = 'transparent';           buyBtn.style.borderColor  = 'rgba(0,255,136,0.3)'; }
-    if (label)   label.textContent = '$AGENT AMOUNT TO SELL';
+    if (sellBtn)  { sellBtn.style.background  = 'rgba(255,70,90,0.15)'; sellBtn.style.borderColor = '#ff465a'; }
+    if (buyBtn)   { buyBtn.style.background   = 'transparent';           buyBtn.style.borderColor  = 'rgba(0,255,136,0.3)'; }
+    if (inLabel)  inLabel.textContent  = 'YOU PAY ($AGENT)';
+    if (outLabel) outLabel.textContent = 'YOU RECEIVE (SUI)';
+    if (inToken)  { inToken.textContent  = '$AGENT'; inToken.style.color  = '#ff465a'; }
+    if (outToken) { outToken.textContent = 'SUI';    outToken.style.color = 'var(--cyan)'; }
+    if (amtOut)   amtOut.style.color = 'var(--cyan)';
   }
-  calcSwapPreview();
+  // Clear output when switching
+  if (amtOut) amtOut.textContent = '—';
+  const detailEl = document.getElementById('swapDetails');
+  if (detailEl) detailEl.style.display = 'none';
+  fetchSwapQuote();
 }
 
 // Alias for the dedicated swap section
@@ -2840,11 +2857,13 @@ function updateWalletUI(address) {
 
 async function signAndExecuteTx(tx) {
   if (!connectedWallet) throw new Error('Wallet not connected');
-  // If UI-only (page refresh), prompt user to click Connect to fully reconnect
+  // If provider missing (page refresh) — silently reconnect
   if (connectedWallet.uiOnly || !connectedProvider) {
-    const ok = confirm('Your wallet session needs to be refreshed.\nClick OK to reconnect your wallet.');
-    if (ok) { connectedWallet = null; connectedProvider = null; await connectWallet(); }
-    throw new Error('Please reconnect your wallet and try again.');
+    connectedWallet = null; connectedProvider = null;
+    await connectWallet();
+    if (!connectedProvider) throw new Error('Please connect your wallet first.');
+    // Small delay for wallet to settle
+    await new Promise(r => setTimeout(r, 500));
   }
   const p = connectedProvider;
   const account = p.accounts?.[0] || { address: connectedWallet.address };
@@ -3027,13 +3046,20 @@ async function executeSwapOnChain() {
       badgeId: badgeCheck.data[0].data.objectId
     });
 
-    if (result?.effects?.status?.status === 'success') {
+    // Check success — digest present means success even if effects not returned
+    const succeeded = result?.effects?.status?.status === 'success' || 
+                      result?.digest || result?.confirmedLocalExecution;
+    if (succeeded) {
+      const digest = result?.digest || result?.effects?.transactionDigest || '';
       if (status) {
         status.style.color = 'var(--green)';
-        status.textContent = '✅ Swap successful! TX: ' + result.digest?.slice(0,12) + '...';
+        status.textContent = '✅ Swap successful!' + (digest ? ' TX: ' + digest.slice(0,12) + '...' : '');
       }
+      // Refresh quote after swap
+      setTimeout(fetchSwapQuote, 2000);
     } else {
-      if (status) { status.style.color = '#ff465a'; status.textContent = '❌ Swap failed. Try the Telegram bot instead.'; }
+      const err = result?.effects?.status?.error || 'unknown error';
+      if (status) { status.style.color = '#ff465a'; status.textContent = '❌ ' + err; }
     }
   } catch(e) {
     if (status) {
