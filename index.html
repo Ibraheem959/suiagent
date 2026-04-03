@@ -1958,7 +1958,22 @@ async function registerAgent() {
 }
 
 // ─── ARENA STATUS ───
-const ARENA_ROUND_ID = '0x1e0b8b0fc3b79ec750bb258df0eca82f80a194d79229d2f1ec798ba28c6f6c45';
+// Dynamic round ID — fetched from backend, updates automatically when new round created
+let ARENA_ROUND_ID = '0x1e0b8b0fc3b79ec750bb258df0eca82f80a194d79229d2f1ec798ba28c6f6c45'; // fallback
+
+async function fetchCurrentRoundId() {
+  try {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 5000);
+    const res  = await fetch(ARENA_API + '/arena', { signal: ctrl.signal });
+    const data = await res.json();
+    const newId = data.currentRound?.roundId;
+    if (newId && newId !== ARENA_ROUND_ID) {
+      console.log('New arena round detected:', newId);
+      ARENA_ROUND_ID = newId;
+    }
+  } catch(e) {}
+}
 const ARENA_API      = 'https://agent-backend-nwb6.onrender.com';
 let arenaParticipants = [];
 let selectedStrat = '';
@@ -2085,10 +2100,19 @@ async function fetchArenaStatus() {
   } catch(e) { console.log('Arena fetch error:', e.message); }
 }
 
-fetchArenaStatus();
-fetchArenaParticipants();
+// Fetch current round from backend first, then load arena
+fetchCurrentRoundId().then(() => {
+  fetchArenaStatus();
+  fetchArenaParticipants();
+});
+// Refresh round ID every 60s in case new round created
+setInterval(async () => {
+  await fetchCurrentRoundId();
+  fetchArenaStatus();
+  fetchArenaParticipants();
+}, 60_000);
 setInterval(fetchArenaStatus, 15000);
-setInterval(fetchArenaParticipants, 10000); // update every 10s during arena
+setInterval(fetchArenaParticipants, 10000);
 
 // ─── CHART + LP — direct from chain, no backend dependency ───
 const BACKEND   = 'https://agent-backend-nwb6.onrender.com';
