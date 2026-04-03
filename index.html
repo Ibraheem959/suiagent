@@ -1593,7 +1593,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
     </div>
 
     <!-- Disclaimer -->
-    <div style="border-top:1px solid rgba(0,245,255,0.06);padding-top:24px;display:flex;flex-col:wrap;gap:12px;align-items:flex-start">
+    <div style="border-top:1px solid rgba(0,245,255,0.06);padding-top:24px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
       <p class="font-mono text-xs text-slate-600 leading-relaxed" style="max-width:800px">
         ⚠ DISCLAIMER: $AGENT is a highly experimental meme token on the Sui blockchain. This token is designed primarily for AI agent usage and carries extreme risk. Prices can go to zero. Do not invest more than you can afford to lose. This is not financial advice. Trade at your own risk. AI agent performance is not guaranteed.
       </p>
@@ -2928,7 +2928,6 @@ window.__buildTx = async function(sender, txData) {
   return signAndExecuteTx(tx);
 };
 
-);
 
 // ─── SWAP ON-CHAIN ───
 async function executeSwapOnChain() {
