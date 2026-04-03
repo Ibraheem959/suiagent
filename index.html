@@ -391,8 +391,8 @@
   <div class="nav-links flex items-center gap-8">
     <a href="#token" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Token</a>
     <a href="#buy" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Buy</a>
-    <a href="#swap" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Swap</a>
-    <a href="#liquidity" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">LP</a>
+    <a href="#swap" onclick="document.getElementById('swap')?.scrollIntoView({behavior:'smooth'});return false;" onclick="document.getElementById('swap')?.scrollIntoView({behavior:'smooth'});return false;" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Swap</a>
+    <a href="#liquidity" onclick="document.getElementById('liquidity')?.scrollIntoView({behavior:'smooth'});return false;" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">LP</a>
     <a href="#chart" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Chart</a>
     <a href="#arena" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Arena</a>
     <a href="#trust" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Trust</a>
@@ -1080,36 +1080,6 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         <a href="https://t.me/sui_agent_trader_bot" target="_blank" class="btn-cyan" style="width:100%;text-align:center;display:block"><span>◈ OPEN TRADING BOT</span></a>
       </div>
 
-      <!-- Quick Swap Widget -->
-      <div class="card p-8 rounded-none" style="border-color:rgba(0,255,136,0.2);background:rgba(0,255,136,0.02)">
-        <div style="display:inline-block;background:rgba(0,255,136,0.1);border:1px solid var(--green);padding:3px 12px;font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--green);letter-spacing:0.1em;margin-bottom:16px">QUICK SWAP — SITE</div>
-        <div class="font-orbitron text-xl font-bold text-white mb-2">⚡ Swap via Bot API</div>
-        <p class="font-mono text-xs text-slate-500 leading-relaxed mb-6">Enter your registered wallet and swap $AGENT directly. Requires an active AgentBadge.</p>
-
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <button onclick="setSwapMode('buy')" id="swapBuyBtn" class="font-orbitron text-xs" style="flex:1;padding:10px;background:rgba(0,255,136,0.15);border:1px solid var(--green);color:var(--green);cursor:pointer">▲ BUY $AGENT</button>
-          <button onclick="setSwapMode('sell')" id="swapSellBtn" class="font-orbitron text-xs" style="flex:1;padding:10px;background:transparent;border:1px solid rgba(255,70,90,0.3);color:#ff465a;cursor:pointer">▼ SELL $AGENT</button>
-        </div>
-
-        <div style="margin-bottom:12px">
-          <label class="font-mono text-xs text-slate-400 block mb-2" id="swapInputLabel">SUI AMOUNT TO SPEND</label>
-          <input type="number" id="swapAmount" placeholder="0.1" min="0.001" step="0.1" oninput="calcSwapPreview()" style="width:100%;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:0.9rem;padding:12px 14px;outline:none"/>
-        </div>
-
-        <div id="swapPreviewBox" style="background:#020609;border:1px solid rgba(0,245,255,0.1);padding:12px;margin-bottom:12px;display:none">
-          <div class="font-mono text-xs text-slate-500 mb-1">YOU RECEIVE ~</div>
-          <div class="font-orbitron text-xl font-bold" id="swapPreviewOut" style="color:var(--green)">—</div>
-          <div class="font-mono text-xs text-slate-600 mt-1">Price impact: <span id="swapImpact">—</span></div>
-        </div>
-
-        <input type="text" id="swapWallet" placeholder="Your wallet 0x..." style="width:100%;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:0.75rem;padding:10px 14px;outline:none;margin-bottom:12px"/>
-
-        <button onclick="executeSwap()" id="swapBtn" class="btn-cyan" style="width:100%;padding:14px;text-align:center">
-          <span id="swapBtnText">◈ OPEN BOT TO SWAP</span>
-        </button>
-        <div id="swapStatus" class="font-mono text-xs text-center mt-3" style="color:#4a5568;min-height:16px"></div>
-        <div class="font-mono text-xs text-slate-600 mt-2 text-center">Swaps execute via @sui_agent_trader_bot — badge required</div>
-      </div>
 
       <!-- Option 2 — Eliza Agent -->
       <div class="card p-8 rounded-none" style="border-color:rgba(180,79,255,0.2);background:rgba(180,79,255,0.02)">
@@ -1379,7 +1349,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
     <div class="reveal text-center mb-12">
       <div class="section-label mb-3">◈ LAST AGENT STANDING</div>
       <h2 class="font-orbitron text-3xl font-bold text-white">🏟 The Arena</h2>
-      <p style="color:#6a8bad;font-weight:300;margin-top:8px">AI vs AI. On-chain. Winner takes all. 1,000,000 $AGENT entry stake.</p>
+      <p style="color:#6a8bad;font-weight:300;margin-top:8px">AI vs AI. On-chain. Winner takes all. 250,000 $AGENT entry.</p>
     </div>
 
     <!-- Live Round Status -->
@@ -1421,7 +1391,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
       <div class="grid gap-8" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
         <div>
           <div class="font-orbitron text-sm font-bold mb-3" style="color:var(--cyan)">⚔️ THE BATTLE</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">10 AI agents enter. Each stakes 1,000,000 $AGENT — all goes into the prize pool. When 10 agents join, the round automatically starts. A 1 hour countdown begins and every agent's bot starts trading $AGENT against the pool.</p>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">10 AI agents enter. Each pays 250,000 $AGENT (200K stake + 50K eco fee) — stakes go into the prize pool. When 10 agents join, the round automatically starts. A 1 hour countdown begins and every agent's bot starts trading $AGENT against the pool.</p>
         </div>
         <div>
           <div class="font-orbitron text-sm font-bold mb-3" style="color:#ff465a">💀 ELIMINATION</div>
@@ -1429,7 +1399,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         </div>
         <div>
           <div class="font-orbitron text-sm font-bold mb-3" style="color:var(--green)">🏆 WINNING</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">Three ways to win: (1) Be the last agent standing — all others eliminated. (2) If time runs out with multiple survivors — highest P&L wins. (3) If all eliminated — last agent to be eliminated wins. Winner claims 100% of all staked $AGENT instantly.</p>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">Three ways to win: (1) Be the last agent standing — all others eliminated. (2) If time runs out with multiple survivors — highest P&L wins. (3) If all eliminated — last agent to be eliminated wins. Winner claims 70% of the prize pool. 15% burned. 15% goes to LP.</p>
         </div>
         <div>
           <div class="font-orbitron text-sm font-bold mb-3" style="color:var(--purple)">🤖 STRATEGIES</div>
@@ -1448,7 +1418,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
       <div class="card p-6 rounded-none text-center">
         <div class="font-orbitron text-3xl mb-3" style="color:var(--purple)">2</div>
         <div class="font-orbitron text-sm font-bold text-white mb-2">REGISTER</div>
-        <p class="font-mono text-xs text-slate-500">Tap 🏟 Arena → Register. Choose strategy. Bot stakes 1M $AGENT on-chain.</p>
+        <p class="font-mono text-xs text-slate-500">Tap 🏟 Arena → Register. Choose strategy. Bot pays 250K $AGENT entry on-chain.</p>
       </div>
       <div class="card p-6 rounded-none text-center">
         <div class="font-orbitron text-3xl mb-3" style="color:var(--green)">3</div>
@@ -1473,7 +1443,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         <div>
           <div class="font-orbitron text-xl font-bold text-white mb-2">⚔️ Ready to Enter?</div>
           <p class="font-mono text-xs text-slate-400">Registration and staking happens through the Telegram trading bot. Open the bot, tap 🏟 Arena → Register.</p>
-          <div class="font-mono text-xs mt-2" style="color:#4a5568">Need 1,000,000 $AGENT in your wallet + SUI for gas</div>
+          <div class="font-mono text-xs mt-2" style="color:#4a5568">Need 250,000 $AGENT in your wallet + SUI for gas</div>
         </div>
         <a href="https://t.me/sui_agent_trader_bot" target="_blank" class="btn-cyan" style="flex-shrink:0"><span>🏟 ENTER ARENA VIA BOT</span></a>
       </div>
@@ -1494,7 +1464,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
     <div class="reveal card p-6 rounded-none" style="border-color:rgba(180,79,255,0.15)">
       <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ ARENA RULES</div>
       <div class="grid gap-3" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
-        <div class="font-mono text-xs text-slate-400">⚡ Entry stake: 1,000,000 $AGENT</div>
+        <div class="font-mono text-xs text-slate-400">⚡ Entry: 250,000 $AGENT (200K stake + 50K fee)</div>
         <div class="font-mono text-xs text-slate-400">⏱ Round duration: 1 hour</div>
         <div class="font-mono text-xs text-slate-400">👥 Min agents to start: 10</div>
         <div class="font-mono text-xs text-slate-400">🏆 Prize: 100% winner takes all</div>
@@ -1797,11 +1767,15 @@ function addRealTrade(isBuy, wallet, agentRaw, suiRaw, timestamp) {
 
 async function fetchRealTrades() {
   try {
-    const result = await rpc('suix_queryEvents', [
-      { MoveModule: { package: POOL_PACKAGE, module: 'pool' } },
-      null, 20, true
+    const LP_PKG_FEED = '0xf554dad1683cb25386ddf57f2d40f2774fb8287b17f467ebc657c5bc20f226e3';
+    // Poll both old pool and LP pool in parallel
+    const [oldRes, lpRes] = await Promise.all([
+      rpc('suix_queryEvents', [{ MoveModule: { package: POOL_PACKAGE, module: 'pool' } }, null, 15, true]),
+      rpc('suix_queryEvents', [{ MoveModule: { package: LP_PKG_FEED, module: 'pool_lp' } }, null, 10, true]),
     ]);
-    const events = result?.data || [];
+    const events = [...(oldRes?.data || []), ...(lpRes?.data || [])];
+    // Sort by timestamp descending
+    events.sort((a, b) => parseInt(b.timestampMs||0) - parseInt(a.timestampMs||0));
     let newCount = 0;
     events.forEach(function(ev) {
       const digest = ev.id && ev.id.txDigest;
@@ -1809,11 +1783,11 @@ async function fetchRealTrades() {
       seenDigests.add(digest);
       const type = ev.type || '';
       const p = ev.parsedJson || {};
-      if (type.includes('TokensBought')) {
-        addRealTrade(true, p.buyer||'0x0000', p.agent_out||0, p.sui_in||0, p.timestamp||Date.now());
+      if (type.includes('TokensBought') || type.includes('Bought')) {
+        addRealTrade(true, p.buyer||'0x0000', p.agent_out||0, p.sui_in||0, ev.timestampMs||Date.now());
         newCount++;
-      } else if (type.includes('TokensSold')) {
-        addRealTrade(false, p.seller||'0x0000', p.agent_in||0, p.sui_out||0, p.timestamp||Date.now());
+      } else if (type.includes('TokensSold') || type.includes('Sold')) {
+        addRealTrade(false, p.seller||'0x0000', p.agent_in||0, p.sui_out||0, ev.timestampMs||Date.now());
         newCount++;
       }
     });
@@ -1856,8 +1830,15 @@ async function fetchSuiPrice() {
 
 async function updatePriceBar() {
   try {
-    const poolObj = await rpc('sui_getObject', [POOL_ID, { showContent: true }]);
+    const LP_POOL_PRICE = '0xe2cb18758423840159a11243387efc27c21db171ba97c1bad2d6009a474d2e79';
+    const [poolObj, lpObj] = await Promise.all([
+      rpc('sui_getObject', [POOL_ID, { showContent: true }]),
+      rpc('sui_getObject', [LP_POOL_PRICE, { showContent: true }]).catch(() => null),
+    ]);
     const pf = poolObj?.data?.content?.fields || {};
+    // Add LP pool reserves to liquidity display
+    const lpF = lpObj?.data?.content?.fields || {};
+    const lpSui = parseInt(lpF.sui_reserve?.fields?.balance || lpF.sui_reserve || 0);
     const suiRaw   = parseInt(pf.sui_reserve?.fields?.balance   || pf.sui_reserve   || 0);
     const agentRaw = parseInt(pf.agent_reserve?.fields?.balance || pf.agent_reserve || 0);
 
@@ -1875,7 +1856,7 @@ async function updatePriceBar() {
     const suiUsd       = await fetchSuiPrice();
     const priceUsd     = priceInSui * suiUsd;
     const mcap         = priceUsd * TOTAL_SUPPLY;
-    const liqUsd       = suiReserve * suiUsd * 2;
+    const liqUsd       = (suiReserve + lpSui/1e9) * suiUsd * 2; // both pools
 
     document.getElementById('priceSui').textContent     = priceInSui.toFixed(10) + ' SUI';
     document.getElementById('priceUsd').textContent     = fmtUsd(priceUsd);
@@ -2085,6 +2066,7 @@ async function fetchArenaParticipants() {
 function renderParticipants() {
   const list  = document.getElementById('participantList');
   const count = document.getElementById('participantCount');
+  if (!list) return;
   count.textContent = arenaParticipants.length + ' agents registered';
   if (arenaParticipants.length === 0) {
     list.innerHTML = '<div class="font-mono text-xs text-slate-600 text-center py-6">No agents registered yet. Be the first! 🤖</div>';
@@ -2092,17 +2074,22 @@ function renderParticipants() {
   }
   list.innerHTML = arenaParticipants.map((p, i) => {
     const stratColors = { scalper:'var(--cyan)', swing:'var(--purple)', conservative:'var(--green)', degen:'#ff6464', auto:'#ffa07a' };
-    const color = stratColors[p.strategy] || 'var(--cyan)';
-    const short = p.wallet ? p.wallet.slice(0,8) + '...' + p.wallet.slice(-6) : '0x???';
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid rgba(0,245,255,0.08);margin-bottom:6px;background:rgba(0,245,255,0.02)">
+    const color   = stratColors[p.strategy] || 'var(--cyan)';
+    const short   = p.wallet ? p.wallet.slice(0,8) + '...' + p.wallet.slice(-6) : '0x???';
+    const isElim  = p.eliminated;
+    // Only show strategy after elimination
+    const stratDisplay = isElim ? `<span style="color:${color};font-size:0.6rem">${(p.strategy||'?').toUpperCase()}</span>` : '<span style="color:#4a5568;font-size:0.6rem">HIDDEN</span>';
+    return \`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid \${isElim ? 'rgba(255,70,90,0.2)' : 'rgba(0,245,255,0.08)'};margin-bottom:6px;background:\${isElim ? 'rgba(255,70,90,0.03)' : 'rgba(0,245,255,0.02)'};opacity:\${isElim ? '0.6' : '1'}">
       <div style="display:flex;align-items:center;gap:12px">
-        <span class="font-orbitron text-xs" style="color:#4a5568">#${i+1}</span>
-        <span class="font-mono text-xs" style="color:var(--cyan)">${short}</span>
+        <span class="font-orbitron text-xs" style="color:#4a5568">#\${i+1}</span>
+        <span class="font-mono text-xs" style="color:var(--cyan)">\${short}</span>
+        \${isElim ? '<span style="font-family:Share Tech Mono,monospace;font-size:0.6rem;color:#ff465a;border:1px solid rgba(255,70,90,0.3);padding:1px 6px">💀 ELIMINATED</span>' : '<span style="font-family:Share Tech Mono,monospace;font-size:0.6rem;color:var(--green);border:1px solid rgba(0,255,136,0.3);padding:1px 6px">⬤ ALIVE</span>'}
       </div>
-      <span class="font-mono text-xs" style="color:${color}">${(p.strategy||'?').toUpperCase()}</span>
-    </div>`;
+      \${stratDisplay}
+    </div>\`;
   }).join('');
 }
+
 
 async function fetchArenaStatus() {
   try {
@@ -2141,7 +2128,7 @@ async function fetchArenaStatus() {
 fetchArenaStatus();
 fetchArenaParticipants();
 setInterval(fetchArenaStatus, 15000);
-setInterval(fetchArenaParticipants, 30000);
+setInterval(fetchArenaParticipants, 10000); // update every 10s during arena
 
 // ─── CHART + LP — direct from chain, no backend dependency ───
 const BACKEND   = 'https://agent-backend-nwb6.onrender.com';
@@ -2248,10 +2235,15 @@ async function seedCandlesFromChain() {
 
 async function pollNewCandles() {
   try {
-    const POOL_PKG = '0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48ce3cd6952';
-    const events = await rpcCall('suix_queryEvents', [{
-      MoveModule: { package: POOL_PKG, module: 'pool' }
-    }, lastEventCursor, 10, false]);
+    const OLD_POOL_PKG = '0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48ce3cd6952';
+    const LP_POOL_PKG  = '0xf554dad1683cb25386ddf57f2d40f2774fb8287b17f467ebc657c5bc20f226e3';
+    // Query both pools simultaneously
+    const [oldEvents, lpEvents] = await Promise.all([
+      rpcCall('suix_queryEvents', [{ MoveModule: { package: OLD_POOL_PKG, module: 'pool' } }, lastEventCursor, 10, false]),
+      rpcCall('suix_queryEvents', [{ MoveModule: { package: LP_POOL_PKG,  module: 'pool_lp' } }, null, 5, false])
+    ]);
+    const allEvents = [...(oldEvents?.data || []), ...(lpEvents?.data || [])].sort((a,b) => parseInt(b.timestampMs||0) - parseInt(a.timestampMs||0));
+    const events = { data: allEvents, nextCursor: oldEvents?.nextCursor, hasNextPage: oldEvents?.hasNextPage };
     if (!events?.data?.length) return;
     for (const e of events.data) {
       const f     = e.parsedJson || {};
@@ -2796,6 +2788,8 @@ async function pickWalletObj(i) {
     if (!address) throw new Error('No address returned from ' + w.name);
     connectedWallet   = { address, provider: p, name: w.name, isStandard: w.isStandard };
     connectedProvider = p;
+    // Persist wallet address across page refreshes
+    try { localStorage.setItem('suiagent_wallet', JSON.stringify({ address, walletName: w.name })); } catch(e) {}
     updateWalletUI(address);
     console.log('✅ Connected:', w.name, address);
   } catch(e) {
@@ -2807,15 +2801,16 @@ async function pickWalletObj(i) {
 function disconnectWallet() {
   connectedWallet   = null;
   connectedProvider = null;
+  // Clear persisted wallet
+  try { localStorage.removeItem('suiagent_wallet'); } catch(e) {}
   updateWalletUI(null);
-  // Also clear LP wallet field
   const lpIn = document.getElementById('lpWallet');
   if (lpIn) { lpIn.value = ''; }
-  // Reset position display
   const lpPos = document.getElementById('lpPosition');
   const lpNo  = document.getElementById('lpNoPosition');
   if (lpPos) lpPos.style.display = 'none';
   if (lpNo)  { lpNo.style.display = 'block'; lpNo.innerHTML = '<div class="font-mono text-xs text-slate-600">Enter your wallet address on the left to see your LP position</div>'; }
+  clearWalletSession();
   console.log('Wallet disconnected');
 }
 
@@ -2844,13 +2839,26 @@ function updateWalletUI(address) {
   // Auto-fill LP wallet field
   const lpIn = document.getElementById('lpWallet');
   if (lpIn && address && !lpIn.value) { lpIn.value = address; fetchLpPosition(); }
+  // Persist to localStorage
+  if (address) {
+    try { localStorage.setItem('suiagent_wallet', JSON.stringify({ address, name: connectedWallet?.name || '' })); }
+    catch(e) {}
+  } else {
+    try { localStorage.removeItem('suiagent_wallet'); } catch(e) {}
+  }
   // Show/hide connected state on LP add button
   const lpAddBtn = document.querySelector('#lpDepositStatus');
   if (lpAddBtn && connected) lpAddBtn.textContent = '';
 }
 
 async function signAndExecuteTx(tx) {
-  if (!connectedProvider || !connectedWallet) throw new Error('Wallet not connected');
+  if (!connectedWallet) throw new Error('Wallet not connected');
+  // If UI-only (page refresh), prompt user to click Connect to fully reconnect
+  if (connectedWallet.uiOnly || !connectedProvider) {
+    const ok = confirm('Your wallet session needs to be refreshed.\nClick OK to reconnect your wallet.');
+    if (ok) { connectedWallet = null; connectedProvider = null; await connectWallet(); }
+    throw new Error('Please reconnect your wallet and try again.');
+  }
   const p = connectedProvider;
   const account = p.accounts?.[0] || { address: connectedWallet.address };
 
@@ -3172,32 +3180,64 @@ async function claimLpFees() {
 }
 // Auto-connect if wallet was previously connected (Wallet Standard)
 window.addEventListener('load', async () => {
-  await new Promise(r => setTimeout(r, 500)); // wait for wallet injection
+  await new Promise(r => setTimeout(r, 600)); // wait for wallet extensions to inject
+
+  // ── Restore from localStorage on reload ──
+  let savedWallet = null;
   try {
-    // Listen for wallet standard registration
-    window.addEventListener('wallet-standard:register-wallet', (e) => {
-      const wallet = e.detail?.wallet;
-      if (wallet) {
-        if (!window.__suiWallets) window.__suiWallets = [];
-        window.__suiWallets.push(wallet);
-        console.log('Wallet registered:', wallet.name);
-        // Auto-connect if already authorized
-        if (wallet.accounts?.length > 0) {
-          connectedWallet   = { address: wallet.accounts[0].address, provider: wallet };
-          connectedProvider = wallet;
-          updateWalletUI(wallet.accounts[0].address);
+    const saved = localStorage.getItem('suiagent_wallet');
+    if (saved) savedWallet = JSON.parse(saved);
+  } catch(e) {}
+
+  // ── Listen for Wallet Standard registrations ──
+  window.addEventListener('wallet-standard:register-wallet', (e) => {
+    const wallet = e.detail?.wallet;
+    if (!wallet) return;
+    if (!window.__suiWallets) window.__suiWallets = [];
+    if (!window.__suiWallets.find(w => w.name === wallet.name)) {
+      window.__suiWallets.push(wallet);
+    }
+    // Auto-reconnect if this is the saved wallet
+    if (wallet.accounts?.length > 0) {
+      const addr = wallet.accounts[0].address;
+      if (!connectedWallet || (savedWallet && addr === savedWallet.address)) {
+        connectedWallet   = { address: addr, provider: wallet, name: wallet.name, isStandard: true };
+        connectedProvider = wallet;
+        updateWalletUI(addr);
+        localStorage.setItem('suiagent_wallet', JSON.stringify({ address: addr, name: wallet.name }));
+      }
+    }
+  });
+
+  // ── Try wallet-standard getWallets after esm.sh loads ──
+  setTimeout(async () => {
+    if (connectedWallet) return; // already connected
+    try {
+      const getWalletsFn = window.__walletStandardGetWallets;
+      if (getWalletsFn) {
+        const wallets = getWalletsFn().get();
+        for (const w of wallets) {
+          if (w.accounts?.length > 0) {
+            const addr = w.accounts[0].address;
+            const isMatch = !savedWallet || addr === savedWallet.address || w.name === savedWallet.name;
+            if (isMatch) {
+              connectedWallet   = { address: addr, provider: w, name: w.name, isStandard: true };
+              connectedProvider = w;
+              updateWalletUI(addr);
+              localStorage.setItem('suiagent_wallet', JSON.stringify({ address: addr, name: w.name }));
+              break;
+            }
+          }
         }
       }
-    });
-    // Check already registered wallets
-    const existing = window.__suiWallets || [];
-    if (existing.length > 0 && existing[0].accounts?.length > 0) {
-      const addr = existing[0].accounts[0].address;
-      connectedWallet   = { address: addr, provider: existing[0] };
-      connectedProvider = existing[0];
-      updateWalletUI(addr);
+    } catch(e) {}
+    // If still no provider but we have saved address, show UI only
+    if (!connectedWallet && savedWallet?.address) {
+      updateWalletUI(savedWallet.address);
+      // Mark as UI-only (no signing yet)
+      connectedWallet = { address: savedWallet.address, provider: null, name: savedWallet.name, isStandard: true, uiOnly: true };
     }
-  } catch(e) { console.log('Auto-connect:', e.message); }
+  }, 1800);
 });
 
 async function checkAgentStatus(wallet) {
