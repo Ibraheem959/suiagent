@@ -1768,26 +1768,33 @@ function addRealTrade(isBuy, wallet, agentRaw, suiRaw, timestamp) {
 async function fetchRealTrades() {
   try {
     const LP_PKG_FEED = '0xf554dad1683cb25386ddf57f2d40f2774fb8287b17f467ebc657c5bc20f226e3';
-    // Poll both old pool and LP pool in parallel
     const [oldRes, lpRes] = await Promise.all([
       rpc('suix_queryEvents', [{ MoveModule: { package: POOL_PACKAGE, module: 'pool' } }, null, 15, true]),
       rpc('suix_queryEvents', [{ MoveModule: { package: LP_PKG_FEED, module: 'pool_lp' } }, null, 10, true]),
     ]);
     const events = [...(oldRes?.data || []), ...(lpRes?.data || [])];
-    // Sort by timestamp descending
     events.sort((a, b) => parseInt(b.timestampMs||0) - parseInt(a.timestampMs||0));
     let newCount = 0;
     events.forEach(function(ev) {
-      const digest = ev.id && ev.id.txDigest;
-      if (!digest || seenDigests.has(digest)) return;
-      seenDigests.add(digest);
+      // Use txDigest + eventSeq as unique key — prevents skipping 2nd event in same TX
+      const txDigest  = ev.id?.txDigest;
+      const eventSeq  = ev.id?.eventSeq ?? '0';
+      const uniqueKey = txDigest + ':' + eventSeq;
+      if (!txDigest || seenDigests.has(uniqueKey)) return;
+      seenDigests.add(uniqueKey);
+      // Cap seenDigests at 300 entries so new events are never skipped
+      if (seenDigests.size > 300) {
+        seenDigests.delete(seenDigests.values().next().value);
+      }
       const type = ev.type || '';
-      const p = ev.parsedJson || {};
-      if (type.includes('TokensBought') || type.includes('Bought')) {
-        addRealTrade(true, p.buyer||'0x0000', p.agent_out||0, p.sui_in||0, ev.timestampMs||Date.now());
+      const p    = ev.parsedJson || {};
+      const isBuy  = type.includes('TokensBought') || type.includes('Bought');
+      const isSell = type.includes('TokensSold')   || type.includes('Sold');
+      if (isBuy) {
+        addRealTrade(true,  p.buyer  || p.sender || '0x0000', p.agent_out || 0, p.sui_in  || 0, ev.timestampMs || Date.now());
         newCount++;
-      } else if (type.includes('TokensSold') || type.includes('Sold')) {
-        addRealTrade(false, p.seller||'0x0000', p.agent_in||0, p.sui_out||0, ev.timestampMs||Date.now());
+      } else if (isSell) {
+        addRealTrade(false, p.seller || p.sender || '0x0000', p.agent_in  || 0, p.sui_out || 0, ev.timestampMs || Date.now());
         newCount++;
       }
     });
@@ -1860,15 +1867,19 @@ async function updatePriceBar() {
     const suiUsd       = await fetchSuiPrice();
     const priceUsd     = priceInSui * suiUsd;
     const mcap         = priceUsd * TOTAL_SUPPLY;
-    const liqUsd       = (suiReserve + lpSui/1e9) * suiUsd * 2; // both pools
+    // Combined liquidity: old pool + LP pool, both sides (SUI * 2 = total TVL)
+    const oldPoolSui = suiReserve;           // already in SUI
+    const lpPoolSui  = lpSui / 1_000_000_000; // convert MIST to SUI
+    const liqUsd     = (oldPoolSui + lpPoolSui) * 2 * suiUsd;
 
     document.getElementById('priceSui').textContent     = priceInSui.toFixed(10) + ' SUI';
     document.getElementById('priceUsd').textContent     = fmtUsd(priceUsd);
     document.getElementById('marketCap').textContent    = fmtUsdShort(mcap);
     document.getElementById('fdv').textContent          = fmtUsdShort(mcap);
     document.getElementById('liquidity').textContent    = fmtUsdShort(liqUsd);
+    const lpPoolSuiDisplay = (lpSui / 1_000_000_000).toFixed(1);
     document.getElementById('poolReserves').textContent =
-      suiReserve.toFixed(1) + ' SUI / ' + agentReserve.toFixed(0) + 'M $AGENT';
+      (suiReserve + lpSui/1e9).toFixed(1) + ' SUI total (' + suiReserve.toFixed(1) + '+' + lpPoolSuiDisplay + ' LP)';
 
     const ch = document.getElementById('priceChange');
     ch.style.color   = 'var(--green)';
@@ -2227,19 +2238,21 @@ async function pollNewCandles() {
       rpcCall('suix_queryEvents', [{ MoveModule: { package: LP_POOL_PKG,  module: 'pool_lp' } }, null, 5, false])
     ]);
     const allEvents = [...(oldEvents?.data || []), ...(lpEvents?.data || [])].sort((a,b) => parseInt(b.timestampMs||0) - parseInt(a.timestampMs||0));
-    const events = { data: allEvents, nextCursor: oldEvents?.nextCursor, hasNextPage: oldEvents?.hasNextPage };
-    if (!events?.data?.length) return;
-    for (const e of events.data) {
-      const f     = e.parsedJson || {};
-      const suiIn    = parseInt(f.sui_in    || f.sui_out  || 0);
-      const agentAmt = parseInt(f.agent_out || f.agent_in || 0);
-      if (!agentAmt) continue;
-      const priceSui = (suiIn/1e9) / (agentAmt/1e6);
+    if (!allEvents.length) return;
+    for (const e of allEvents) {
+      const f       = e.parsedJson || {};
+      const isBuy   = e.type?.includes('TokensBought') || e.type?.includes('Bought');
+      const isSell  = e.type?.includes('TokensSold')   || e.type?.includes('Sold');
+      if (!isBuy && !isSell) continue;
+      const suiVal   = parseInt(isBuy ? f.sui_in : f.sui_out || 0);
+      const agentAmt = parseInt(isBuy ? f.agent_out : f.agent_in || 0);
+      if (!agentAmt || !suiVal) continue;
+      const priceSui = (suiVal/1e9) / (agentAmt/1e6);
       const priceUsd = priceSui * chartSuiUsd;
       const ts       = parseInt(e.timestampMs || Date.now());
-      Object.keys(TF_MS).forEach(tf => updateCandle(tf, ts, priceUsd, suiIn/1e9));
+      Object.keys(TF_MS).forEach(tf => updateCandle(tf, ts, priceUsd, suiVal/1e9));
     }
-    if (events.data.length > 0) lastEventCursor = events.nextCursor;
+    if (oldEvents?.data?.length > 0) lastEventCursor = oldEvents?.nextCursor;
     renderCandles();
   } catch(e) {}
 }
