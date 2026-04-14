@@ -376,6 +376,110 @@
     .hero-title { font-size: 2.8rem !important; }
     .nav-links { display: none; }
   }
+
+  /* ═══════ MEME LAB ═══════ */
+  .btn-green {
+    background: rgba(0,255,136,0.1);
+    border: 1.5px solid var(--green);
+    color: var(--green);
+    padding: 10px 24px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-block;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  }
+  .btn-green:hover { background: var(--green); color: var(--bg); }
+
+  .input-cyber {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(0,245,255,0.2);
+    color: #c8daf0;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    padding: 10px 14px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-cyber:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,245,255,0.15); }
+  .input-cyber::placeholder { color: #3a5070; }
+
+  .ml-progress-bar { height: 6px; background: rgba(0,245,255,0.1); border-radius: 0; position: relative; overflow: hidden; }
+  .ml-progress-fill { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--green)); transition: width 0.5s ease; }
+
+  .token-tile {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .token-tile::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--cyan),transparent); opacity:0.5; }
+  .token-tile:hover { border-color: rgba(0,245,255,0.4); box-shadow: 0 0 20px rgba(0,245,255,0.1); transform: translateY(-1px); }
+
+  .ml-modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(8px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ml-modal-box {
+    background: #070d1a;
+    border: 1px solid rgba(0,245,255,0.25);
+    max-width: 580px;
+    width: 92%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 32px;
+    position: relative;
+  }
+  .ml-modal-box::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--cyan),transparent); }
+
+  .ml-sort-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    padding: 5px 12px;
+    cursor: pointer;
+    border: 1px solid rgba(0,245,255,0.15);
+    color: #4a6480;
+    transition: all 0.2s;
+    background: none;
+  }
+  .ml-sort-btn.active { border-color: var(--cyan); color: var(--cyan); background: rgba(0,245,255,0.06); }
+  .ml-tab-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    padding: 8px 20px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    color: #4a6480;
+    transition: all 0.2s;
+    background: none;
+    border-top: none; border-left: none; border-right: none;
+  }
+  .ml-tab-btn.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+
+  .ml-tag { font-family: 'Share Tech Mono', monospace; font-size: 0.65rem; padding: 2px 8px; border: 1px solid; letter-spacing: 0.05em; }
+
+  .ml-spinner { width:20px; height:20px; border:2px solid rgba(0,245,255,0.2); border-top-color:var(--cyan); border-radius:50%; animation:mlSpin 0.7s linear infinite; display:inline-block; }
+  @keyframes mlSpin { to { transform: rotate(360deg); } }
+  @keyframes mlFadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .ml-animate-fade { animation: mlFadeIn 0.4s ease forwards; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #040810; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,245,255,0.2); }
+
 </style>
 </head>
 <body>
@@ -398,6 +502,7 @@
     <a href="#trust" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Trust</a>
     <a href="#setup" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Setup</a>
     <a href="#live" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Live</a>
+    <a href="#memelab" class="text-xs font-mono transition-colors tracking-widest uppercase" style="color:var(--green);text-shadow:0 0 8px rgba(0,255,136,0.4)">Meme Lab</a>
     <a href="https://x.com/SUI__AGENT" target="_blank" class="text-xs font-mono text-slate-400 hover:text-purple-400 transition-colors" title="Twitter / X">𝕏</a>
     <a href="https://t.me/+AHZzczUoOeYzMThk" target="_blank" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors" title="Telegram">TG</a>
   </div>
@@ -440,7 +545,7 @@
       <div style="width:1px;height:28px;background:rgba(0,245,255,0.1)"></div>
       <div style="text-align:center">
         <div class="font-mono text-xs text-slate-500">LIQUIDITY</div>
-        <div class="font-mono text-xs font-bold" id="liquidity" style="color:var(--purple)">—</div>
+        <div class="font-mono text-xs font-bold" id="statLiquidity" style="color:var(--purple)">—</div>
       </div>
       <div style="width:1px;height:28px;background:rgba(0,245,255,0.1)"></div>
       <div style="text-align:center">
@@ -489,6 +594,193 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════ MEME LAB: CREATE TOKEN MODAL ══════════════════════════════════════ -->
+<div id="mlCreateModal" class="ml-modal-bg" style="display:none;">
+  <div class="ml-modal-box ml-animate-fade">
+    <button onclick="mlCloseCreateModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#4a5568;font-size:1.1rem;cursor:pointer;">✕</button>
+    <div class="font-orbitron text-lg font-bold text-white mb-1">🚀 LAUNCH A MEME</div>
+    <div class="font-mono text-xs mb-6" style="color:var(--cyan)">Tokens trade exclusively in $AGENT · 1% fee · Graduate at 15M $AGENT</div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">TOKEN NAME *</label>
+        <input id="mlCreateName" class="input-cyber" placeholder="e.g. Pepe Agent" maxlength="50"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">SYMBOL * (2-10 chars)</label>
+          <input id="mlCreateSymbol" class="input-cyber" placeholder="e.g. PEPA" maxlength="10" style="text-transform:uppercase"/>
+        </div>
+        <div>
+          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">IMAGE URL</label>
+          <input id="mlCreateImage" class="input-cyber" placeholder="https://..."/>
+        </div>
+      </div>
+      <div>
+        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">DESCRIPTION</label>
+        <textarea id="mlCreateDesc" class="input-cyber" placeholder="What is this meme about?" rows="2" maxlength="300" style="resize:none;"></textarea>
+      </div>
+      <div>
+        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">YOUR WALLET ADDRESS *</label>
+        <input id="mlCreateCreator" class="input-cyber" placeholder="0x..."/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div>
+          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">TWITTER</label>
+          <input id="mlCreateTwitter" class="input-cyber" placeholder="https://x.com/..."/>
+        </div>
+        <div>
+          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">TELEGRAM</label>
+          <input id="mlCreateTelegram" class="input-cyber" placeholder="https://t.me/..."/>
+        </div>
+        <div>
+          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">WEBSITE</label>
+          <input id="mlCreateWebsite" class="input-cyber" placeholder="https://..."/>
+        </div>
+      </div>
+    </div>
+
+    <div id="mlCreateError" style="display:none;background:rgba(255,70,90,0.1);border:1px solid rgba(255,70,90,0.3);padding:10px;margin-top:14px;" class="font-mono text-xs" style="color:#ff465a;"></div>
+
+    <div style="background:rgba(0,245,255,0.05);border:1px solid rgba(0,245,255,0.15);padding:12px;margin-top:14px;">
+      <div class="font-mono text-xs" style="color:var(--cyan);line-height:1.7">
+        ⚠ <strong>HOW IT WORKS</strong><br>
+        → Your meme launches with a bonding curve priced in $AGENT<br>
+        → Starting price: ~0.0000188 AGENT per token<br>
+        → 1% fee on every buy/sell · 25% of fee goes to referrer<br>
+        → At 15M $AGENT raised → automatically listed on AGENT DEX<br>
+        → 2% eco tax at graduation goes to ecosystem treasury
+      </div>
+    </div>
+
+    <button onclick="mlSubmitCreate()" id="mlCreateBtn" class="btn-green" style="width:100%;margin-top:16px;padding:14px;font-size:0.8rem;">
+      🚀 LAUNCH TOKEN
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ MEME LAB: TOKEN DETAIL MODAL ══════════════════════════════════════ -->
+<div id="mlTokenModal" class="ml-modal-bg" style="display:none;">
+  <div class="ml-modal-box ml-animate-fade" style="max-width:640px;">
+    <button onclick="mlCloseTokenModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#4a5568;font-size:1.1rem;cursor:pointer;">✕</button>
+
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+      <div id="mlModalImg" style="width:52px;height:52px;border-radius:50%;border:2px solid var(--cyan);background:rgba(0,245,255,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">
+        <span class="font-orbitron text-sm" style="color:var(--cyan)">?</span>
+      </div>
+      <div>
+        <div class="font-orbitron text-xl font-bold text-white" id="mlModalName">—</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+          <span class="font-mono text-sm" style="color:var(--cyan)" id="mlModalSymbol">$—</span>
+          <span id="mlModalGradBadge" class="ml-tag" style="display:none;border-color:var(--green);color:var(--green)">🎓 GRADUATED</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:12px;text-align:center;">
+        <div class="font-mono text-xs text-slate-500">PRICE</div>
+        <div class="font-orbitron text-sm font-bold" style="color:var(--cyan)" id="mlModalPrice">—</div>
+        <div class="font-mono text-xs text-slate-500" id="mlModalPriceUsd">—</div>
+      </div>
+      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:12px;text-align:center;">
+        <div class="font-mono text-xs text-slate-500">MKT CAP</div>
+        <div class="font-orbitron text-sm font-bold" style="color:var(--green)" id="mlModalMcap">—</div>
+      </div>
+      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:12px;text-align:center;">
+        <div class="font-mono text-xs text-slate-500">HOLDERS</div>
+        <div class="font-orbitron text-sm font-bold text-white" id="mlModalHolders">—</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span class="font-mono text-xs text-slate-400">Graduation Progress</span>
+        <span class="font-mono text-xs font-bold" style="color:var(--cyan)" id="mlModalProgress">0%</span>
+      </div>
+      <div class="ml-progress-bar"><div class="ml-progress-fill" id="mlModalProgressBar" style="width:0%"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <span class="font-mono text-xs text-slate-500" id="mlModalAgentRaised">0 AGENT raised</span>
+        <span class="font-mono text-xs text-slate-500">15,000,000 AGENT goal</span>
+      </div>
+    </div>
+
+    <div id="mlModalDesc" class="font-mono text-xs text-slate-400 mb-4" style="line-height:1.6;"></div>
+
+    <div style="display:flex;border-bottom:1px solid rgba(0,245,255,0.1);margin-bottom:16px;">
+      <button class="ml-tab-btn active" id="mlBuyTab" onclick="mlSetTradeTab('buy')">BUY</button>
+      <button class="ml-tab-btn" id="mlSellTab" onclick="mlSetTradeTab('sell')">SELL</button>
+      <button class="ml-tab-btn" id="mlHoldersTab" onclick="mlSetTradeTab('holders')">HOLDERS</button>
+      <button class="ml-tab-btn" id="mlInfoTab" onclick="mlSetTradeTab('info')">INFO</button>
+    </div>
+
+    <!-- BUY PANEL -->
+    <div id="mlBuyPanel">
+      <div style="background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.15);padding:14px;margin-bottom:12px;">
+        <div class="font-mono text-xs text-slate-400 mb-2">Pay with $AGENT (or SUI — auto-converted)</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+          <button onclick="mlSetAmount(100)" class="ml-sort-btn" style="font-size:0.7rem;">100 AGENT</button>
+          <button onclick="mlSetAmount(1000)" class="ml-sort-btn" style="font-size:0.7rem;">1K AGENT</button>
+          <button onclick="mlSetAmount(10000)" class="ml-sort-btn" style="font-size:0.7rem;">10K AGENT</button>
+          <button onclick="mlSetAmount(100000)" class="ml-sort-btn" style="font-size:0.7rem;">100K AGENT</button>
+        </div>
+        <input id="mlBuyAmount" class="input-cyber" type="number" placeholder="AGENT amount to spend" oninput="mlUpdateBuyQuote()" style="margin-bottom:10px;"/>
+        <div id="mlBuyQuote" class="font-mono text-xs text-slate-500" style="margin-bottom:10px;line-height:1.7;white-space:pre-line;"></div>
+        <div style="background:rgba(255,200,0,0.06);border:1px solid rgba(255,200,0,0.2);padding:10px;margin-bottom:10px;">
+          <div class="font-mono text-xs" style="color:#ffc864;line-height:1.6">
+            ⚠ <strong>To buy via site:</strong><br>
+            1. Send AGENT to treasury address below<br>
+            2. Paste TX digest in bot: <code>/meme buy [symbol] [digest]</code><br>
+            Or use the bot: <a href="https://t.me/sui_agent_trader_bot" target="_blank" style="color:var(--cyan)">@sui_agent_trader_bot</a> → 🚀 Meme Lab
+          </div>
+        </div>
+        <div class="font-mono text-xs text-slate-500">Treasury address:</div>
+        <div class="font-mono text-xs" style="color:var(--cyan);word-break:break-all;" id="mlTreasuryAddr">Loading...</div>
+      </div>
+      <div style="background:rgba(180,79,255,0.06);border:1px solid rgba(180,79,255,0.2);padding:12px;margin-top:10px;">
+        <div class="font-mono text-xs font-bold mb-2" style="color:var(--purple);">🔗 YOUR REFERRAL LINK</div>
+        <div class="font-mono text-xs text-slate-400 mb-2" style="line-height:1.6;">
+          Share your link — earn <strong style="color:var(--green)">25% of the 1% fee</strong> on every referred trade.
+        </div>
+        <div id="mlMyRefLink" class="font-mono text-xs" style="color:var(--purple);word-break:break-all;margin-bottom:8px;">Use bot /ref or connect wallet to see your link</div>
+        <button onclick="mlCopyRefLink()" class="btn-cyan" style="font-size:0.65rem;padding:6px 14px;">📋 Copy Referral Link</button>
+        <div id="mlRefStats" class="font-mono text-xs text-slate-500 mt-2"></div>
+      </div>
+    </div>
+
+    <!-- SELL PANEL -->
+    <div id="mlSellPanel" style="display:none;">
+      <div style="background:rgba(255,70,90,0.04);border:1px solid rgba(255,70,90,0.15);padding:14px;">
+        <div class="font-mono text-xs text-slate-400 mb-2">Sell $<span id="mlSellSymbolLabel">MEME</span> for $AGENT</div>
+        <input id="mlSellAmount" class="input-cyber" type="number" placeholder="Token amount to sell" oninput="mlUpdateSellQuote()" style="margin-bottom:10px;"/>
+        <div id="mlSellQuote" class="font-mono text-xs text-slate-500" style="margin-bottom:10px;line-height:1.7;white-space:pre-line;"></div>
+        <div style="background:rgba(255,200,0,0.06);border:1px solid rgba(255,200,0,0.2);padding:10px;">
+          <div class="font-mono text-xs" style="color:#ffc864;line-height:1.6">
+            ⚠ Use the Telegram bot to sell:<br>
+            <a href="https://t.me/sui_agent_trader_bot" target="_blank" style="color:var(--cyan)">@sui_agent_trader_bot</a> → 🚀 Meme Lab → select token → Sell
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOLDERS PANEL -->
+    <div id="mlHoldersPanel" style="display:none;">
+      <div id="mlHoldersList" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- INFO PANEL -->
+    <div id="mlInfoPanel" style="display:none;">
+      <div style="display:flex;flex-direction:column;gap:8px;" id="mlInfoContent"></div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <a href="https://t.me/sui_agent_trader_bot" target="_blank" class="btn-cyan" style="flex:1;text-align:center;font-size:0.7rem;padding:10px;text-decoration:none;">🤖 TRADE ON BOT</a>
+      <button onclick="mlShareToken()" class="btn-cyan" style="font-size:0.7rem;padding:10px 16px;">📤 SHARE</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- ══════════════════════════════════════ TICKER ══════════════════════════════════════ -->
 <div class="ticker-wrap">
   <div class="ticker-content" id="tickerContent">
@@ -507,6 +799,12 @@
     <span class="font-mono text-xs px-8" style="color:var(--cyan)">SUPPLY: 1,000,000,000 $AGENT</span>
     <span class="font-mono text-xs px-8 text-slate-500">◈</span>
     <span class="font-mono text-xs px-8" style="color:var(--green)">AGENT-ONLY POOL — BADGE VERIFIED ON-CHAIN</span>
+    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
+    <span class="font-mono text-xs px-8" style="color:var(--green)">🚀 MEME LAB — LAUNCH MEMES IN $AGENT</span>
+    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
+    <span class="font-mono text-xs px-8" style="color:var(--purple)">15M AGENT GRADUATION THRESHOLD</span>
+    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
+    <span class="font-mono text-xs px-8" style="color:var(--cyan)">1% FEE · 25% REFERRAL REWARDS</span>
   </div>
 </div>
 
@@ -1479,6 +1777,110 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   </div>
 </section>
 
+<!-- ══════════════════════════════════════ MEME LAB ══════════════════════════════════════ -->
+<section id="memelab" style="padding:100px 24px;background:var(--bg2)">
+  <div style="max-width:1200px;margin:0 auto">
+
+    <!-- Header -->
+    <div class="reveal text-center mb-10">
+      <div class="section-label mb-3">◈ AGENT ECOSYSTEM · VIRTUAL TOKEN LAUNCHPAD</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:8px;">
+        <div class="dot-ripple"></div>
+        <h2 class="font-orbitron font-black" style="font-size:2.5rem;color:#fff;letter-spacing:0.05em">MEME <span style="color:var(--green);text-shadow:0 0 30px var(--green)">LAB</span></h2>
+      </div>
+      <p style="color:#6a8bad;font-weight:300;max-width:520px;margin:0 auto 24px;line-height:1.6;">
+        Launch meme tokens that trade exclusively in <span style="color:var(--cyan)">$AGENT</span>. Bonding curve, 15M AGENT graduation, then listed on the AGENT DEX.
+      </p>
+      <!-- Stats -->
+      <div style="display:flex;justify-content:center;gap:32px;flex-wrap:wrap;margin-bottom:28px;">
+        <div style="text-align:center"><div class="font-orbitron text-xl font-bold" style="color:var(--green)" id="mlHeroTotal">—</div><div class="font-mono text-xs text-slate-500 mt-1">TOKENS LAUNCHED</div></div>
+        <div style="width:1px;background:var(--border);height:40px;margin:auto 0;"></div>
+        <div style="text-align:center"><div class="font-orbitron text-xl font-bold" style="color:var(--cyan)" id="mlHeroGrad">—</div><div class="font-mono text-xs text-slate-500 mt-1">GRADUATED</div></div>
+        <div style="width:1px;background:var(--border);height:40px;margin:auto 0;"></div>
+        <div style="text-align:center"><div class="font-orbitron text-xl font-bold" style="color:var(--purple)" id="mlHeroVol">—</div><div class="font-mono text-xs text-slate-500 mt-1">TOTAL VOLUME</div></div>
+        <div style="width:1px;background:var(--border);height:40px;margin:auto 0;"></div>
+        <div style="text-align:center"><div class="font-orbitron text-lg font-bold" style="color:var(--green)">15M</div><div class="font-mono text-xs text-slate-500 mt-1">GRAD THRESHOLD</div></div>
+      </div>
+      <!-- How it works strip -->
+      <div style="display:flex;justify-content:center;gap:0;flex-wrap:wrap;max-width:800px;margin:0 auto 28px;">
+        <div style="flex:1;min-width:140px;padding:12px;border:1px solid rgba(0,245,255,0.1);background:rgba(0,245,255,0.03);">
+          <div class="font-orbitron text-xs" style="color:var(--cyan)">1. LAUNCH</div>
+          <div class="font-mono text-xs text-slate-500 mt-1">Anyone can create</div>
+        </div>
+        <div style="flex:1;min-width:140px;padding:12px;border:1px solid rgba(0,245,255,0.1);background:rgba(0,245,255,0.03);">
+          <div class="font-orbitron text-xs" style="color:var(--purple)">2. TRADE</div>
+          <div class="font-mono text-xs text-slate-500 mt-1">Buy/sell with AGENT</div>
+        </div>
+        <div style="flex:1;min-width:140px;padding:12px;border:1px solid rgba(0,245,255,0.1);background:rgba(0,245,255,0.03);">
+          <div class="font-orbitron text-xs" style="color:var(--green)">3. GRADUATE</div>
+          <div class="font-mono text-xs text-slate-500 mt-1">15M AGENT raised</div>
+        </div>
+        <div style="flex:1;min-width:140px;padding:12px;border:1px solid rgba(0,245,255,0.1);background:rgba(0,245,255,0.03);">
+          <div class="font-orbitron text-xs" style="color:var(--green)">4. DEX LISTING</div>
+          <div class="font-mono text-xs text-slate-500 mt-1">MEME/AGENT pair</div>
+        </div>
+      </div>
+      <button onclick="mlOpenCreateModal()" class="btn-green" style="font-size:0.85rem;padding:14px 32px;">🚀 LAUNCH A MEME</button>
+    </div>
+
+    <!-- Filter + Sort Bar -->
+    <div class="reveal" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;gap:0;">
+        <button class="ml-tab-btn active" id="mlTabAll" onclick="mlSetTab('all')">ALL TOKENS</button>
+        <button class="ml-tab-btn" id="mlTabTrending" onclick="mlSetTab('trending')">🔥 TRENDING</button>
+        <button class="ml-tab-btn" id="mlTabNew" onclick="mlSetTab('new')">✨ NEW</button>
+        <button class="ml-tab-btn" id="mlTabGrad" onclick="mlSetTab('graduated')">🎓 GRADUATED</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input id="mlSearchInput" class="input-cyber" placeholder="Search tokens..." style="width:180px;padding:7px 12px;" oninput="mlFilterTokens()" />
+        <button class="ml-sort-btn active" id="mlSortNewest" onclick="mlSetSort('newest')">NEWEST</button>
+        <button class="ml-sort-btn" id="mlSortVolume" onclick="mlSetSort('trending')">VOLUME</button>
+        <button class="ml-sort-btn" id="mlSortProgress" onclick="mlSetSort('progress')">PROGRESS</button>
+      </div>
+    </div>
+
+    <!-- Token Grid -->
+    <div id="mlTokenGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;min-height:200px;">
+      <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#2a3f55;">
+        <div class="ml-spinner" style="margin:0 auto 12px;"></div>
+        <div class="font-mono text-sm">Loading tokens...</div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="mlEmptyState" style="display:none;text-align:center;padding:80px 20px;">
+      <div class="font-orbitron text-2xl font-bold mb-4" style="color:rgba(0,245,255,0.3)">NO TOKENS YET</div>
+      <p class="font-mono text-sm text-slate-500 mb-6">Be the first to launch a meme on the AGENT ecosystem!</p>
+      <button onclick="mlOpenCreateModal()" class="btn-green">+ LAUNCH FIRST MEME</button>
+    </div>
+
+    <!-- Fee info -->
+    <div class="reveal card p-6 rounded-none mt-10" style="border-color:rgba(180,79,255,0.2)">
+      <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ FEE STRUCTURE & REFERRALS</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+        <div>
+          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--cyan)">1% TRADE FEE</div>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">Every buy and sell pays 1% fee (deducted from payment). Fee keeps the ecosystem running.</p>
+        </div>
+        <div>
+          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--purple)">25% REFERRAL SHARE</div>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">Refer traders with your link — you earn 25% of every 1% fee from your referrals. Share your link via <code>/ref</code> in the bot.</p>
+        </div>
+        <div>
+          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--green)">GRADUATION → DEX</div>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">At 15M AGENT raised, token graduates: 2% eco tax sent to treasury, remaining listed as MEME/AGENT pair on the DEX.</p>
+        </div>
+        <div>
+          <div class="font-orbitron text-sm font-bold mb-2" style="color:#ffa07a">TRADE VIA BOT</div>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">All trades execute through <a href="https://t.me/sui_agent_trader_bot" target="_blank" style="color:var(--cyan)">@sui_agent_trader_bot</a>. Use <code>/meme</code> to browse, buy, and sell tokens.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
 <!-- ══════════════════════════════════════ TRUST ══════════════════════════════════════ -->
 <section id="trust" style="padding:100px 24px;background:var(--bg2)">
   <div style="max-width:1100px;margin:0 auto">
@@ -1876,7 +2278,7 @@ async function updatePriceBar() {
     document.getElementById('priceUsd').textContent     = fmtUsd(priceUsd);
     document.getElementById('marketCap').textContent    = fmtUsdShort(mcap);
     document.getElementById('fdv').textContent          = fmtUsdShort(mcap);
-    document.getElementById('liquidity').textContent    = fmtUsdShort(liqUsd);
+    document.getElementById('statLiquidity').textContent = fmtUsdShort(liqUsd);
     const lpPoolSuiDisplay = (lpSui / 1_000_000_000).toFixed(1);
     document.getElementById('poolReserves').textContent =
       (suiReserve + lpSui/1e9).toFixed(1) + ' SUI total (' + suiReserve.toFixed(1) + '+' + lpPoolSuiDisplay + ' LP)';
@@ -3313,6 +3715,385 @@ async function fetchSwapQuote() {
     if (detailEl) detailEl.style.display = 'block';
   } catch(e) { console.log('Quote error:', e.message); }
 }
+
+
+
+// ══════════════════════════════════════
+// MEME LAB — Integrated Launchpad
+// ══════════════════════════════════════
+(function() {
+const BACKEND = API_URL; // alias to existing backend constant
+
+let mlAllTokens   = [];
+let mlCurrentTab  = 'all';
+let mlCurrentSort = 'newest';
+let mlActiveToken = null;
+let mlMyWallet    = null;
+
+// Read referral from URL: ?ref=0x...
+const mlUrlRef = new URLSearchParams(window.location.search).get('ref') || null;
+if (mlUrlRef) {
+  window.addEventListener('DOMContentLoaded', () => {
+    const banner = document.createElement('div');
+    banner.style.cssText = 'background:rgba(0,255,136,0.1);border-bottom:1px solid rgba(0,255,136,0.3);padding:8px 20px;text-align:center;font-family:Share Tech Mono,monospace;font-size:0.75rem;color:#00ff88;position:relative;z-index:60;';
+    banner.textContent = '🎁 Referral active — your trades earn rewards for ' + mlUrlRef.slice(0,8) + '...' + mlUrlRef.slice(-6);
+    document.body.prepend(banner);
+  });
+}
+
+// ── Sync memelab wallet with site wallet ──
+const origUpdateWalletUI = window.updateWalletUI;
+window.updateWalletUI = function(addr) {
+  if (origUpdateWalletUI) origUpdateWalletUI(addr);
+  mlMyWallet = addr;
+  mlUpdateRefLink();
+};
+
+// ── Load tokens ──
+async function mlLoadTokens() {
+  try {
+    const res  = await fetch(BACKEND + '/launchpad/tokens?sort=' + mlCurrentSort + '&limit=100');
+    const data = await res.json();
+    mlAllTokens = data.tokens || [];
+    mlUpdateHeroStats(mlAllTokens);
+    mlRenderGrid();
+  } catch(e) {
+    const grid = document.getElementById('mlTokenGrid');
+    if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:#ff465a;" class="font-mono text-sm">Failed to load tokens. Backend may be sleeping — try in 30s.</div>';
+  }
+}
+window.mlLoadTokens = mlLoadTokens;
+
+function mlUpdateHeroStats(tokens) {
+  const total = document.getElementById('mlHeroTotal');
+  const grad  = document.getElementById('mlHeroGrad');
+  const vol   = document.getElementById('mlHeroVol');
+  if (total) total.textContent = tokens.length;
+  if (grad)  grad.textContent  = tokens.filter(t=>t.graduated).length;
+  if (vol) {
+    const v = tokens.reduce((s,t) => s + (t.volumeAgent||0), 0);
+    vol.textContent = v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1000 ? (v/1000).toFixed(1)+'K' : v.toFixed(0);
+  }
+}
+
+function mlFmtAgent(n) {
+  if (!n) return '0';
+  if (n >= 1e6) return (n/1e6).toFixed(2)+'M';
+  if (n >= 1000) return (n/1000).toFixed(1)+'K';
+  return n.toFixed(0);
+}
+
+function mlRenderGrid() {
+  const grid  = document.getElementById('mlTokenGrid');
+  const empty = document.getElementById('mlEmptyState');
+  if (!grid) return;
+  const search = (document.getElementById('mlSearchInput')?.value || '').toLowerCase();
+
+  let filtered = mlAllTokens.filter(t => {
+    if (mlCurrentTab === 'graduated' && !t.graduated) return false;
+    if (mlCurrentTab === 'new' && t.graduated) return false;
+    if (search) return t.name.toLowerCase().includes(search) || t.symbol.toLowerCase().includes(search);
+    return true;
+  });
+
+  if (mlCurrentTab === 'trending') {
+    filtered.sort((a,b) => (b.volumeAgent||0) - (a.volumeAgent||0));
+  }
+
+  if (filtered.length === 0) {
+    grid.style.display = 'none';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  grid.style.display = 'grid';
+  if (empty) empty.style.display = 'none';
+
+  grid.innerHTML = filtered.map(t => `
+    <div class="token-tile ml-animate-fade" onclick="mlOpenToken('${t.id}')">
+      ${t.graduated ? '<div style="position:absolute;top:0;right:0;background:var(--green);color:var(--bg);font-family:Orbitron,sans-serif;font-size:0.55rem;padding:3px 10px;letter-spacing:0.1em;z-index:1;">GRADUATED</div>' : ''}
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.06);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+          ${t.image ? `<img src="${t.image}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><span class="font-orbitron text-xs" style="color:var(--cyan);display:none">${t.symbol.slice(0,2)}</span>` : `<span class="font-orbitron text-xs" style="color:var(--cyan)">${t.symbol.slice(0,2)}</span>`}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div class="font-orbitron text-sm font-bold text-white" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.name}</div>
+          <div class="font-mono text-xs" style="color:var(--cyan)">$${t.symbol}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="font-mono text-xs font-bold" style="color:var(--green)">${mlFmtAgent(t.marketCap)}</div>
+          <div class="font-mono text-xs text-slate-500">mcap</div>
+        </div>
+      </div>
+      <div class="ml-progress-bar" style="margin-bottom:6px;">
+        <div class="ml-progress-fill" style="width:${(t.progress||0).toFixed(1)}%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <div class="font-mono text-xs text-slate-500">${(t.progress||0).toFixed(1)}% to grad</div>
+        <div class="font-mono text-xs text-slate-500">${t.holders||0} holders</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;">
+        <div class="font-mono text-xs" style="color:var(--cyan)">${t.price?.toFixed(8)||'—'} AGENT</div>
+        <div class="font-mono text-xs text-slate-500">${t.trades||0} trades</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Tabs & Sort ──
+window.mlSetTab = function(tab) {
+  mlCurrentTab = tab;
+  ['mlTabAll','mlTabTrending','mlTabNew','mlTabGrad'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+  const map = { all:'mlTabAll', trending:'mlTabTrending', new:'mlTabNew', graduated:'mlTabGrad' };
+  document.getElementById(map[tab])?.classList.add('active');
+  mlRenderGrid();
+};
+
+window.mlSetSort = function(sort) {
+  mlCurrentSort = sort;
+  ['mlSortNewest','mlSortVolume','mlSortProgress'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+  const map = { newest:'mlSortNewest', trending:'mlSortVolume', progress:'mlSortProgress' };
+  document.getElementById(map[sort])?.classList.add('active');
+  mlAllTokens.sort((a,b) => {
+    if (sort === 'newest')   return b.createdAt - a.createdAt;
+    if (sort === 'trending') return (b.volumeAgent||0) - (a.volumeAgent||0);
+    if (sort === 'progress') return (b.progress||0) - (a.progress||0);
+    return 0;
+  });
+  mlRenderGrid();
+};
+
+window.mlFilterTokens = function() { mlRenderGrid(); };
+
+// ── Create Modal ──
+window.mlOpenCreateModal = function() {
+  const m = document.getElementById('mlCreateModal');
+  if (m) { m.style.display = 'flex'; }
+  const err = document.getElementById('mlCreateError');
+  if (err) err.style.display = 'none';
+  // Pre-fill wallet if connected
+  if (connectedWallet?.address) {
+    const el = document.getElementById('mlCreateCreator');
+    if (el) el.value = connectedWallet.address;
+  }
+};
+window.mlCloseCreateModal = function() {
+  const m = document.getElementById('mlCreateModal');
+  if (m) m.style.display = 'none';
+};
+
+window.mlSubmitCreate = async function() {
+  const btn    = document.getElementById('mlCreateBtn');
+  const errDiv = document.getElementById('mlCreateError');
+  if (errDiv) errDiv.style.display = 'none';
+
+  const name    = document.getElementById('mlCreateName')?.value.trim();
+  const symbol  = document.getElementById('mlCreateSymbol')?.value.trim();
+  const creator = document.getElementById('mlCreateCreator')?.value.trim();
+  const desc    = document.getElementById('mlCreateDesc')?.value.trim();
+  const image   = document.getElementById('mlCreateImage')?.value.trim();
+  const twitter = document.getElementById('mlCreateTwitter')?.value.trim();
+  const telegram= document.getElementById('mlCreateTelegram')?.value.trim();
+  const website = document.getElementById('mlCreateWebsite')?.value.trim();
+
+  if (!name || !symbol || !creator) {
+    if (errDiv) { errDiv.textContent = '❌ Name, symbol and wallet are required.'; errDiv.style.display = 'block'; }
+    return;
+  }
+  if (!creator.startsWith('0x') || creator.length < 20) {
+    if (errDiv) { errDiv.textContent = '❌ Invalid wallet address.'; errDiv.style.display = 'block'; }
+    return;
+  }
+
+  if (btn) { btn.textContent = '⏳ Launching...'; btn.disabled = true; }
+  try {
+    const res  = await fetch(BACKEND + '/launchpad/create', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, symbol, creator, description: desc||null, image: image||null, twitter: twitter||null, telegram: telegram||null, website: website||null })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      if (errDiv) { errDiv.textContent = '❌ ' + data.error; errDiv.style.display = 'block'; }
+      return;
+    }
+    mlCloseCreateModal();
+    await mlLoadTokens();
+    setTimeout(() => mlOpenToken(data.id), 300);
+  } catch(e) {
+    if (errDiv) { errDiv.textContent = '❌ Network error: ' + e.message; errDiv.style.display = 'block'; }
+  } finally {
+    if (btn) { btn.textContent = '🚀 LAUNCH TOKEN'; btn.disabled = false; }
+  }
+};
+
+// ── Token Detail Modal ──
+window.mlOpenToken = async function(id) {
+  const modal = document.getElementById('mlTokenModal');
+  if (modal) modal.style.display = 'flex';
+  mlActiveToken = id;
+
+  try {
+    const [tokenRes, treasuryRes] = await Promise.all([
+      fetch(BACKEND + '/launchpad/token/' + id),
+      fetch(BACKEND + '/launchpad/treasury'),
+    ]);
+    const token    = await tokenRes.json();
+    const treasury = await treasuryRes.json().catch(() => ({}));
+
+    const imgEl = document.getElementById('mlModalImg');
+    if (imgEl) {
+      if (token.image) { imgEl.innerHTML = '<img src="' + token.image + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"/><span class="font-orbitron text-sm" style="color:var(--cyan);display:none">' + (token.symbol?.slice(0,2)||'?') + '</span>'; }
+      else { imgEl.innerHTML = '<span class="font-orbitron text-sm" style="color:var(--cyan)">' + (token.symbol?.slice(0,2)||'?') + '</span>'; }
+    }
+
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('mlModalName',    token.name);
+    set('mlModalSymbol',  '$' + token.symbol);
+    const badge = document.getElementById('mlModalGradBadge');
+    if (badge) badge.style.display = token.graduated ? 'inline-block' : 'none';
+
+    set('mlModalPrice',    (token.price||0).toFixed(8) + ' AGENT');
+    set('mlModalPriceUsd', token.priceUsd ? '$' + token.priceUsd.toFixed(10) : '');
+    set('mlModalMcap',     mlFmtAgent(token.marketCap) + ' AGENT');
+    set('mlModalHolders',  token.holdersCount || 0);
+
+    const prog = token.progress || 0;
+    set('mlModalProgress',    prog.toFixed(2) + '%');
+    const pb = document.getElementById('mlModalProgressBar'); if (pb) pb.style.width = prog + '%';
+    set('mlModalAgentRaised', mlFmtAgent(token.agentRaised||0) + ' AGENT raised');
+    set('mlModalDesc',        token.description || '');
+
+    const sellLbl = document.getElementById('mlSellSymbolLabel'); if (sellLbl) sellLbl.textContent = token.symbol;
+    set('mlTreasuryAddr', treasury.address || 'Loading...');
+
+    // Holders list
+    const holdersDiv = document.getElementById('mlHoldersList');
+    if (holdersDiv) {
+      const holders = token.holdersAll || [];
+      if (holders.length === 0) { holdersDiv.innerHTML = '<div class="font-mono text-xs text-slate-500">No holders yet. Be the first!</div>'; }
+      else {
+        holdersDiv.innerHTML = holders.map((h,i) => '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.06);"><div class="font-mono text-xs" style="color:' + (i===0?'var(--green)':'#8ba8c8') + '">' + (i===0?'👑 ':'') + h.wallet.slice(0,8) + '...' + h.wallet.slice(-6) + '</div><div class="font-mono text-xs" style="color:var(--cyan)">' + mlFmtAgent(h.balance) + ' $' + token.symbol + '</div></div>').join('');
+      }
+    }
+
+    // Info panel
+    const infoDiv = document.getElementById('mlInfoContent');
+    if (infoDiv) {
+      infoDiv.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+        '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:10px;"><div class="font-mono text-xs text-slate-500">TOTAL SUPPLY</div><div class="font-mono text-xs text-white">1,000,000,000</div></div>' +
+        '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:10px;"><div class="font-mono text-xs text-slate-500">TRADES</div><div class="font-mono text-xs text-white">' + (token.trades||0) + '</div></div>' +
+        '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:10px;"><div class="font-mono text-xs text-slate-500">VOLUME</div><div class="font-mono text-xs" style="color:var(--cyan)">' + mlFmtAgent(token.volumeAgent||0) + ' AGENT</div></div>' +
+        '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:10px;"><div class="font-mono text-xs text-slate-500">CREATOR</div><div class="font-mono text-xs text-white">' + (token.creator||'').slice(0,8) + '...' + (token.creator||'').slice(-6) + '</div></div>' +
+        '</div>' +
+        ((token.twitter||token.telegram||token.website) ?
+          '<div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;">' +
+          (token.twitter  ? '<a href="' + token.twitter  + '" target="_blank" class="btn-cyan" style="font-size:0.65rem;padding:6px 12px;text-decoration:none;">𝕏 Twitter</a>' : '') +
+          (token.telegram ? '<a href="' + token.telegram + '" target="_blank" class="btn-cyan" style="font-size:0.65rem;padding:6px 12px;text-decoration:none;">TG Telegram</a>' : '') +
+          (token.website  ? '<a href="' + token.website  + '" target="_blank" class="btn-cyan" style="font-size:0.65rem;padding:6px 12px;text-decoration:none;">🌐 Website</a>' : '') +
+          '</div>' : '') +
+        '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:10px;margin-top:4px;"><div class="font-mono text-xs text-slate-500 mb-1">LAUNCHED</div><div class="font-mono text-xs text-white">' + new Date(token.createdAt||0).toLocaleString() + '</div></div>';
+    }
+
+    mlSetTradeTab('buy');
+    mlUpdateRefLink();
+  } catch(e) {
+    console.error('mlOpenToken error:', e);
+  }
+};
+
+window.mlCloseTokenModal = function() {
+  const m = document.getElementById('mlTokenModal'); if (m) m.style.display = 'none';
+  mlActiveToken = null;
+  const bq = document.getElementById('mlBuyQuote');  if (bq) bq.textContent = '';
+  const sq = document.getElementById('mlSellQuote'); if (sq) sq.textContent = '';
+  const ba = document.getElementById('mlBuyAmount'); if (ba) ba.value = '';
+  const sa = document.getElementById('mlSellAmount'); if (sa) sa.value = '';
+};
+
+window.mlSetTradeTab = function(tab) {
+  ['mlBuyPanel','mlSellPanel','mlHoldersPanel','mlInfoPanel'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  ['mlBuyTab','mlSellTab','mlHoldersTab','mlInfoTab'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+  const p = document.getElementById('ml' + tab.charAt(0).toUpperCase() + tab.slice(1) + 'Panel'); if (p) p.style.display = 'block';
+  document.getElementById('ml' + tab.charAt(0).toUpperCase() + tab.slice(1) + 'Tab')?.classList.add('active');
+};
+function mlSetTradeTab(tab) { window.mlSetTradeTab(tab); }
+
+window.mlSetAmount = function(n) { const el = document.getElementById('mlBuyAmount'); if (el) { el.value = n; mlUpdateBuyQuote(); } };
+
+window.mlUpdateBuyQuote = async function() {
+  if (!mlActiveToken) return;
+  const amount = parseFloat(document.getElementById('mlBuyAmount')?.value);
+  const el = document.getElementById('mlBuyQuote');
+  if (!amount || amount <= 0) { if (el) el.textContent = ''; return; }
+  try {
+    const res  = await fetch(BACKEND + '/launchpad/token/' + mlActiveToken + '/quote?type=buy&amount=' + amount);
+    const data = await res.json();
+    if (el) {
+      if (data.error) { el.textContent = '❌ ' + data.error; return; }
+      el.innerHTML = 'You get: <span style="color:var(--green);font-weight:bold">' + mlFmtAgent(data.memeOut) + ' tokens</span>\nFee: ' + (data.agentFee?.toFixed(4)||'?') + ' AGENT (1%)\nPrice impact: ' + (data.priceImpact||'?') + '\nNew price: ' + (data.newPrice?.toFixed(8)||'?') + ' AGENT';
+    }
+  } catch { if (el) el.textContent = '⏳ Fetching quote...'; }
+};
+
+window.mlUpdateSellQuote = async function() {
+  if (!mlActiveToken) return;
+  const amount = parseFloat(document.getElementById('mlSellAmount')?.value);
+  const el = document.getElementById('mlSellQuote');
+  if (!amount || amount <= 0) { if (el) el.textContent = ''; return; }
+  try {
+    const res  = await fetch(BACKEND + '/launchpad/token/' + mlActiveToken + '/quote?type=sell&amount=' + amount);
+    const data = await res.json();
+    if (el) {
+      if (data.error) { el.textContent = '❌ ' + data.error; return; }
+      el.innerHTML = 'You receive: <span style="color:var(--cyan);font-weight:bold">' + (data.agentOut?.toFixed(4)||'?') + ' AGENT</span>\nFee: ' + (data.agentFee?.toFixed(4)||'?') + ' AGENT (1%)\nPrice per token: ' + (data.pricePerToken?.toFixed(8)||'?') + ' AGENT';
+    }
+  } catch { if (el) el.textContent = '⏳ Fetching quote...'; }
+};
+
+function mlUpdateRefLink() {
+  const refWallet = mlMyWallet || mlUrlRef || (typeof connectedWallet !== 'undefined' && connectedWallet?.address);
+  const linkEl = document.getElementById('mlMyRefLink');
+  const statsEl = document.getElementById('mlRefStats');
+  if (!refWallet) {
+    if (linkEl) linkEl.textContent = 'Use bot /ref command or connect wallet to see your link';
+    return;
+  }
+  const refUrl = location.origin + location.pathname + '?id=' + (mlActiveToken||'') + '&ref=' + refWallet + '#memelab';
+  if (linkEl) linkEl.textContent = refUrl;
+  if (statsEl && mlActiveToken) {
+    fetch(BACKEND + '/launchpad/referral/' + refWallet)
+      .then(r => r.json())
+      .then(d => { if (statsEl) statsEl.textContent = 'Earned: ' + (d.totalEarned?.toFixed(2)||0) + ' AGENT ($' + (d.totalEarnedUsd?.toFixed(2)||0) + ') · ' + (d.totalReferrals||0) + ' referrals'; })
+      .catch(() => {});
+  }
+}
+
+window.mlCopyRefLink = function() {
+  const refWallet = mlMyWallet || mlUrlRef || (typeof connectedWallet !== 'undefined' && connectedWallet?.address);
+  if (!refWallet) { alert('Use the Telegram bot: /ref — to get your personal referral link'); return; }
+  const refUrl = location.origin + location.pathname + '?id=' + (mlActiveToken||'') + '&ref=' + refWallet + '#memelab';
+  navigator.clipboard.writeText(refUrl).then(() => alert('Referral link copied! Share to earn 25% of every trade fee.')).catch(() => prompt('Copy your referral link:', refUrl));
+};
+
+window.mlShareToken = function() {
+  if (!mlActiveToken) return;
+  const refWallet = mlMyWallet || (typeof connectedWallet !== 'undefined' && connectedWallet?.address);
+  const ref = refWallet ? '&ref=' + refWallet : '';
+  const url = location.origin + location.pathname + '?id=' + mlActiveToken + ref + '#memelab';
+  navigator.clipboard.writeText(url).then(() => alert('Link copied!')).catch(() => prompt('Copy this link:', url));
+};
+
+// ── Auto-open from URL param ──
+const mlUrlParams = new URLSearchParams(window.location.search);
+const mlTokenIdParam = mlUrlParams.get('id');
+
+// ── Init ──
+mlLoadTokens();
+if (mlTokenIdParam) {
+  setTimeout(() => { mlOpenToken(mlTokenIdParam); document.getElementById('memelab')?.scrollIntoView({behavior:'smooth'}); }, 1000);
+}
+setInterval(mlLoadTokens, 30000);
+
+})(); // end IIFE
 
 </script>
 </body>
