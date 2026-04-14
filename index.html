@@ -601,6 +601,12 @@
     <div class="font-orbitron text-lg font-bold text-white mb-1">🚀 LAUNCH A MEME</div>
     <div class="font-mono text-xs mb-6" style="color:var(--cyan)">Tokens trade exclusively in $AGENT · 1% fee · Graduate at 15M $AGENT</div>
 
+    <!-- Connected wallet banner -->
+    <div id="mlCreateWalletBanner" style="display:none;background:rgba(0,255,136,0.07);border:1px solid rgba(0,255,136,0.25);padding:8px 12px;margin-bottom:4px;align-items:center;gap:8px;">
+      <span style="color:var(--green);font-size:0.8rem;">●</span>
+      <span class="font-mono text-xs" style="color:var(--green);" id="mlCreateWalletLabel">Wallet connected</span>
+    </div>
+
     <div style="display:flex;flex-direction:column;gap:14px;">
       <div>
         <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">TOKEN NAME *</label>
@@ -621,8 +627,8 @@
         <textarea id="mlCreateDesc" class="input-cyber" placeholder="What is this meme about?" rows="2" maxlength="300" style="resize:none;"></textarea>
       </div>
       <div>
-        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">YOUR WALLET ADDRESS *</label>
-        <input id="mlCreateCreator" class="input-cyber" placeholder="0x..."/>
+        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">LAUNCHER WALLET (auto-filled) *</label>
+        <input id="mlCreateCreator" class="input-cyber" placeholder="Connect wallet above to auto-fill" readonly style="opacity:0.7;cursor:not-allowed;"/>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
         <div>
@@ -637,6 +643,11 @@
           <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">WEBSITE</label>
           <input id="mlCreateWebsite" class="input-cyber" placeholder="https://..."/>
         </div>
+      </div>
+      <div>
+        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">INITIAL BUY — OPTIONAL (AGENT)</label>
+        <input id="mlCreateInitialBuy" class="input-cyber" type="number" min="0" placeholder="0 — leave blank for no initial buy"/>
+        <div class="font-mono text-xs text-slate-500 mt-1">Dev buy executes immediately at launch price to bootstrap your token. 1% fee applies.</div>
       </div>
     </div>
 
@@ -1805,7 +1816,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
       <div style="display:flex;justify-content:center;gap:0;flex-wrap:wrap;max-width:800px;margin:0 auto 28px;">
         <div style="flex:1;min-width:140px;padding:12px;border:1px solid rgba(0,245,255,0.1);background:rgba(0,245,255,0.03);">
           <div class="font-orbitron text-xs" style="color:var(--cyan)">1. LAUNCH</div>
-          <div class="font-mono text-xs text-slate-500 mt-1">Anyone can create</div>
+          <div class="font-mono text-xs text-slate-500 mt-1">Badge holders can create</div>
         </div>
         <div style="flex:1;min-width:140px;padding:12px;border:1px solid rgba(0,245,255,0.1);background:rgba(0,245,255,0.03);">
           <div class="font-orbitron text-xs" style="color:var(--purple)">2. TRADE</div>
@@ -3865,20 +3876,67 @@ window.mlSetSort = function(sort) {
 window.mlFilterTokens = function() { mlRenderGrid(); };
 
 // ── Create Modal ──
-window.mlOpenCreateModal = function() {
+window.mlOpenCreateModal = async function() {
+  // 1. Require wallet connection
+  if (!connectedWallet?.address) {
+    const confirmed = window.confirm('You need to connect your wallet to launch a meme token.\n\nClick OK to connect now.');
+    if (confirmed) await connectWallet();
+    if (!connectedWallet?.address) return; // still not connected
+  }
+
+  const wallet = connectedWallet.address;
+
+  // 2. Show modal with loading state first
   const m = document.getElementById('mlCreateModal');
-  if (m) { m.style.display = 'flex'; }
+  if (m) m.style.display = 'flex';
   const err = document.getElementById('mlCreateError');
   if (err) err.style.display = 'none';
-  // Pre-fill wallet if connected
-  if (connectedWallet?.address) {
-    const el = document.getElementById('mlCreateCreator');
-    if (el) el.value = connectedWallet.address;
+  const btn = document.getElementById('mlCreateBtn');
+  if (btn) { btn.textContent = '⏳ Checking badge...'; btn.disabled = true; }
+
+  // 3. Auto-fill wallet (readonly)
+  const creatorEl = document.getElementById('mlCreateCreator');
+  if (creatorEl) { creatorEl.value = wallet; creatorEl.readOnly = true; }
+
+  // 4. Show connected wallet banner
+  const banner = document.getElementById('mlCreateWalletBanner');
+  const label  = document.getElementById('mlCreateWalletLabel');
+  if (banner) banner.style.display = 'flex';
+  if (label)  label.textContent = '✓ ' + wallet.slice(0,10) + '...' + wallet.slice(-8);
+
+  // 5. Check AgentBadge on-chain
+  try {
+    const statusRes  = await fetch(BACKEND + '/status/' + wallet);
+    const statusData = await statusRes.json();
+    if (!statusData.registered) {
+      if (err) {
+        err.innerHTML =
+          '❌ <strong>AgentBadge required</strong> to launch a meme token.<br><br>' +
+          '• <a href="#badge" onclick="mlCloseCreateModal()" style="color:var(--cyan)">Register on this page</a> (instant, free) or<br>' +
+          '• Use the Telegram bot: <a href="https://t.me/sui_agent_trader_bot" target="_blank" style="color:var(--cyan)">@sui_agent_trader_bot</a> and run <code>/start</code>';
+        err.style.display = 'block';
+      }
+      if (btn) { btn.textContent = '🚀 LAUNCH TOKEN'; btn.disabled = true; }
+      return;
+    }
+    // Badge confirmed
+    if (btn) { btn.textContent = '🚀 LAUNCH TOKEN'; btn.disabled = false; }
+  } catch(e) {
+    // Can't verify — allow but warn
+    if (btn) { btn.textContent = '🚀 LAUNCH TOKEN'; btn.disabled = false; }
+    console.warn('Badge check failed:', e.message);
   }
 };
 window.mlCloseCreateModal = function() {
   const m = document.getElementById('mlCreateModal');
   if (m) m.style.display = 'none';
+  // Reset form
+  ['mlCreateName','mlCreateSymbol','mlCreateImage','mlCreateDesc','mlCreateTwitter','mlCreateTelegram','mlCreateWebsite','mlCreateInitialBuy'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const err = document.getElementById('mlCreateError'); if (err) err.style.display = 'none';
+  const btn = document.getElementById('mlCreateBtn'); if (btn) { btn.textContent = '🚀 LAUNCH TOKEN'; btn.disabled = false; }
+  const banner = document.getElementById('mlCreateWalletBanner'); if (banner) banner.style.display = 'none';
 };
 
 window.mlSubmitCreate = async function() {
@@ -3886,21 +3944,32 @@ window.mlSubmitCreate = async function() {
   const errDiv = document.getElementById('mlCreateError');
   if (errDiv) errDiv.style.display = 'none';
 
-  const name    = document.getElementById('mlCreateName')?.value.trim();
-  const symbol  = document.getElementById('mlCreateSymbol')?.value.trim();
-  const creator = document.getElementById('mlCreateCreator')?.value.trim();
-  const desc    = document.getElementById('mlCreateDesc')?.value.trim();
-  const image   = document.getElementById('mlCreateImage')?.value.trim();
-  const twitter = document.getElementById('mlCreateTwitter')?.value.trim();
-  const telegram= document.getElementById('mlCreateTelegram')?.value.trim();
-  const website = document.getElementById('mlCreateWebsite')?.value.trim();
-
-  if (!name || !symbol || !creator) {
-    if (errDiv) { errDiv.textContent = '❌ Name, symbol and wallet are required.'; errDiv.style.display = 'block'; }
+  // Wallet must still be connected
+  if (!connectedWallet?.address) {
+    if (errDiv) { errDiv.textContent = '❌ Wallet disconnected. Please reconnect and try again.'; errDiv.style.display = 'block'; }
     return;
   }
-  if (!creator.startsWith('0x') || creator.length < 20) {
-    if (errDiv) { errDiv.textContent = '❌ Invalid wallet address.'; errDiv.style.display = 'block'; }
+
+  const name       = document.getElementById('mlCreateName')?.value.trim();
+  const symbol     = document.getElementById('mlCreateSymbol')?.value.trim();
+  const creator    = connectedWallet.address; // always use live wallet, not editable field
+  const desc       = document.getElementById('mlCreateDesc')?.value.trim();
+  const image      = document.getElementById('mlCreateImage')?.value.trim();
+  const twitter    = document.getElementById('mlCreateTwitter')?.value.trim();
+  const telegram   = document.getElementById('mlCreateTelegram')?.value.trim();
+  const website    = document.getElementById('mlCreateWebsite')?.value.trim();
+  const initialBuy = parseFloat(document.getElementById('mlCreateInitialBuy')?.value) || 0;
+
+  if (!name || !symbol) {
+    if (errDiv) { errDiv.textContent = '❌ Name and symbol are required.'; errDiv.style.display = 'block'; }
+    return;
+  }
+  if (symbol.replace(/[^A-Za-z0-9]/g,'').length < 2) {
+    if (errDiv) { errDiv.textContent = '❌ Symbol must be 2-10 alphanumeric characters.'; errDiv.style.display = 'block'; }
+    return;
+  }
+  if (initialBuy < 0) {
+    if (errDiv) { errDiv.textContent = '❌ Initial buy cannot be negative.'; errDiv.style.display = 'block'; }
     return;
   }
 
@@ -3908,11 +3977,19 @@ window.mlSubmitCreate = async function() {
   try {
     const res  = await fetch(BACKEND + '/launchpad/create', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, symbol, creator, description: desc||null, image: image||null, twitter: twitter||null, telegram: telegram||null, website: website||null })
+      body: JSON.stringify({
+        name, symbol, creator,
+        description: desc || null,
+        image:       image || null,
+        twitter:     twitter || null,
+        telegram:    telegram || null,
+        website:     website || null,
+        initialBuy:  initialBuy > 0 ? initialBuy : 0,
+      })
     });
     const data = await res.json();
     if (!data.success) {
-      if (errDiv) { errDiv.textContent = '❌ ' + data.error; errDiv.style.display = 'block'; }
+      if (errDiv) { errDiv.innerHTML = '❌ ' + (data.error || 'Launch failed'); errDiv.style.display = 'block'; }
       return;
     }
     mlCloseCreateModal();
