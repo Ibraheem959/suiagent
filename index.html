@@ -618,8 +618,15 @@
           <input id="mlCreateSymbol" class="input-cyber" placeholder="e.g. PEPA" maxlength="10" style="text-transform:uppercase"/>
         </div>
         <div>
-          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">IMAGE URL</label>
-          <input id="mlCreateImage" class="input-cyber" placeholder="https://..."/>
+          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">IMAGE</label>
+          <input id="mlCreateImage" class="input-cyber" placeholder="https://... (URL)" style="margin-bottom:6px;"/>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="font-mono text-xs text-slate-500">or</span>
+            <input type="file" id="mlCreateImageFile" accept="image/*" style="display:none;" onchange="mlHandleImageUpload(this)"/>
+            <button type="button" onclick="document.getElementById('mlCreateImageFile').click()" class="ml-sort-btn" style="font-size:0.7rem;padding:5px 10px;">📁 Upload File</button>
+            <span id="mlImageFileName" class="font-mono text-xs text-slate-500"></span>
+          </div>
+          <div id="mlImagePreview" style="display:none;margin-top:6px;"><img id="mlImagePreviewImg" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:1px solid var(--cyan);" /></div>
         </div>
       </div>
       <div>
@@ -665,7 +672,7 @@
     </div>
 
     <button onclick="mlSubmitCreate()" id="mlCreateBtn" class="btn-green" style="width:100%;margin-top:16px;padding:14px;font-size:0.8rem;">
-      🚀 LAUNCH TOKEN
+      🚀 LAUNCH TOKEN — SIGN WITH WALLET
     </button>
   </div>
 </div>
@@ -728,32 +735,46 @@
     <!-- BUY PANEL -->
     <div id="mlBuyPanel">
       <div style="background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.15);padding:14px;margin-bottom:12px;">
-        <div class="font-mono text-xs text-slate-400 mb-2">Pay with $AGENT (or SUI — auto-converted)</div>
-        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-          <button onclick="mlSetAmount(100)" class="ml-sort-btn" style="font-size:0.7rem;">100 AGENT</button>
-          <button onclick="mlSetAmount(1000)" class="ml-sort-btn" style="font-size:0.7rem;">1K AGENT</button>
-          <button onclick="mlSetAmount(10000)" class="ml-sort-btn" style="font-size:0.7rem;">10K AGENT</button>
-          <button onclick="mlSetAmount(100000)" class="ml-sort-btn" style="font-size:0.7rem;">100K AGENT</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div class="font-mono text-xs text-slate-400">Pay with $AGENT · <span style="color:var(--green)" id="mlBuyWalletBal">—</span> available</div>
+          <div class="font-mono text-xs" style="color:var(--cyan)">1% fee</div>
         </div>
-        <input id="mlBuyAmount" class="input-cyber" type="number" placeholder="AGENT amount to spend" oninput="mlUpdateBuyQuote()" style="margin-bottom:10px;"/>
-        <div id="mlBuyQuote" class="font-mono text-xs text-slate-500" style="margin-bottom:10px;line-height:1.7;white-space:pre-line;"></div>
-        <div style="background:rgba(255,200,0,0.06);border:1px solid rgba(255,200,0,0.2);padding:10px;margin-bottom:10px;">
-          <div class="font-mono text-xs" style="color:#ffc864;line-height:1.6">
-            ⚠ <strong>To buy via site:</strong><br>
-            1. Send AGENT to treasury address below<br>
-            2. Paste TX digest in bot: <code>/meme buy [symbol] [digest]</code><br>
-            Or use the bot: <a href="https://t.me/sui_agent_trader_bot" target="_blank" style="color:var(--cyan)">@sui_agent_trader_bot</a> → 🚀 Meme Lab
+
+        <!-- % Quick buttons (reads wallet balance) -->
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <button onclick="mlSetBuyPct(25)"  class="ml-sort-btn" style="font-size:0.7rem;flex:1;">25%</button>
+          <button onclick="mlSetBuyPct(50)"  class="ml-sort-btn" style="font-size:0.7rem;flex:1;">50%</button>
+          <button onclick="mlSetBuyPct(75)"  class="ml-sort-btn" style="font-size:0.7rem;flex:1;">75%</button>
+          <button onclick="mlSetBuyPct(100)" class="ml-sort-btn" style="font-size:0.7rem;flex:1;">MAX</button>
+        </div>
+
+        <!-- Manual amount -->
+        <input id="mlBuyAmount" class="input-cyber" type="number" min="0" placeholder="AGENT amount to spend" oninput="mlUpdateBuyQuote()" style="margin-bottom:10px;"/>
+
+        <!-- Quote -->
+        <div id="mlBuyQuote" class="font-mono text-xs text-slate-500" style="margin-bottom:10px;line-height:1.8;background:rgba(0,0,0,0.2);padding:8px;border:1px solid rgba(0,245,255,0.08);display:none;"></div>
+
+        <!-- Token CA -->
+        <div style="margin-bottom:10px;background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.12);padding:8px;">
+          <div class="font-mono text-xs text-slate-500 mb-1">TOKEN CA (on-chain ID)</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="font-mono text-xs" style="color:var(--cyan);word-break:break-all;flex:1;" id="mlTokenCA">—</div>
+            <button onclick="mlCopyCA()" class="copy-btn" style="font-size:0.6rem;padding:3px 8px;flex-shrink:0;">COPY</button>
           </div>
         </div>
-        <div class="font-mono text-xs text-slate-500">Treasury address:</div>
-        <div class="font-mono text-xs" style="color:var(--cyan);word-break:break-all;" id="mlTreasuryAddr">Loading...</div>
+
+        <!-- Buy button -->
+        <div id="mlBuyStatus" class="font-mono text-xs text-center mb-2" style="color:#4a5568;min-height:14px;"></div>
+        <button onclick="mlExecuteBuy()" id="mlBuyBtn" class="btn-green" style="width:100%;font-size:0.8rem;padding:12px;">
+          ⚡ BUY — SIGN WITH WALLET
+        </button>
       </div>
+
+      <!-- Referral -->
       <div style="background:rgba(180,79,255,0.06);border:1px solid rgba(180,79,255,0.2);padding:12px;margin-top:10px;">
         <div class="font-mono text-xs font-bold mb-2" style="color:var(--purple);">🔗 YOUR REFERRAL LINK</div>
-        <div class="font-mono text-xs text-slate-400 mb-2" style="line-height:1.6;">
-          Share your link — earn <strong style="color:var(--green)">25% of the 1% fee</strong> on every referred trade.
-        </div>
-        <div id="mlMyRefLink" class="font-mono text-xs" style="color:var(--purple);word-break:break-all;margin-bottom:8px;">Use bot /ref or connect wallet to see your link</div>
+        <div class="font-mono text-xs text-slate-400 mb-2" style="line-height:1.6;">Share — earn <strong style="color:var(--green)">25% of 1% fee</strong> on every referred trade (paid on-chain).</div>
+        <div id="mlMyRefLink" class="font-mono text-xs" style="color:var(--purple);word-break:break-all;margin-bottom:8px;">Connect wallet to see your link</div>
         <button onclick="mlCopyRefLink()" class="btn-cyan" style="font-size:0.65rem;padding:6px 14px;">📋 Copy Referral Link</button>
         <div id="mlRefStats" class="font-mono text-xs text-slate-500 mt-2"></div>
       </div>
@@ -762,15 +783,28 @@
     <!-- SELL PANEL -->
     <div id="mlSellPanel" style="display:none;">
       <div style="background:rgba(255,70,90,0.04);border:1px solid rgba(255,70,90,0.15);padding:14px;">
-        <div class="font-mono text-xs text-slate-400 mb-2">Sell $<span id="mlSellSymbolLabel">MEME</span> for $AGENT</div>
-        <input id="mlSellAmount" class="input-cyber" type="number" placeholder="Token amount to sell" oninput="mlUpdateSellQuote()" style="margin-bottom:10px;"/>
-        <div id="mlSellQuote" class="font-mono text-xs text-slate-500" style="margin-bottom:10px;line-height:1.7;white-space:pre-line;"></div>
-        <div style="background:rgba(255,200,0,0.06);border:1px solid rgba(255,200,0,0.2);padding:10px;">
-          <div class="font-mono text-xs" style="color:#ffc864;line-height:1.6">
-            ⚠ Use the Telegram bot to sell:<br>
-            <a href="https://t.me/sui_agent_trader_bot" target="_blank" style="color:var(--cyan)">@sui_agent_trader_bot</a> → 🚀 Meme Lab → select token → Sell
-          </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div class="font-mono text-xs text-slate-400">Sell $<span id="mlSellSymbolLabel">MEME</span> → $AGENT</div>
+          <div class="font-mono text-xs" style="color:var(--green)">Balance: <span id="mlSellWalletBal">—</span></div>
         </div>
+
+        <!-- % Quick sell buttons (reads on-chain MemeBalance) -->
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <button onclick="mlSetSellPct(25)"  class="ml-sort-btn" style="font-size:0.7rem;flex:1;">25%</button>
+          <button onclick="mlSetSellPct(50)"  class="ml-sort-btn" style="font-size:0.7rem;flex:1;">50%</button>
+          <button onclick="mlSetSellPct(75)"  class="ml-sort-btn" style="font-size:0.7rem;flex:1;">75%</button>
+          <button onclick="mlSetSellPct(100)" class="ml-sort-btn" style="font-size:0.7rem;flex:1;">MAX</button>
+        </div>
+
+        <input id="mlSellAmount" class="input-cyber" type="number" min="0" placeholder="Token amount to sell" oninput="mlUpdateSellQuote()" style="margin-bottom:10px;"/>
+        <div id="mlSellQuote" class="font-mono text-xs text-slate-500" style="margin-bottom:10px;line-height:1.8;background:rgba(0,0,0,0.2);padding:8px;border:1px solid rgba(255,70,90,0.08);display:none;"></div>
+
+        <div id="mlSellObjectsInfo" class="font-mono text-xs text-slate-500 mb-8" style="line-height:1.6;"></div>
+
+        <div id="mlSellStatus" class="font-mono text-xs text-center mb-2" style="color:#4a5568;min-height:14px;"></div>
+        <button onclick="mlExecuteSell()" id="mlSellBtn" class="btn-cyan" style="width:100%;font-size:0.8rem;padding:12px;border-color:rgba(255,70,90,0.6);color:#ff6a6a;">
+          💸 SELL — SIGN WITH WALLET
+        </button>
       </div>
     </div>
 
@@ -1794,7 +1828,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
 
     <!-- Header -->
     <div class="reveal text-center mb-10">
-      <div class="section-label mb-3">◈ AGENT ECOSYSTEM · VIRTUAL TOKEN LAUNCHPAD</div>
+      <div class="section-label mb-3">◈ AGENT ECOSYSTEM · ON-CHAIN MEME LAUNCHPAD</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:8px;">
         <div class="dot-ripple"></div>
         <h2 class="font-orbitron font-black" style="font-size:2.5rem;color:#fff;letter-spacing:0.05em">MEME <span style="color:var(--green);text-shadow:0 0 30px var(--green)">LAB</span></h2>
@@ -1882,8 +1916,8 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
           <p class="font-mono text-xs text-slate-400 leading-relaxed">At 15M AGENT raised, token graduates: 2% eco tax sent to treasury, remaining listed as MEME/AGENT pair on the DEX.</p>
         </div>
         <div>
-          <div class="font-orbitron text-sm font-bold mb-2" style="color:#ffa07a">TRADE VIA BOT</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">All trades execute through <a href="https://t.me/sui_agent_trader_bot" target="_blank" style="color:var(--cyan)">@sui_agent_trader_bot</a>. Use <code>/meme</code> to browse, buy, and sell tokens.</p>
+          <div class="font-orbitron text-sm font-bold mb-2" style="color:#ffa07a">ON-CHAIN TOKENS</div>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">Every token is a real <strong style="color:var(--cyan)">MemeBalance</strong> object on Sui — visible in your wallet. Buy on site or via <a href="https://t.me/sui_agent_trader_bot" target="_blank" style="color:var(--cyan)">@sui_agent_trader_bot</a>. Use <code>/meme [CA]</code> to look up tokens.</p>
         </div>
       </div>
     </div>
@@ -3730,16 +3764,26 @@ async function fetchSwapQuote() {
 
 
 // ══════════════════════════════════════
-// MEME LAB — Integrated Launchpad
+// MEME LAB — On-Chain Launchpad
 // ══════════════════════════════════════
 (function() {
 const BACKEND = API_URL; // alias to existing backend constant
 
-let mlAllTokens   = [];
-let mlCurrentTab  = 'all';
-let mlCurrentSort = 'newest';
-let mlActiveToken = null;
-let mlMyWallet    = null;
+// ── On-Chain Contract IDs (set after deploy) ──
+const MEME_PACKAGE_ID = '0x26ca03f974e84e306fb8e6e4c435a725a7e7035151614e3dfb840739725bec58';
+const MEME_MANAGER_ID = '0xccb6c62363da72ed061f0c0670cffbb5261c328c519c4c34500b3c681078eeb2';
+const AGENT_COIN_TYPE = '0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT';
+const MEME_ONCHAIN    = MEME_PACKAGE_ID !== 'PENDING_DEPLOY' && MEME_MANAGER_ID !== 'PENDING_DEPLOY';
+
+let mlAllTokens     = [];
+let mlCurrentTab    = 'all';
+let mlCurrentSort   = 'newest';
+let mlActiveToken   = null;
+let mlActiveTokenData = null; // full token info from backend
+let mlMyWallet      = null;
+let mlBuyWalletAgentBalance = 0;   // AGENT balance in raw (6 decimals)
+let mlSellMemeObjects       = [];  // user's on-chain MemeBalance objects for active token
+let mlImageDataUrl          = null; // base64 data URL if file was uploaded
 
 // Read referral from URL: ?ref=0x...
 const mlUrlRef = new URLSearchParams(window.location.search).get('ref') || null;
@@ -3939,66 +3983,143 @@ window.mlCloseCreateModal = function() {
   const banner = document.getElementById('mlCreateWalletBanner'); if (banner) banner.style.display = 'none';
 };
 
+window.mlHandleImageUpload = function(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  const nameEl = document.getElementById('mlImageFileName');
+  if (nameEl) nameEl.textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    mlImageDataUrl = e.target.result;
+    const previewDiv = document.getElementById('mlImagePreview');
+    const previewImg = document.getElementById('mlImagePreviewImg');
+    if (previewDiv) previewDiv.style.display = 'block';
+    if (previewImg) previewImg.src = mlImageDataUrl;
+  };
+  reader.readAsDataURL(file);
+};
+
 window.mlSubmitCreate = async function() {
   const btn    = document.getElementById('mlCreateBtn');
   const errDiv = document.getElementById('mlCreateError');
   if (errDiv) errDiv.style.display = 'none';
 
-  // Wallet must still be connected
   if (!connectedWallet?.address) {
-    if (errDiv) { errDiv.textContent = '❌ Wallet disconnected. Please reconnect and try again.'; errDiv.style.display = 'block'; }
+    if (errDiv) { errDiv.textContent = '❌ Wallet not connected. Connect your wallet first.'; errDiv.style.display = 'block'; }
     return;
   }
 
-  const name       = document.getElementById('mlCreateName')?.value.trim();
-  const symbol     = document.getElementById('mlCreateSymbol')?.value.trim();
-  const creator    = connectedWallet.address; // always use live wallet, not editable field
-  const desc       = document.getElementById('mlCreateDesc')?.value.trim();
-  const image      = document.getElementById('mlCreateImage')?.value.trim();
-  const twitter    = document.getElementById('mlCreateTwitter')?.value.trim();
-  const telegram   = document.getElementById('mlCreateTelegram')?.value.trim();
-  const website    = document.getElementById('mlCreateWebsite')?.value.trim();
+  const name    = document.getElementById('mlCreateName')?.value.trim();
+  const symbol  = document.getElementById('mlCreateSymbol')?.value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10);
+  const creator = connectedWallet.address;
+  const desc    = document.getElementById('mlCreateDesc')?.value.trim();
+  const imageUrl= document.getElementById('mlCreateImage')?.value.trim();
+  const twitter = document.getElementById('mlCreateTwitter')?.value.trim();
+  const telegram= document.getElementById('mlCreateTelegram')?.value.trim();
+  const website = document.getElementById('mlCreateWebsite')?.value.trim();
   const initialBuy = parseFloat(document.getElementById('mlCreateInitialBuy')?.value) || 0;
+  const image   = mlImageDataUrl || imageUrl || null; // prefer uploaded file
 
-  if (!name || !symbol) {
-    if (errDiv) { errDiv.textContent = '❌ Name and symbol are required.'; errDiv.style.display = 'block'; }
-    return;
-  }
-  if (symbol.replace(/[^A-Za-z0-9]/g,'').length < 2) {
-    if (errDiv) { errDiv.textContent = '❌ Symbol must be 2-10 alphanumeric characters.'; errDiv.style.display = 'block'; }
-    return;
-  }
-  if (initialBuy < 0) {
-    if (errDiv) { errDiv.textContent = '❌ Initial buy cannot be negative.'; errDiv.style.display = 'block'; }
-    return;
-  }
+  if (!name) { if (errDiv) { errDiv.textContent = '❌ Token name required.'; errDiv.style.display='block'; } return; }
+  if (!symbol || symbol.length < 2) { if (errDiv) { errDiv.textContent = '❌ Symbol must be 2-10 alphanumeric chars.'; errDiv.style.display='block'; } return; }
+  if (initialBuy < 0) { if (errDiv) { errDiv.textContent = '❌ Initial buy cannot be negative.'; errDiv.style.display='block'; } return; }
 
-  if (btn) { btn.textContent = '⏳ Launching...'; btn.disabled = true; }
+  if (btn) { btn.textContent = '⏳ Launching on-chain...'; btn.disabled = true; }
+
   try {
-    const res  = await fetch(BACKEND + '/launchpad/create', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name, symbol, creator,
-        description: desc || null,
-        image:       image || null,
-        twitter:     twitter || null,
-        telegram:    telegram || null,
-        website:     website || null,
-        initialBuy:  initialBuy > 0 ? initialBuy : 0,
-      })
-    });
-    const data = await res.json();
-    if (!data.success) {
-      if (errDiv) { errDiv.innerHTML = '❌ ' + (data.error || 'Launch failed'); errDiv.style.display = 'block'; }
-      return;
+    if (MEME_ONCHAIN) {
+      // ── ON-CHAIN PATH: Build create_token PTB and sign with wallet ──
+      // 1. Get badge ID (required by contract)
+      const statusRes = await fetch(BACKEND + '/status/' + creator);
+      const statusData = await statusRes.json().catch(() => ({}));
+      if (!statusData.registered) {
+        if (errDiv) { errDiv.textContent = '❌ AgentBadge required to launch memes. Register at the top of the page.'; errDiv.style.display='block'; }
+        return;
+      }
+
+      // 2. Build create_token PTB via @mysten/sui Transaction (loaded from CDN)
+      const { Transaction } = window.suiTx || {};
+      if (!Transaction) {
+        if (errDiv) { errDiv.textContent = '❌ Sui SDK not loaded. Please refresh the page.'; errDiv.style.display='block'; }
+        return;
+      }
+      const tx = new Transaction();
+      tx.setSender(creator);
+
+      // Name/symbol/desc must be ASCII ≤ 64 chars for Move string limits
+      const nameBytes = Array.from(new TextEncoder().encode(name.slice(0, 50)));
+      const symBytes  = Array.from(new TextEncoder().encode(symbol.slice(0, 10)));
+      const descBytes = Array.from(new TextEncoder().encode((desc||'').slice(0, 300)));
+      const imgBytes  = Array.from(new TextEncoder().encode((image||'').slice(0, 512)));
+
+      tx.moveCall({
+        target: `${MEME_PACKAGE_ID}::launchpad::create_token`,
+        typeArguments: [AGENT_COIN_TYPE],
+        arguments: [
+          tx.object(MEME_MANAGER_ID),
+          tx.pure.vector('u8', nameBytes),
+          tx.pure.vector('u8', symBytes),
+          tx.pure.vector('u8', descBytes),
+          tx.pure.vector('u8', imgBytes),
+        ],
+      });
+      tx.setGasBudget(20_000_000);
+
+      // 3. Sign & execute via connected wallet
+      if (btn) btn.textContent = '✍️ Sign in wallet...';
+      const suiClient  = window.suiClientInstance;
+      const txBytes    = await tx.build({ client: suiClient });
+      const b64        = btoa(String.fromCharCode(...txBytes));
+      const walletApi  = window.suiWalletApi || window.suiWallet;
+      if (!walletApi) throw new Error('No wallet provider found');
+
+      const result = await walletApi.signAndExecuteTransactionBlock({
+        transactionBlock: b64,
+        options: { showEffects: true, showEvents: true },
+      });
+
+      if (result.effects?.status?.status !== 'success') {
+        throw new Error(result.effects?.status?.error || 'TX failed on-chain');
+      }
+
+      // 4. Register with backend (to add metadata like image, socials)
+      if (btn) btn.textContent = '⏳ Recording...';
+      const regRes = await fetch(BACKEND + '/launchpad/create', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, symbol, creator, description: desc||null, image: image||null, twitter:twitter||null, telegram:telegram||null, website:website||null, txDigest: result.digest }),
+      });
+      const regData = await regRes.json();
+      if (!regData.success && !regData.id) throw new Error(regData.error || 'Backend registration failed');
+      const tokenId = regData.id;
+
+      // 5. Handle initial buy if requested (also on-chain)
+      if (initialBuy > 0 && tokenId) {
+        if (btn) btn.textContent = '⏳ Executing initial buy...';
+        await mlExecuteBuyForToken(tokenId, initialBuy, creator, walletApi, suiClient);
+      }
+
+      mlCloseCreateModal();
+      await mlLoadTokens();
+      if (tokenId) setTimeout(() => mlOpenToken(tokenId), 300);
+
+    } else {
+      // ── VIRTUAL PATH (fallback until on-chain deployed) ──
+      const res  = await fetch(BACKEND + '/launchpad/create', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, symbol, creator, description: desc||null, image: image||null, twitter:twitter||null, telegram:telegram||null, website:website||null, initialBuy: initialBuy > 0 ? initialBuy : 0 }),
+      });
+      const data = await res.json();
+      if (!data.success) { if (errDiv) { errDiv.innerHTML = '❌ ' + (data.error||'Launch failed'); errDiv.style.display='block'; } return; }
+      mlCloseCreateModal();
+      await mlLoadTokens();
+      setTimeout(() => mlOpenToken(data.id), 300);
     }
-    mlCloseCreateModal();
-    await mlLoadTokens();
-    setTimeout(() => mlOpenToken(data.id), 300);
   } catch(e) {
-    if (errDiv) { errDiv.textContent = '❌ Network error: ' + e.message; errDiv.style.display = 'block'; }
+    console.error('mlSubmitCreate error:', e);
+    if (errDiv) { errDiv.textContent = '❌ ' + (e.message || 'Launch failed'); errDiv.style.display = 'block'; }
   } finally {
     if (btn) { btn.textContent = '🚀 LAUNCH TOKEN'; btn.disabled = false; }
+    mlImageDataUrl = null;
   }
 };
 
@@ -4006,15 +4127,28 @@ window.mlSubmitCreate = async function() {
 window.mlOpenToken = async function(id) {
   const modal = document.getElementById('mlTokenModal');
   if (modal) modal.style.display = 'flex';
-  mlActiveToken = id;
+  mlActiveToken     = id;
+  mlActiveTokenData = null;
+  mlBuyWalletAgentBalance = 0;
+  mlSellMemeObjects = [];
+
+  // Reset panel indicators
+  const bq = document.getElementById('mlBuyQuote');  if (bq) { bq.style.display='none'; bq.innerHTML=''; }
+  const sq = document.getElementById('mlSellQuote'); if (sq) { sq.style.display='none'; sq.innerHTML=''; }
+  const ba = document.getElementById('mlBuyAmount'); if (ba) ba.value = '';
+  const sa = document.getElementById('mlSellAmount'); if (sa) sa.value = '';
+  const bwb = document.getElementById('mlBuyWalletBal'); if (bwb) bwb.textContent = '—';
+  const swb = document.getElementById('mlSellWalletBal'); if (swb) swb.textContent = '—';
+  const bs = document.getElementById('mlBuyStatus');  if (bs) bs.textContent='';
+  const ss = document.getElementById('mlSellStatus'); if (ss) ss.textContent='';
 
   try {
-    const [tokenRes, treasuryRes] = await Promise.all([
-      fetch(BACKEND + '/launchpad/token/' + id),
-      fetch(BACKEND + '/launchpad/treasury'),
-    ]);
+    const tokenRes = await fetch(BACKEND + '/launchpad/token/' + id);
     const token    = await tokenRes.json();
-    const treasury = await treasuryRes.json().catch(() => ({}));
+    mlActiveTokenData = token;
+
+    // deprecated treasury call — no longer needed in on-chain mode
+    const treasury = {};
 
     const imgEl = document.getElementById('mlModalImg');
     if (imgEl) {
@@ -4039,8 +4173,7 @@ window.mlOpenToken = async function(id) {
     set('mlModalAgentRaised', mlFmtAgent(token.agentRaised||0) + ' AGENT raised');
     set('mlModalDesc',        token.description || '');
 
-    const sellLbl = document.getElementById('mlSellSymbolLabel'); if (sellLbl) sellLbl.textContent = token.symbol;
-    set('mlTreasuryAddr', treasury.address || 'Loading...');
+    set('mlTreasuryAddr', '');
 
     // Holders list
     const holdersDiv = document.getElementById('mlHoldersList');
@@ -4070,8 +4203,31 @@ window.mlOpenToken = async function(id) {
         '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:10px;margin-top:4px;"><div class="font-mono text-xs text-slate-500 mb-1">LAUNCHED</div><div class="font-mono text-xs text-white">' + new Date(token.createdAt||0).toLocaleString() + '</div></div>';
     }
 
+    // ── Token CA (on-chain ID) ──
+    const caEl = document.getElementById('mlTokenCA');
+    if (caEl) {
+      if (token.onChainId) {
+        caEl.textContent = `meme_${token.onChainId} (on-chain ID: ${token.onChainId})`;
+      } else if (token.id) {
+        caEl.textContent = token.id + (token.onChain ? '' : ' [virtual — no on-chain ID yet]');
+      } else {
+        caEl.textContent = '—';
+      }
+    }
+
+    const sellLbl = document.getElementById('mlSellSymbolLabel');
+    if (sellLbl) sellLbl.textContent = token.symbol;
+
     mlSetTradeTab('buy');
     mlUpdateRefLink();
+
+    // ── Load wallet balance & sell objects in background ──
+    const wallet = mlMyWallet || (typeof connectedWallet !== 'undefined' ? connectedWallet?.address : null);
+    if (wallet) {
+      mlFetchWalletBalance(wallet);
+      mlFetchSellObjects(wallet, id);
+    }
+
   } catch(e) {
     console.error('mlOpenToken error:', e);
   }
@@ -4079,9 +4235,12 @@ window.mlOpenToken = async function(id) {
 
 window.mlCloseTokenModal = function() {
   const m = document.getElementById('mlTokenModal'); if (m) m.style.display = 'none';
-  mlActiveToken = null;
-  const bq = document.getElementById('mlBuyQuote');  if (bq) bq.textContent = '';
-  const sq = document.getElementById('mlSellQuote'); if (sq) sq.textContent = '';
+  mlActiveToken     = null;
+  mlActiveTokenData = null;
+  mlSellMemeObjects = [];
+  mlBuyWalletAgentBalance = 0;
+  const bq = document.getElementById('mlBuyQuote');  if (bq) { bq.style.display='none'; bq.innerHTML=''; }
+  const sq = document.getElementById('mlSellQuote'); if (sq) { sq.style.display='none'; sq.innerHTML=''; }
   const ba = document.getElementById('mlBuyAmount'); if (ba) ba.value = '';
   const sa = document.getElementById('mlSellAmount'); if (sa) sa.value = '';
 };
@@ -4096,34 +4255,311 @@ function mlSetTradeTab(tab) { window.mlSetTradeTab(tab); }
 
 window.mlSetAmount = function(n) { const el = document.getElementById('mlBuyAmount'); if (el) { el.value = n; mlUpdateBuyQuote(); } };
 
+// ── % buy buttons — reads wallet AGENT balance ──
+window.mlSetBuyPct = function(pct) {
+  if (mlBuyWalletAgentBalance <= 0) {
+    const wallet = mlMyWallet || connectedWallet?.address;
+    if (!wallet) { alert('Connect wallet to use % buttons'); return; }
+    // Balance hasn't loaded yet — reload it
+    mlFetchWalletBalance(wallet);
+    return;
+  }
+  const agentAmt = (mlBuyWalletAgentBalance * pct / 100) / 1_000_000; // raw → AGENT
+  const el = document.getElementById('mlBuyAmount');
+  if (el) { el.value = agentAmt.toFixed(4); mlUpdateBuyQuote(); }
+};
+
+// ── % sell buttons — reads on-chain MemeBalance objects ──
+window.mlSetSellPct = function(pct) {
+  const total = mlSellMemeObjects.reduce((s, o) => s + o.amount, 0);
+  if (total <= 0) {
+    const balEl = document.getElementById('mlSellWalletBal');
+    if (balEl) balEl.textContent = 'No holdings';
+    return;
+  }
+  const sellAmt = Math.floor(total * pct / 100);
+  const el = document.getElementById('mlSellAmount');
+  if (el) { el.value = sellAmt; mlUpdateSellQuote(); }
+};
+
+// ── Fetch wallet AGENT balance ──
+async function mlFetchWalletBalance(wallet) {
+  const balEl = document.getElementById('mlBuyWalletBal');
+  if (!wallet || !balEl) return;
+  try {
+    const r = await fetch(BACKEND + '/status/' + wallet);
+    const d = await r.json();
+    const agentHuman = parseFloat(d.balances?.agent || '0');
+    mlBuyWalletAgentBalance = Math.floor(agentHuman * 1_000_000);
+    balEl.textContent = mlFmtAgent(agentHuman) + ' AGENT';
+  } catch { balEl.textContent = '— AGENT'; }
+}
+
+// ── Fetch user's on-chain MemeBalance objects for current token ──
+async function mlFetchSellObjects(wallet, tokenId) {
+  const balEl = document.getElementById('mlSellWalletBal');
+  const infoEl = document.getElementById('mlSellObjectsInfo');
+  mlSellMemeObjects = [];
+  if (!wallet || !tokenId || !MEME_ONCHAIN) {
+    if (balEl) balEl.textContent = 'N/A (virtual mode)';
+    if (infoEl) infoEl.textContent = 'Virtual mode: sell via Telegram bot.';
+    return;
+  }
+  try {
+    const token = mlActiveTokenData;
+    const onChainId = token?.onChainId;
+    if (!onChainId) { if (balEl) balEl.textContent = 'No on-chain ID'; return; }
+    const r = await fetch(`${BACKEND}/launchpad/meme-objects/${wallet}/${onChainId}`);
+    const d = await r.json();
+    mlSellMemeObjects = d.objects || [];
+    const total = d.total || 0;
+    if (balEl) balEl.textContent = mlFmtAgent(total) + ' ' + (token?.symbol || '');
+    if (infoEl) {
+      if (mlSellMemeObjects.length === 0) {
+        infoEl.textContent = 'No MemeBalance objects found for this token in your wallet.';
+      } else {
+        infoEl.innerHTML = `${mlSellMemeObjects.length} MemeBalance object${mlSellMemeObjects.length>1?'s':''} in wallet. Total: ${mlFmtAgent(total)} tokens.`;
+      }
+    }
+  } catch(e) {
+    if (balEl) balEl.textContent = 'Error';
+    console.error('mlFetchSellObjects:', e);
+  }
+}
+
 window.mlUpdateBuyQuote = async function() {
   if (!mlActiveToken) return;
   const amount = parseFloat(document.getElementById('mlBuyAmount')?.value);
   const el = document.getElementById('mlBuyQuote');
-  if (!amount || amount <= 0) { if (el) el.textContent = ''; return; }
+  if (!el) return;
+  if (!amount || amount <= 0) { el.style.display='none'; return; }
   try {
     const res  = await fetch(BACKEND + '/launchpad/token/' + mlActiveToken + '/quote?type=buy&amount=' + amount);
     const data = await res.json();
-    if (el) {
-      if (data.error) { el.textContent = '❌ ' + data.error; return; }
-      el.innerHTML = 'You get: <span style="color:var(--green);font-weight:bold">' + mlFmtAgent(data.memeOut) + ' tokens</span>\nFee: ' + (data.agentFee?.toFixed(4)||'?') + ' AGENT (1%)\nPrice impact: ' + (data.priceImpact||'?') + '\nNew price: ' + (data.newPrice?.toFixed(8)||'?') + ' AGENT';
-    }
-  } catch { if (el) el.textContent = '⏳ Fetching quote...'; }
+    if (data.error) { el.textContent = '❌ ' + data.error; el.style.display='block'; return; }
+    el.style.display = 'block';
+    el.innerHTML = `You receive: <span style="color:var(--green);font-weight:bold">${mlFmtAgent(data.memeOut)} ${mlActiveTokenData?.symbol||'tokens'}</span><br>` +
+      `Fee: ${(data.agentFee||0).toFixed(4)} AGENT (1%) · Impact: ${data.priceImpact||'?'}<br>` +
+      `New price: ${(data.newPrice||0).toFixed(8)} AGENT per token`;
+  } catch { el.textContent = '⏳ Fetching quote...'; el.style.display='block'; }
 };
 
 window.mlUpdateSellQuote = async function() {
   if (!mlActiveToken) return;
   const amount = parseFloat(document.getElementById('mlSellAmount')?.value);
   const el = document.getElementById('mlSellQuote');
-  if (!amount || amount <= 0) { if (el) el.textContent = ''; return; }
+  if (!el) return;
+  if (!amount || amount <= 0) { el.style.display='none'; return; }
   try {
     const res  = await fetch(BACKEND + '/launchpad/token/' + mlActiveToken + '/quote?type=sell&amount=' + amount);
     const data = await res.json();
-    if (el) {
-      if (data.error) { el.textContent = '❌ ' + data.error; return; }
-      el.innerHTML = 'You receive: <span style="color:var(--cyan);font-weight:bold">' + (data.agentOut?.toFixed(4)||'?') + ' AGENT</span>\nFee: ' + (data.agentFee?.toFixed(4)||'?') + ' AGENT (1%)\nPrice per token: ' + (data.pricePerToken?.toFixed(8)||'?') + ' AGENT';
+    if (data.error) { el.textContent = '❌ ' + data.error; el.style.display='block'; return; }
+    el.style.display = 'block';
+    el.innerHTML = `You receive: <span style="color:var(--cyan);font-weight:bold">${(data.agentOut||0).toFixed(4)} AGENT</span><br>` +
+      `Fee: ${(data.agentFee||0).toFixed(4)} AGENT (1%) · Rate: ${(data.pricePerToken||0).toFixed(8)} AGENT each`;
+  } catch { el.textContent = '⏳ Fetching quote...'; el.style.display='block'; }
+};
+
+// ── Copy token CA ──
+window.mlCopyCA = function() {
+  const el = document.getElementById('mlTokenCA');
+  const val = el?.textContent?.trim();
+  if (!val || val === '—') return;
+  navigator.clipboard.writeText(val).then(() => { el.style.color='var(--green)'; setTimeout(()=>{ el.style.color='var(--cyan)'; }, 1200); });
+};
+
+// ── Helper: build & execute buy PTB for a token ──
+async function mlExecuteBuyForToken(tokenId, agentAmount, sender, walletApi, suiClient) {
+  const token = mlActiveTokenData || (await fetch(BACKEND+'/launchpad/token/'+tokenId).then(r=>r.json()).catch(()=>null));
+  if (!token?.onChainId) throw new Error('Cannot find on-chain token ID');
+
+  const { Transaction } = window.suiTx || {};
+  if (!Transaction) throw new Error('Sui SDK not loaded');
+
+  // Get user's AGENT coins
+  const coinsRes = await suiClient.getCoins({ owner: sender, coinType: AGENT_COIN_TYPE });
+  if (!coinsRes.data?.length) throw new Error('No AGENT in wallet');
+
+  const agentRaw = Math.floor(agentAmount * 1_000_000);
+  const tx = new Transaction();
+  tx.setSender(sender);
+  const primary = tx.object(coinsRes.data[0].coinObjectId);
+  if (coinsRes.data.length > 1) {
+    tx.mergeCoins(primary, coinsRes.data.slice(1).map(c => tx.object(c.coinObjectId)));
+  }
+  const [paymentCoin] = tx.splitCoins(primary, [agentRaw]);
+  const referrer = mlUrlRef || '0x0000000000000000000000000000000000000000000000000000000000000000';
+  tx.moveCall({
+    target: `${MEME_PACKAGE_ID}::launchpad::buy_meme`,
+    typeArguments: [AGENT_COIN_TYPE],
+    arguments: [
+      tx.object(MEME_MANAGER_ID),
+      tx.pure.u64(parseInt(token.onChainId)),
+      paymentCoin,
+      tx.pure.address(referrer),
+    ],
+  });
+  tx.setGasBudget(25_000_000);
+
+  const txBytes = await tx.build({ client: suiClient });
+  const b64     = btoa(String.fromCharCode(...txBytes));
+  const result  = await walletApi.signAndExecuteTransactionBlock({
+    transactionBlock: b64,
+    options: { showEffects: true, showEvents: true },
+  });
+  if (result.effects?.status?.status !== 'success') {
+    throw new Error(result.effects?.status?.error || 'Buy TX failed');
+  }
+  // Notify backend to update cache
+  await fetch(BACKEND + '/launchpad/record-trade', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ txDigest: result.digest, tokenId, referrer: mlUrlRef || null }),
+  }).catch(() => {});
+  return result;
+}
+
+// ── Execute Buy from the trade modal ──
+window.mlExecuteBuy = async function() {
+  const btn    = document.getElementById('mlBuyBtn');
+  const status = document.getElementById('mlBuyStatus');
+  const wallet = mlMyWallet || connectedWallet?.address;
+
+  if (!wallet) { if (status) { status.textContent = '❌ Connect wallet first'; status.style.color='#ff465a'; } return; }
+
+  const amount = parseFloat(document.getElementById('mlBuyAmount')?.value);
+  if (!amount || amount <= 0) { if (status) { status.textContent = '❌ Enter AGENT amount'; status.style.color='#ff465a'; } return; }
+  if (!mlActiveToken) return;
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Preparing...'; }
+  if (status) { status.textContent = ''; }
+
+  try {
+    if (MEME_ONCHAIN) {
+      const walletApi  = window.suiWalletApi || window.suiWallet;
+      const suiClient  = window.suiClientInstance;
+      if (!walletApi || !suiClient) throw new Error('Wallet or Sui client not available');
+      if (status) { status.textContent = '✍️ Sign in wallet...'; status.style.color='var(--cyan)'; }
+      await mlExecuteBuyForToken(mlActiveToken, amount, wallet, walletApi, suiClient);
+      if (status) { status.textContent = '✅ Buy confirmed! Tokens in your wallet.'; status.style.color='var(--green)'; }
+      setTimeout(async () => {
+        await mlOpenToken(mlActiveToken);
+        mlFetchWalletBalance(wallet);
+      }, 1500);
+    } else {
+      // Virtual mode — not used (the old /launchpad/buy endpoint)
+      if (status) { status.textContent = '⚠ Virtual mode: use Telegram bot to buy'; status.style.color='#ffc864'; }
     }
-  } catch { if (el) el.textContent = '⏳ Fetching quote...'; }
+  } catch(e) {
+    if (status) { status.textContent = '❌ ' + (e.message||'Buy failed'); status.style.color='#ff465a'; }
+    console.error('mlExecuteBuy:', e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⚡ BUY — SIGN WITH WALLET'; }
+  }
+};
+
+// ── Execute Sell from the trade modal ──
+window.mlExecuteSell = async function() {
+  const btn    = document.getElementById('mlSellBtn');
+  const status = document.getElementById('mlSellStatus');
+  const wallet = mlMyWallet || connectedWallet?.address;
+
+  if (!wallet) { if (status) { status.textContent = '❌ Connect wallet first'; status.style.color='#ff465a'; } return; }
+
+  const amount = parseInt(document.getElementById('mlSellAmount')?.value);
+  if (!amount || amount <= 0) { if (status) { status.textContent = '❌ Enter token amount to sell'; status.style.color='#ff465a'; } return; }
+  if (!mlActiveToken) return;
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Preparing...'; }
+  if (status) status.textContent = '';
+
+  try {
+    if (MEME_ONCHAIN) {
+      const token     = mlActiveTokenData;
+      if (!token?.onChainId) throw new Error('No on-chain token ID');
+      if (!mlSellMemeObjects.length) throw new Error('No MemeBalance objects in wallet for this token');
+
+      // Pick objects to satisfy requested sell amount
+      let remaining = amount;
+      const toUse   = [];
+      for (const obj of mlSellMemeObjects.sort((a,b)=>b.amount-a.amount)) {
+        if (remaining <= 0) break;
+        toUse.push(obj);
+        remaining -= obj.amount;
+      }
+      const available = mlSellMemeObjects.reduce((s,o)=>s+o.amount,0);
+      if (amount > available) throw new Error(`Only ${available} tokens available to sell`);
+
+      const { Transaction } = window.suiTx || {};
+      if (!Transaction) throw new Error('Sui SDK not loaded');
+
+      const suiClient  = window.suiClientInstance;
+      const walletApi  = window.suiWalletApi || window.suiWallet;
+      if (!walletApi || !suiClient) throw new Error('Wallet not available');
+
+      const tx = new Transaction();
+      tx.setSender(wallet);
+
+      // Merge all picked objects, then split to sell exactly `amount`
+      const primaryObj = tx.object(toUse[0].objectId);
+      if (toUse.length > 1) {
+        tx.moveCall({
+          target: `${MEME_PACKAGE_ID}::launchpad::merge_balance`,
+          typeArguments: [AGENT_COIN_TYPE],
+          arguments: [tx.object(MEME_MANAGER_ID), primaryObj, ...toUse.slice(1).map(o=>tx.object(o.objectId))],
+        });
+      }
+
+      // If we need to sell less than what's in primaryObj, split first
+      const primaryTotal = toUse.reduce((s,o)=>s+o.amount,0);
+      let sellObj = primaryObj;
+      if (primaryTotal > amount) {
+        const [split, rest] = tx.moveCall({
+          target: `${MEME_PACKAGE_ID}::launchpad::split_balance`,
+          typeArguments: [AGENT_COIN_TYPE],
+          arguments: [tx.object(MEME_MANAGER_ID), primaryObj, tx.pure.u64(amount)],
+        });
+        tx.transferObjects([rest], wallet); // return remainder
+        sellObj = split;
+      }
+
+      const referrer = mlUrlRef || '0x0000000000000000000000000000000000000000000000000000000000000000';
+      tx.moveCall({
+        target: `${MEME_PACKAGE_ID}::launchpad::sell_meme`,
+        typeArguments: [AGENT_COIN_TYPE],
+        arguments: [
+          tx.object(MEME_MANAGER_ID),
+          sellObj,
+          tx.pure.address(referrer),
+        ],
+      });
+      tx.setGasBudget(30_000_000);
+
+      if (status) { status.textContent = '✍️ Sign in wallet...'; status.style.color='var(--cyan)'; }
+      const txBytes = await tx.build({ client: suiClient });
+      const b64     = btoa(String.fromCharCode(...txBytes));
+      const result  = await walletApi.signAndExecuteTransactionBlock({ transactionBlock: b64, options: { showEffects: true } });
+      if (result.effects?.status?.status !== 'success') throw new Error(result.effects?.status?.error || 'Sell TX failed');
+
+      await fetch(BACKEND + '/launchpad/record-trade', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ txDigest: result.digest, tokenId: mlActiveToken, referrer: mlUrlRef||null }),
+      }).catch(() => {});
+
+      if (status) { status.textContent = '✅ Sold! AGENT credited to your wallet.'; status.style.color='var(--green)'; }
+      setTimeout(async () => {
+        await mlOpenToken(mlActiveToken);
+        mlFetchSellObjects(wallet, mlActiveToken);
+        mlFetchWalletBalance(wallet);
+      }, 1500);
+    } else {
+      if (status) { status.textContent = '⚠ Virtual mode: use Telegram bot to sell'; status.style.color='#ffc864'; }
+    }
+  } catch(e) {
+    if (status) { status.textContent = '❌ ' + (e.message||'Sell failed'); status.style.color='#ff465a'; }
+    console.error('mlExecuteSell:', e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '💸 SELL — SIGN WITH WALLET'; }
+  }
 };
 
 function mlUpdateRefLink() {
