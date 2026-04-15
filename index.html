@@ -652,9 +652,11 @@
         </div>
       </div>
       <div>
-        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">INITIAL BUY — OPTIONAL (AGENT)</label>
-        <input id="mlCreateInitialBuy" class="input-cyber" type="number" min="0" placeholder="0 — leave blank for no initial buy"/>
-        <div class="font-mono text-xs text-slate-500 mt-1">Dev buy executes immediately at launch price to bootstrap your token. 1% fee applies.</div>
+        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">INITIAL BUY — HOW MUCH AGENT TO SPEND</label>
+        <input id="mlCreateInitialBuy" class="input-cyber" type="number" min="0" step="any" placeholder="e.g. 10  (enter AGENT amount, not token count)"
+          oninput="mlPreviewInitialBuy(this.value)"/>
+        <div class="font-mono text-xs text-slate-500 mt-1">⚠ Enter the <b style="color:var(--cyan)">AGENT amount you want to spend</b>, not the number of tokens. e.g. type <b style="color:var(--cyan)">10</b> to spend 10 AGENT.</div>
+        <div id="mlInitialBuyPreview" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.2);font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--green)"></div>
       </div>
     </div>
 
@@ -3856,6 +3858,22 @@ function mlFmtAgent(n) {
   if (n >= 1000) return (n/1000).toFixed(1)+'K';
   return n.toFixed(0);
 }
+
+// Live preview for the initial buy field — shows tokens received for AGENT spent
+window.mlPreviewInitialBuy = function(val) {
+  const el = document.getElementById('mlInitialBuyPreview');
+  if (!el) return;
+  const agentAmount = parseFloat(val);
+  if (!agentAmount || agentAmount <= 0) { el.style.display='none'; return; }
+  // Bonding curve starting price: ~0.0000188 AGENT per token
+  const BASE_PRICE = 0.0000188;
+  const tokensEst  = Math.floor(agentAmount * 0.99 / BASE_PRICE);
+  const agentFee   = (agentAmount * 0.01).toFixed(4);
+  el.style.display = 'block';
+  el.innerHTML =
+    `✅ Spending <b>${agentAmount} AGENT</b> → you receive approximately <b>${mlFmtAgent(tokensEst)} tokens</b><br>` +
+    `Fee: ${agentFee} AGENT (1%) · Starting price: 0.0000188 AGENT/token`;
+};
 
 function mlRenderGrid() {
   const grid  = document.getElementById('mlTokenGrid');
