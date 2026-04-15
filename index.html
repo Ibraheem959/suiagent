@@ -4032,19 +4032,21 @@ async function suiSignAndExecute(txBytes, opts) {
   const provider = connectedWallet?.provider;
   if (!provider) throw new Error('__NEED_RECONNECT__');
 
-  const b64     = btoa(String.fromCharCode(...txBytes));
-  const options = opts || { showEffects: true, showEvents: true };
+  const options  = opts || { showEffects: true, showEvents: true };
+  const rawBytes = txBytes instanceof Uint8Array ? txBytes : new Uint8Array(txBytes);
 
-  // Wallet-standard: sui:signAndExecuteTransactionBlock feature
+  // Wallet-standard: expects raw Uint8Array, NOT base64
   const stdFeat = provider.features?.['sui:signAndExecuteTransactionBlock'];
   if (stdFeat?.signAndExecuteTransactionBlock) {
     return await stdFeat.signAndExecuteTransactionBlock({
-      transactionBlock: b64, options,
+      transactionBlock: rawBytes,
+      options,
       account: provider.accounts?.[0],
       chain: 'sui:mainnet',
     });
   }
-  // Legacy provider (older wallet extensions)
+  // Legacy providers (OKX, Suiet, Phantom, etc.) — expect base64
+  const b64     = btoa(String.fromCharCode(...rawBytes));
   const legacyP = provider?.sui || provider;
   if (legacyP?.signAndExecuteTransactionBlock) {
     return await legacyP.signAndExecuteTransactionBlock({ transactionBlock: b64, options });
