@@ -2850,6 +2850,12 @@ window.__walletStandardGetWallets = function() {
         window.__SuiTransaction = sui.Transaction;
         console.log('✅ Sui Transaction builder loaded');
       } catch(e) { console.warn('Sui Transaction load failed:', e.message); }
+      try {
+        // Load SuiClient — needed for tx.build({ client }) and on-chain reads
+        const suiClient = await import('https://esm.sh/@mysten/sui@1.21.0/client');
+        window.suiClientInstance = new suiClient.SuiClient({ url: 'https://fullnode.mainnet.sui.io:443' });
+        console.log('✅ SuiClient initialized');
+      } catch(e) { console.warn('SuiClient load failed:', e.message); }
     })();
   `;
   document.head.appendChild(m);
@@ -4072,7 +4078,9 @@ window.mlSubmitCreate = async function() {
 
       // 3. Sign & execute via connected wallet
       if (btn) btn.textContent = '✍️ Sign in wallet...';
-      const suiClient  = window.suiClientInstance;
+      let suiClient = window.suiClientInstance;
+      if (!suiClient) { let w=0; while(!window.suiClientInstance && w<6000){await new Promise(r=>setTimeout(r,300));w+=300;} suiClient=window.suiClientInstance; }
+      if (!suiClient) throw new Error('Sui client not ready — please refresh the page');
       const txBytes    = await tx.build({ client: suiClient });
       const b64        = btoa(String.fromCharCode(...txBytes));
       const walletApi  = window.suiWalletApi || window.suiWallet;
@@ -4446,8 +4454,9 @@ window.mlExecuteBuy = async function() {
   try {
     if (MEME_ONCHAIN) {
       const walletApi  = window.suiWalletApi || window.suiWallet;
-      const suiClient  = window.suiClientInstance;
-      if (!walletApi || !suiClient) throw new Error('Wallet or Sui client not available');
+      let suiClient = window.suiClientInstance;
+      if (!suiClient) { let w=0; while(!window.suiClientInstance && w<6000){await new Promise(r=>setTimeout(r,300));w+=300;} suiClient=window.suiClientInstance; }
+      if (!walletApi || !suiClient) throw new Error('Wallet or Sui client not available — please refresh');
       if (status) { status.textContent = '✍️ Sign in wallet...'; status.style.color='var(--cyan)'; }
       await mlExecuteBuyForToken(mlActiveToken, amount, wallet, walletApi, suiClient);
       if (status) { status.textContent = '✅ Buy confirmed! Tokens in your wallet.'; status.style.color='var(--green)'; }
@@ -4507,9 +4516,10 @@ window.mlExecuteSell = async function() {
       }
       if (!Transaction) throw new Error('Sui SDK not loaded — please refresh the page');
 
-      const suiClient  = window.suiClientInstance;
+      let suiClient = window.suiClientInstance;
+      if (!suiClient) { let w=0; while(!window.suiClientInstance && w<6000){await new Promise(r=>setTimeout(r,300));w+=300;} suiClient=window.suiClientInstance; }
       const walletApi  = window.suiWalletApi || window.suiWallet;
-      if (!walletApi || !suiClient) throw new Error('Wallet not available');
+      if (!walletApi || !suiClient) throw new Error('Wallet not available — please refresh');
 
       const tx = new Transaction();
       tx.setSender(wallet);
