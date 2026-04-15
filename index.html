@@ -3573,6 +3573,10 @@ async function addLiquidityOnChain() {
 
   if (status) { status.style.color = 'var(--cyan)'; status.textContent = '⏳ Building LP transaction...'; }
 
+  if (!connectedWallet?.address) {
+    if (status) { status.style.color = '#ff465a'; status.textContent = '❌ Wallet not connected'; }
+    return;
+  }
   try {
     const result = await window.__buildTx(connectedWallet.address, {
       action:      'add_liquidity',
@@ -3616,6 +3620,10 @@ async function withdrawLiquidityOnChain() {
   const lpBurn = Math.floor(lpPositionData.lpBalance * withdrawPct / 100);
   if (status) { status.style.color = 'var(--cyan)'; status.textContent = '⏳ Building withdrawal transaction...'; }
 
+  if (!connectedWallet?.address) {
+    if (status) { status.style.color = '#ff465a'; status.textContent = '❌ Wallet not connected'; }
+    return;
+  }
   try {
     const result = await window.__buildTx(connectedWallet.address, {
       action:  'remove_liquidity',
