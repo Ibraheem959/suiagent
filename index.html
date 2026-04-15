@@ -4008,33 +4008,29 @@ window.mlHandleImageUpload = function(input) {
 // ── Unified wallet signing helper ───────────────────────────────────────────
 // Uses connectedWallet.provider (set by pickWalletObj) to sign and execute.
 // Works with Wallet Standard (Slush, Sui Wallet, etc.) and legacy providers.
-async function suiSignAndExecute(txBytes, opts) {
-  // If address is known but provider is missing (UI-only restore after page refresh),
-  // try to find the live wallet object from registered extensions before giving up.
-  if (connectedWallet && !connectedWallet.provider) {
-    const sources = [
-      ...(window.__walletStandardGetWallets ? window.__walletStandardGetWallets().get() : []),
-      ...(window.__suiWallets || []),
-    ];
-    for (const w of sources) {
-      const addrMatch = w.accounts?.some(a => a.address === connectedWallet.address);
-      const nameMatch = w.name === connectedWallet.name;
-      if (addrMatch || nameMatch) {
-        connectedWallet.provider  = w;
-        connectedWallet.isStandard = true;
-        connectedWallet.uiOnly    = false;
-        connectedProvider         = w;
-        break;
-      }
+// Try to recover the wallet provider from detected extensions (used when
+// the page was refreshed and only address was restored from localStorage).
+function tryRecoverWalletProvider() {
+  if (!connectedWallet || connectedWallet.provider) return; // nothing to do
+  const candidates = getDetectedWallets();
+  for (const w of candidates) {
+    const addrMatch = w.provider?.accounts?.some(a => a.address === connectedWallet.address);
+    const nameMatch = (w.name || '').toLowerCase() === (connectedWallet.name || '').toLowerCase();
+    if (addrMatch || nameMatch) {
+      connectedWallet.provider   = w.provider;
+      connectedWallet.isStandard = w.isStandard;
+      connectedWallet.uiOnly     = false;
+      connectedProvider          = w.provider;
+      return;
     }
   }
+}
+
+async function suiSignAndExecute(txBytes, opts) {
+  tryRecoverWalletProvider();
 
   const provider = connectedWallet?.provider;
-  if (!provider) {
-    // Open the wallet picker so the user can re-authenticate in one click
-    connectWallet();
-    throw new Error('Wallet session expired — reconnect in the popup that just opened, then try again');
-  }
+  if (!provider) throw new Error('__NEED_RECONNECT__');
 
   const b64     = btoa(String.fromCharCode(...txBytes));
   const options = opts || { showEffects: true, showEvents: true };
@@ -4195,7 +4191,12 @@ window.mlSubmitCreate = async function() {
     }
   } catch(e) {
     console.error('mlSubmitCreate error:', e);
-    if (errDiv) { errDiv.textContent = '❌ ' + (e.message || 'Launch failed'); errDiv.style.display = 'block'; }
+    if (e.message === '__NEED_RECONNECT__') {
+      connectWallet();
+      if (errDiv) { errDiv.textContent = '🔌 Wallet disconnected — pick your wallet in the popup, then try again.'; errDiv.style.display = 'block'; }
+    } else {
+      if (errDiv) { errDiv.textContent = '❌ ' + (e.message || 'Launch failed'); errDiv.style.display = 'block'; }
+    }
   } finally {
     if (btn) { btn.textContent = '🚀 LAUNCH TOKEN'; btn.disabled = false; }
     mlImageDataUrl = null;
@@ -4531,8 +4532,13 @@ window.mlExecuteBuy = async function() {
       if (status) { status.textContent = '⚠ Virtual mode: use Telegram bot to buy'; status.style.color='#ffc864'; }
     }
   } catch(e) {
-    if (status) { status.textContent = '❌ ' + (e.message||'Buy failed'); status.style.color='#ff465a'; }
     console.error('mlExecuteBuy:', e);
+    if (e.message === '__NEED_RECONNECT__') {
+      connectWallet();
+      if (status) { status.textContent = '🔌 Wallet disconnected — pick your wallet in the popup, then try again.'; status.style.color='#ffc864'; }
+    } else {
+      if (status) { status.textContent = '❌ ' + (e.message||'Buy failed'); status.style.color='#ff465a'; }
+    }
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '⚡ BUY — SIGN WITH WALLET'; }
   }
@@ -4640,8 +4646,13 @@ window.mlExecuteSell = async function() {
       if (status) { status.textContent = '⚠ Virtual mode: use Telegram bot to sell'; status.style.color='#ffc864'; }
     }
   } catch(e) {
-    if (status) { status.textContent = '❌ ' + (e.message||'Sell failed'); status.style.color='#ff465a'; }
     console.error('mlExecuteSell:', e);
+    if (e.message === '__NEED_RECONNECT__') {
+      connectWallet();
+      if (status) { status.textContent = '🔌 Wallet disconnected — pick your wallet in the popup, then try again.'; status.style.color='#ffc864'; }
+    } else {
+      if (status) { status.textContent = '❌ ' + (e.message||'Sell failed'); status.style.color='#ff465a'; }
+    }
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '💸 SELL — SIGN WITH WALLET'; }
   }
