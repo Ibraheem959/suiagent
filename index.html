@@ -3475,7 +3475,7 @@ window.__buildTx = async function(sender, txData) {
     throw new Error('Unknown action: ' + txData.action);
   }
 
-  return signAndExecuteTx(tx);
+  return suiSignAndExecute(tx, window.suiClientInstance);
 };
 
 
