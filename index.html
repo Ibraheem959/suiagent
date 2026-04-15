@@ -3448,28 +3448,44 @@ window.__buildTx = async function(sender, txData) {
 
   } else if (txData.action === 'add_liquidity') {
     const { suiAmount, agentAmount } = txData;
+    const GAS_BUDGET = 50_000_000; // 0.05 SUI — LP needs more gas than simple swaps
+    // Pre-check: user needs suiAmount + gas budget in SUI balance
+    const suiBalRes = await rpcCall('suix_getBalance', [sender, '0x2::sui::SUI']);
+    const suiBal = parseInt(suiBalRes?.totalBalance || 0);
+    if (suiBal < suiAmount + GAS_BUDGET) {
+      const needSui = ((suiAmount + GAS_BUDGET) / 1e9).toFixed(4);
+      const haveSui = (suiBal / 1e9).toFixed(4);
+      throw new Error(`Insufficient SUI — need ${needSui} SUI (deposit + 0.05 gas), have ${haveSui} SUI`);
+    }
     const coinsRes = await rpcCall('suix_getCoins', [sender, COIN_T, null, 50]);
     const coins = coinsRes?.data || [];
-    if (!coins.length) throw new Error('No $AGENT coins found');
+    if (!coins.length) throw new Error('No $AGENT coins found in wallet');
+    // Check AGENT balance
+    const agentBal = coins.reduce((s, c) => s + parseInt(c.balance || 0), 0);
+    if (agentBal < agentAmount) {
+      const needAg = (agentAmount / 1e6).toFixed(0);
+      const haveAg = (agentBal / 1e6).toFixed(0);
+      throw new Error(`Insufficient $AGENT — need ${needAg}, have ${haveAg}`);
+    }
     const [suiCoin]   = tx.splitCoins(tx.gas, [suiAmount]);
     const primaryAg   = tx.object(coins[0].coinObjectId);
     if (coins.length > 1) tx.mergeCoins(primaryAg, coins.slice(1).map(c => tx.object(c.coinObjectId)));
     const [agentCoin] = tx.splitCoins(primaryAg, [agentAmount]);
     const [lpOut]     = tx.moveCall({ target: `${LP_PKG}::pool_lp::add_liquidity`, arguments: [tx.object(LP_POOL), suiCoin, agentCoin, tx.pure.u64(0), tx.object(CLK)] });
     tx.transferObjects([lpOut], sender);
-    tx.setGasBudget(20_000_000);
+    tx.setGasBudget(GAS_BUDGET);
 
   } else if (txData.action === 'remove_liquidity') {
     const { lpAmount } = txData;
     const lpCoinsRes = await rpcCall('suix_getCoins', [sender, LP_COIN, null, 50]);
     const lpCoins = lpCoinsRes?.data || [];
-    if (!lpCoins.length) throw new Error('No LP tokens found');
+    if (!lpCoins.length) throw new Error('No LP tokens found in wallet');
     const primaryLp = tx.object(lpCoins[0].coinObjectId);
     if (lpCoins.length > 1) tx.mergeCoins(primaryLp, lpCoins.slice(1).map(c => tx.object(c.coinObjectId)));
     const [lpCoin] = tx.splitCoins(primaryLp, [lpAmount]);
     const [suiOut, agentOut] = tx.moveCall({ target: `${LP_PKG}::pool_lp::remove_liquidity`, arguments: [tx.object(LP_POOL), lpCoin, tx.pure.u64(0), tx.pure.u64(0), tx.object(CLK)] });
     tx.transferObjects([suiOut, agentOut], sender);
-    tx.setGasBudget(20_000_000);
+    tx.setGasBudget(50_000_000);
 
   } else {
     throw new Error('Unknown action: ' + txData.action);
