@@ -4038,7 +4038,12 @@ window.mlSubmitCreate = async function() {
       }
 
       // 2. Build create_token PTB via @mysten/sui Transaction (loaded from CDN)
-      const { Transaction } = window.suiTx || {};
+      let Transaction = window.__SuiTransaction;
+      if (!Transaction) {
+        let waited = 0;
+        while (!window.__SuiTransaction && waited < 6000) { await new Promise(r => setTimeout(r, 300)); waited += 300; }
+        Transaction = window.__SuiTransaction;
+      }
       if (!Transaction) {
         if (errDiv) { errDiv.textContent = '❌ Sui SDK not loaded. Please refresh the page.'; errDiv.style.display='block'; }
         return;
@@ -4373,8 +4378,13 @@ async function mlExecuteBuyForToken(tokenId, agentAmount, sender, walletApi, sui
   const token = mlActiveTokenData || (await fetch(BACKEND+'/launchpad/token/'+tokenId).then(r=>r.json()).catch(()=>null));
   if (!token?.onChainId) throw new Error('Cannot find on-chain token ID');
 
-  const { Transaction } = window.suiTx || {};
-  if (!Transaction) throw new Error('Sui SDK not loaded');
+  let Transaction = window.__SuiTransaction;
+  if (!Transaction) {
+    let waited = 0;
+    while (!window.__SuiTransaction && waited < 6000) { await new Promise(r => setTimeout(r, 300)); waited += 300; }
+    Transaction = window.__SuiTransaction;
+  }
+  if (!Transaction) throw new Error('Sui SDK not loaded — please refresh the page');
 
   // Get user's AGENT coins
   const coinsRes = await suiClient.getCoins({ owner: sender, coinType: AGENT_COIN_TYPE });
@@ -4489,8 +4499,13 @@ window.mlExecuteSell = async function() {
       const available = mlSellMemeObjects.reduce((s,o)=>s+o.amount,0);
       if (amount > available) throw new Error(`Only ${available} tokens available to sell`);
 
-      const { Transaction } = window.suiTx || {};
-      if (!Transaction) throw new Error('Sui SDK not loaded');
+      let Transaction = window.__SuiTransaction;
+      if (!Transaction) {
+        let waited = 0;
+        while (!window.__SuiTransaction && waited < 6000) { await new Promise(r => setTimeout(r, 300)); waited += 300; }
+        Transaction = window.__SuiTransaction;
+      }
+      if (!Transaction) throw new Error('Sui SDK not loaded — please refresh the page');
 
       const suiClient  = window.suiClientInstance;
       const walletApi  = window.suiWalletApi || window.suiWallet;
