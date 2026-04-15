@@ -4009,9 +4009,34 @@ window.mlHandleImageUpload = function(input) {
 // Uses connectedWallet.provider (set by pickWalletObj) to sign and execute.
 // Works with Wallet Standard (Slush, Sui Wallet, etc.) and legacy providers.
 async function suiSignAndExecute(txBytes, opts) {
+  // If address is known but provider is missing (UI-only restore after page refresh),
+  // try to find the live wallet object from registered extensions before giving up.
+  if (connectedWallet && !connectedWallet.provider) {
+    const sources = [
+      ...(window.__walletStandardGetWallets ? window.__walletStandardGetWallets().get() : []),
+      ...(window.__suiWallets || []),
+    ];
+    for (const w of sources) {
+      const addrMatch = w.accounts?.some(a => a.address === connectedWallet.address);
+      const nameMatch = w.name === connectedWallet.name;
+      if (addrMatch || nameMatch) {
+        connectedWallet.provider  = w;
+        connectedWallet.isStandard = true;
+        connectedWallet.uiOnly    = false;
+        connectedProvider         = w;
+        break;
+      }
+    }
+  }
+
   const provider = connectedWallet?.provider;
-  if (!provider) throw new Error('Wallet not connected — connect your wallet first');
-  const b64 = btoa(String.fromCharCode(...txBytes));
+  if (!provider) {
+    // Open the wallet picker so the user can re-authenticate in one click
+    connectWallet();
+    throw new Error('Wallet session expired — reconnect in the popup that just opened, then try again');
+  }
+
+  const b64     = btoa(String.fromCharCode(...txBytes));
   const options = opts || { showEffects: true, showEvents: true };
 
   // Wallet-standard: sui:signAndExecuteTransactionBlock feature
