@@ -4184,11 +4184,8 @@ window.mlSubmitCreate = async function() {
       if (!regData.success && !regData.id) throw new Error(regData.error || 'Backend registration failed');
       const tokenId = regData.id;
 
-      // 5. Handle initial buy if requested (also on-chain)
-      if (initialBuy > 0 && tokenId) {
-        if (btn) btn.textContent = '⏳ Executing initial buy...';
-        await mlExecuteBuyForToken(tokenId, initialBuy, creator, null, suiClient);
-      }
+      // NOTE: initial buy is already executed inside create_token via initial_payment coin.
+      // Do NOT call mlExecuteBuyForToken here — that would double-spend.
 
       mlCloseCreateModal();
       await mlLoadTokens();
