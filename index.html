@@ -3475,7 +3475,7 @@ window.__buildTx = async function(sender, txData) {
     throw new Error('Unknown action: ' + txData.action);
   }
 
-  return suiSignAndExecute(tx, window.suiClientInstance);
+  return window.suiSignAndExecute(tx, window.suiClientInstance);
 };
 
 
@@ -4058,7 +4058,7 @@ function tryRecoverWalletProvider() {
 }
 
 // tx = Transaction object, suiClient needed only for legacy path
-async function suiSignAndExecute(tx, suiClient, opts) {
+window.suiSignAndExecute = async function suiSignAndExecute(tx, suiClient, opts) {
   tryRecoverWalletProvider();
 
   const provider = connectedWallet?.provider;
@@ -4186,7 +4186,7 @@ window.mlSubmitCreate = async function() {
 
       // 3. Sign & execute via connected wallet
       if (btn) btn.textContent = '✍️ Sign in wallet...';
-      const result  = await suiSignAndExecute(tx, suiClient2);
+      const result  = await window.suiSignAndExecute(tx, suiClient2);
 
       if (result.effects?.status?.status !== 'success') {
         throw new Error(result.effects?.status?.error || 'TX failed on-chain');
@@ -4533,7 +4533,7 @@ async function mlExecuteBuyForToken(tokenId, agentAmount, sender, _unused, suiCl
   });
   tx.setGasBudget(25_000_000);
 
-  const result  = await suiSignAndExecute(tx, suiClient);
+  const result  = await window.suiSignAndExecute(tx, suiClient);
   if (result.effects?.status?.status !== 'success') {
     throw new Error(result.effects?.status?.error || 'Buy TX failed');
   }
@@ -4673,7 +4673,7 @@ window.mlExecuteSell = async function() {
       tx.setGasBudget(30_000_000);
 
       if (status) { status.textContent = '✍️ Sign in wallet...'; status.style.color='var(--cyan)'; }
-      const result  = await suiSignAndExecute(tx, suiClient, { showEffects: true });
+      const result  = await window.suiSignAndExecute(tx, suiClient, { showEffects: true });
       if (result.effects?.status?.status !== 'success') throw new Error(result.effects?.status?.error || 'Sell TX failed');
 
       await fetch(BACKEND + '/launchpad/record-trade', {
