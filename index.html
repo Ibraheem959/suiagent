@@ -1865,7 +1865,13 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
           <div class="font-mono text-xs text-slate-500 mt-1">MEME/AGENT pair</div>
         </div>
       </div>
-      <button onclick="mlOpenCreateModal()" class="btn-green" style="font-size:0.85rem;padding:14px 32px;">🚀 LAUNCH A MEME</button>
+      <div style="display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;">
+        <button onclick="mlOpenCreateModal()" class="btn-green" style="font-size:0.85rem;padding:14px 32px;">🚀 LAUNCH A MEME</button>
+        <button id="mlConnectBtn" onclick="connectedWallet?.address ? disconnectWallet() : connectWallet()"
+          style="font-size:0.8rem;padding:12px 24px;border:1px solid rgba(0,245,255,0.4);color:var(--cyan);background:rgba(0,245,255,0.05);cursor:pointer;font-family:'Share Tech Mono',monospace;letter-spacing:0.08em;">
+          CONNECT WALLET
+        </button>
+      </div>
     </div>
 
     <!-- Filter + Sort Bar -->
@@ -3302,6 +3308,13 @@ function updateWalletUI(address) {
     el.style.color = connected ? '#ff465a' : 'var(--cyan)';
     el.style.borderColor = connected ? 'rgba(255,70,90,0.3)' : 'rgba(0,245,255,0.3)';
   });
+  // Update Meme Lab connect button
+  const mlBtn = document.getElementById('mlConnectBtn');
+  if (mlBtn) {
+    mlBtn.textContent = connected ? (short + ' · DISCONNECT') : 'CONNECT WALLET';
+    mlBtn.style.color = connected ? 'var(--green)' : 'var(--cyan)';
+    mlBtn.style.borderColor = connected ? 'rgba(0,255,136,0.4)' : 'rgba(0,245,255,0.4)';
+  }
   // Update ALL swap button texts
   document.querySelectorAll('#swapBtnText').forEach(el => {
     el.textContent = connected ? '◈ EXECUTE SWAP ON-CHAIN' : '◈ CONNECT WALLET TO SWAP';
@@ -4174,7 +4187,7 @@ window.mlSubmitCreate = async function() {
       // 5. Handle initial buy if requested (also on-chain)
       if (initialBuy > 0 && tokenId) {
         if (btn) btn.textContent = '⏳ Executing initial buy...';
-        await mlExecuteBuyForToken(tokenId, initialBuy, creator, walletApi, suiClient);
+        await mlExecuteBuyForToken(tokenId, initialBuy, creator, null, suiClient);
       }
 
       mlCloseCreateModal();
@@ -4438,9 +4451,18 @@ window.mlUpdateSellQuote = async function() {
     const res  = await fetch(BACKEND + '/launchpad/token/' + mlActiveToken + '/quote?type=sell&amount=' + amount);
     const data = await res.json();
     if (data.error) { el.textContent = '❌ ' + data.error; el.style.display='block'; return; }
+    // Fallback: if backend returns 0, estimate from current token price
+    let agentOut = data.agentOut || data.agent_out || 0;
+    let agentFee = data.agentFee || data.agent_fee || 0;
+    let rate     = data.pricePerToken || data.price_per_token || 0;
+    if (!agentOut && mlActiveTokenData?.price) {
+      rate     = mlActiveTokenData.price;
+      agentOut = rate * amount * 0.99;
+      agentFee = rate * amount * 0.01;
+    }
     el.style.display = 'block';
-    el.innerHTML = `You receive: <span style="color:var(--cyan);font-weight:bold">${(data.agentOut||0).toFixed(4)} AGENT</span><br>` +
-      `Fee: ${(data.agentFee||0).toFixed(4)} AGENT (1%) · Rate: ${(data.pricePerToken||0).toFixed(8)} AGENT each`;
+    el.innerHTML = `You receive: <span style="color:var(--cyan);font-weight:bold">${agentOut.toFixed(4)} AGENT</span><br>` +
+      `Fee: ${agentFee.toFixed(4)} AGENT (1%) · Rate: ${rate.toFixed(8)} AGENT each`;
   } catch { el.textContent = '⏳ Fetching quote...'; el.style.display='block'; }
 };
 
@@ -4519,7 +4541,7 @@ window.mlExecuteBuy = async function() {
 
   try {
     if (MEME_ONCHAIN) {
-      if (!connectedWallet?.provider) throw new Error('Wallet not connected — connect your wallet first');
+      tryRecoverWalletProvider();
       let suiClient = window.suiClientInstance;
       if (!suiClient) { let w=0; while(!window.suiClientInstance && w<6000){await new Promise(r=>setTimeout(r,300));w+=300;} suiClient=window.suiClientInstance; }
       if (!suiClient) throw new Error('Sui client not ready — please refresh the page');
@@ -4589,7 +4611,7 @@ window.mlExecuteSell = async function() {
 
       let suiClient = window.suiClientInstance;
       if (!suiClient) { let w=0; while(!window.suiClientInstance && w<6000){await new Promise(r=>setTimeout(r,300));w+=300;} suiClient=window.suiClientInstance; }
-      if (!connectedWallet?.provider) throw new Error('Wallet not connected — connect your wallet first');
+      tryRecoverWalletProvider();
 
       const tx = new Transaction();
       tx.setSender(wallet);
