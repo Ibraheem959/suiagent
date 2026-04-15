@@ -4450,9 +4450,15 @@ window.mlUpdateBuyQuote = async function() {
     const data = await res.json();
     if (data.error) { el.textContent = '❌ ' + data.error; el.style.display='block'; return; }
     el.style.display = 'block';
-    el.innerHTML = `You receive: <span style="color:var(--green);font-weight:bold">${mlFmtAgent(data.memeOut)} ${mlActiveTokenData?.symbol||'tokens'}</span><br>` +
-      `Fee: ${(data.agentFee||0).toFixed(4)} AGENT (1%) · Impact: ${data.priceImpact||'?'}<br>` +
-      `New price: ${(data.newPrice||0).toFixed(8)} AGENT per token`;
+    const impactNum  = parseFloat(data.priceImpact) || 0;
+    const impactCol  = impactNum > 30 ? '#ff465a' : impactNum > 10 ? '#f5a623' : 'var(--green)';
+    const effPrice   = data.memeOut > 0 ? (data.agentIn / data.memeOut).toFixed(8) : '—';
+    el.innerHTML =
+      `You receive: <span style="color:var(--green);font-weight:bold">${mlFmtAgent(data.memeOut)} ${mlActiveTokenData?.symbol||'tokens'}</span><br>` +
+      `Fee: ${(data.agentFee||0).toFixed(4)} AGENT (1%) · ` +
+      `Impact: <span style="color:${impactCol}">${data.priceImpact||'?'}</span><br>` +
+      `Effective price: <b>${effPrice} AGENT/token</b> · New spot: ${(data.newPrice||0).toFixed(8)} AGENT/token` +
+      (impactNum > 30 ? `<br><span style="color:#ff465a">⚠ High price impact — large buy moves the bonding curve significantly</span>` : '');
   } catch { el.textContent = '⏳ Fetching quote...'; el.style.display='block'; }
 };
 
