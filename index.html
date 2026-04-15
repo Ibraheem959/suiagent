@@ -1663,6 +1663,24 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
       </div>
     </div>
 
+    <!-- Admin: Protocol Eco Fee Claim (only visible to LP deployer wallet) -->
+    <div id="lpAdminPanel" style="display:none" class="reveal card p-6 rounded-none mt-6" style="border-color:rgba(157,78,221,0.3);background:rgba(157,78,221,0.04)">
+      <div class="font-mono text-xs tracking-widest mb-4" style="color:var(--purple)">◈ ADMIN — PROTOCOL ECO FEE</div>
+      <div class="grid gap-4" style="grid-template-columns:1fr 1fr">
+        <div>
+          <div class="font-mono text-xs text-slate-500 mb-1">ACCUMULATED PROTOCOL SUI</div>
+          <div id="ecoFeeBalance" class="font-orbitron text-xl font-bold" style="color:var(--purple)">—</div>
+          <div class="font-mono text-xs text-slate-500 mt-1">50% of all LP trading fees</div>
+        </div>
+        <div class="flex flex-col justify-end">
+          <button onclick="claimProtocolFees()" id="claimEcoBtn" style="width:100%;padding:12px;background:rgba(157,78,221,0.15);border:1.5px solid var(--purple);color:var(--purple);font-family:'Orbitron',sans-serif;font-size:0.7rem;letter-spacing:0.1em;cursor:pointer">
+            CLAIM ECO FEES →
+          </button>
+          <div id="ecoFeeStatus" class="font-mono text-xs text-center mt-2" style="color:#4a5568;min-height:16px"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- How LP works -->
     <div class="reveal card p-8 rounded-none mt-8" style="border-color:rgba(0,245,255,0.1)">
       <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ HOW LP WORKS</div>
@@ -3487,6 +3505,19 @@ window.__buildTx = async function(sender, txData) {
     tx.transferObjects([suiOut, agentOut], sender);
     tx.setGasBudget(50_000_000);
 
+  } else if (txData.action === 'claim_eco_fees') {
+    // Admin only — requires LP AdminCap
+    // withdraw_protocol_fees(&mut AgentPoolLP, &AdminCap, &mut TxContext)
+    // Sends all accumulated protocol_sui to the transaction sender
+    tx.moveCall({
+      target: `${LP_PKG}::pool_lp::withdraw_protocol_fees`,
+      arguments: [
+        tx.object(LP_POOL),
+        tx.object('0xcaf008988b557cc9ddf4a5921e42d2440db13e108f05c884c44c57903bc7c4e5'), // LP AdminCap
+      ]
+    });
+    tx.setGasBudget(20_000_000);
+
   } else {
     throw new Error('Unknown action: ' + txData.action);
   }
@@ -3662,26 +3693,62 @@ async function withdrawLiquidityOnChain() {
 }
 
 
-// ─── CLAIM LP FEES (admin only) ───
-async function claimLpFees() {
-  const status = document.getElementById('lpFeeStatus');
-  if (status) { status.style.color = 'var(--cyan)'; status.textContent = '⏳ Claiming fees...'; }
+// ─── CLAIM PROTOCOL ECO FEES (LP admin only, on-chain) ───
+const LP_ADMIN_ADDRESS  = '0x9e0ac3152f035e411164b24c8db59b3f0ee870340ec754ae5f074559baaa15b1';
+const LP_ADMIN_CAP_ID   = '0xcaf008988b557cc9ddf4a5921e42d2440db13e108f05c884c44c57903bc7c4e5';
+
+async function refreshEcoFeeBalance() {
   try {
-    const res = await fetch(BACKEND + '/lp/claim-fees', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ adminKey: 'agent-admin-2026' })
-    });
-    const data = await res.json();
-    if (data.success) {
-      if (status) { status.style.color = 'var(--green)'; status.textContent = '✅ Fees claimed! TX: ' + data.txDigest?.slice(0,12) + '...'; }
+    const obj = await rpcCall('sui_getObject', [LP_POOL_OBJ, { showContent: true }]);
+    const fields = obj?.data?.content?.fields || {};
+    const raw = parseInt(fields.protocol_sui || 0);
+    const el = document.getElementById('ecoFeeBalance');
+    if (el) el.textContent = (raw / 1e9).toFixed(4) + ' SUI';
+  } catch(e) {}
+}
+
+function checkLpAdminPanel() {
+  const panel = document.getElementById('lpAdminPanel');
+  if (!panel) return;
+  const addr = connectedWallet?.address?.toLowerCase();
+  if (addr && addr === LP_ADMIN_ADDRESS.toLowerCase()) {
+    panel.style.display = 'block';
+    refreshEcoFeeBalance();
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+async function claimProtocolFees() {
+  const status = document.getElementById('ecoFeeStatus');
+  if (!connectedWallet?.address) {
+    await connectWallet();
+    if (!connectedWallet?.address) return;
+  }
+  if (connectedWallet.address.toLowerCase() !== LP_ADMIN_ADDRESS.toLowerCase()) {
+    if (status) { status.style.color = '#ff465a'; status.textContent = '❌ Not LP admin wallet'; }
+    return;
+  }
+  if (status) { status.style.color = 'var(--cyan)'; status.textContent = '⏳ Building claim transaction...'; }
+  try {
+    const result = await window.__buildTx(connectedWallet.address, { action: 'claim_eco_fees' });
+    if (result?.effects?.status?.status === 'success') {
+      if (status) {
+        status.style.color = 'var(--green)';
+        status.innerHTML = '✅ Fees claimed! <a href="https://suiscan.xyz/mainnet/tx/' + result.digest + '" target="_blank" style="color:var(--purple);text-decoration:underline">View TX ↗</a>';
+      }
+      setTimeout(refreshEcoFeeBalance, 3000);
     } else {
-      if (status) { status.style.color = '#ff465a'; status.textContent = '❌ ' + (data.error || 'Failed'); }
+      const err = result?.effects?.status?.error || 'Transaction failed';
+      if (status) { status.style.color = '#ff465a'; status.textContent = '❌ ' + err; }
     }
   } catch(e) {
     if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ ' + e.message; }
   }
 }
+
+// Legacy alias
+async function claimLpFees() { return claimProtocolFees(); }
 // Auto-connect if wallet was previously connected (Wallet Standard)
 window.addEventListener('load', async () => {
   await new Promise(r => setTimeout(r, 600)); // wait for wallet extensions to inject
@@ -3847,6 +3914,7 @@ window.updateWalletUI = function(addr) {
   if (origUpdateWalletUI) origUpdateWalletUI(addr);
   mlMyWallet = addr;
   mlUpdateRefLink();
+  checkLpAdminPanel(); // show eco-fee claim panel if LP deployer wallet connected
 };
 
 // ── Load tokens ──
