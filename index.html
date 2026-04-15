@@ -4005,6 +4005,33 @@ window.mlHandleImageUpload = function(input) {
   reader.readAsDataURL(file);
 };
 
+// ── Unified wallet signing helper ───────────────────────────────────────────
+// Uses connectedWallet.provider (set by pickWalletObj) to sign and execute.
+// Works with Wallet Standard (Slush, Sui Wallet, etc.) and legacy providers.
+async function suiSignAndExecute(txBytes, opts) {
+  const provider = connectedWallet?.provider;
+  if (!provider) throw new Error('Wallet not connected — connect your wallet first');
+  const b64 = btoa(String.fromCharCode(...txBytes));
+  const options = opts || { showEffects: true, showEvents: true };
+
+  // Wallet-standard: sui:signAndExecuteTransactionBlock feature
+  const stdFeat = provider.features?.['sui:signAndExecuteTransactionBlock'];
+  if (stdFeat?.signAndExecuteTransactionBlock) {
+    return await stdFeat.signAndExecuteTransactionBlock({
+      transactionBlock: b64, options,
+      account: provider.accounts?.[0],
+      chain: 'sui:mainnet',
+    });
+  }
+  // Legacy provider (older wallet extensions)
+  const legacyP = provider?.sui || provider;
+  if (legacyP?.signAndExecuteTransactionBlock) {
+    return await legacyP.signAndExecuteTransactionBlock({ transactionBlock: b64, options });
+  }
+  throw new Error('Wallet does not support signAndExecuteTransactionBlock — try updating your wallet');
+}
+// ────────────────────────────────────────────────────────────────────────────
+
 window.mlSubmitCreate = async function() {
   const btn    = document.getElementById('mlCreateBtn');
   const errDiv = document.getElementById('mlCreateError');
@@ -4102,15 +4129,8 @@ window.mlSubmitCreate = async function() {
 
       // 3. Sign & execute via connected wallet
       if (btn) btn.textContent = '✍️ Sign in wallet...';
-      const txBytes    = await tx.build({ client: suiClient2 });
-      const b64        = btoa(String.fromCharCode(...txBytes));
-      const walletApi  = window.suiWalletApi || window.suiWallet;
-      if (!walletApi) throw new Error('No wallet provider found');
-
-      const result = await walletApi.signAndExecuteTransactionBlock({
-        transactionBlock: b64,
-        options: { showEffects: true, showEvents: true },
-      });
+      const txBytes = await tx.build({ client: suiClient2 });
+      const result  = await suiSignAndExecute(txBytes);
 
       if (result.effects?.status?.status !== 'success') {
         throw new Error(result.effects?.status?.error || 'TX failed on-chain');
@@ -4403,7 +4423,7 @@ window.mlCopyCA = function() {
 };
 
 // ── Helper: build & execute buy PTB for a token ──
-async function mlExecuteBuyForToken(tokenId, agentAmount, sender, walletApi, suiClient) {
+async function mlExecuteBuyForToken(tokenId, agentAmount, sender, _unused, suiClient) {
   const token = mlActiveTokenData || (await fetch(BACKEND+'/launchpad/token/'+tokenId).then(r=>r.json()).catch(()=>null));
   if (!token?.onChainId) throw new Error('Cannot find on-chain token ID');
 
@@ -4441,11 +4461,7 @@ async function mlExecuteBuyForToken(tokenId, agentAmount, sender, walletApi, sui
   tx.setGasBudget(25_000_000);
 
   const txBytes = await tx.build({ client: suiClient });
-  const b64     = btoa(String.fromCharCode(...txBytes));
-  const result  = await walletApi.signAndExecuteTransactionBlock({
-    transactionBlock: b64,
-    options: { showEffects: true, showEvents: true },
-  });
+  const result  = await suiSignAndExecute(txBytes);
   if (result.effects?.status?.status !== 'success') {
     throw new Error(result.effects?.status?.error || 'Buy TX failed');
   }
@@ -4474,12 +4490,12 @@ window.mlExecuteBuy = async function() {
 
   try {
     if (MEME_ONCHAIN) {
-      const walletApi  = window.suiWalletApi || window.suiWallet;
+      if (!connectedWallet?.provider) throw new Error('Wallet not connected — connect your wallet first');
       let suiClient = window.suiClientInstance;
       if (!suiClient) { let w=0; while(!window.suiClientInstance && w<6000){await new Promise(r=>setTimeout(r,300));w+=300;} suiClient=window.suiClientInstance; }
-      if (!walletApi || !suiClient) throw new Error('Wallet or Sui client not available — please refresh');
+      if (!suiClient) throw new Error('Sui client not ready — please refresh the page');
       if (status) { status.textContent = '✍️ Sign in wallet...'; status.style.color='var(--cyan)'; }
-      await mlExecuteBuyForToken(mlActiveToken, amount, wallet, walletApi, suiClient);
+      await mlExecuteBuyForToken(mlActiveToken, amount, wallet, null, suiClient);
       if (status) { status.textContent = '✅ Buy confirmed! Tokens in your wallet.'; status.style.color='var(--green)'; }
       setTimeout(async () => {
         await mlOpenToken(mlActiveToken);
@@ -4539,8 +4555,7 @@ window.mlExecuteSell = async function() {
 
       let suiClient = window.suiClientInstance;
       if (!suiClient) { let w=0; while(!window.suiClientInstance && w<6000){await new Promise(r=>setTimeout(r,300));w+=300;} suiClient=window.suiClientInstance; }
-      const walletApi  = window.suiWalletApi || window.suiWallet;
-      if (!walletApi || !suiClient) throw new Error('Wallet not available — please refresh');
+      if (!connectedWallet?.provider) throw new Error('Wallet not connected — connect your wallet first');
 
       const tx = new Transaction();
       tx.setSender(wallet);
@@ -4582,8 +4597,7 @@ window.mlExecuteSell = async function() {
 
       if (status) { status.textContent = '✍️ Sign in wallet...'; status.style.color='var(--cyan)'; }
       const txBytes = await tx.build({ client: suiClient });
-      const b64     = btoa(String.fromCharCode(...txBytes));
-      const result  = await walletApi.signAndExecuteTransactionBlock({ transactionBlock: b64, options: { showEffects: true } });
+      const result  = await suiSignAndExecute(txBytes, { showEffects: true });
       if (result.effects?.status?.status !== 'success') throw new Error(result.effects?.status?.error || 'Sell TX failed');
 
       await fetch(BACKEND + '/launchpad/record-trade', {
