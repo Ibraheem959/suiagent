@@ -4026,27 +4026,30 @@ function tryRecoverWalletProvider() {
   }
 }
 
-async function suiSignAndExecute(txBytes, opts) {
+// tx = Transaction object, suiClient needed only for legacy path
+async function suiSignAndExecute(tx, suiClient, opts) {
   tryRecoverWalletProvider();
 
   const provider = connectedWallet?.provider;
   if (!provider) throw new Error('__NEED_RECONNECT__');
 
-  const options  = opts || { showEffects: true, showEvents: true };
-  const rawBytes = txBytes instanceof Uint8Array ? txBytes : new Uint8Array(txBytes);
+  const options = opts || { showEffects: true, showEvents: true };
 
-  // Wallet-standard: expects raw Uint8Array, NOT base64
+  // Wallet-standard wallets (Slush, Sui Wallet, Nightly):
+  // pass Transaction object directly — wallet calls .serialize() itself
   const stdFeat = provider.features?.['sui:signAndExecuteTransactionBlock'];
   if (stdFeat?.signAndExecuteTransactionBlock) {
     return await stdFeat.signAndExecuteTransactionBlock({
-      transactionBlock: rawBytes,
+      transactionBlock: tx,
       options,
       account: provider.accounts?.[0],
       chain: 'sui:mainnet',
     });
   }
-  // Legacy providers (OKX, Suiet, Phantom, etc.) — expect base64
-  const b64     = btoa(String.fromCharCode(...rawBytes));
+
+  // Legacy providers (OKX, Suiet, Phantom) — need base64 bytes
+  const txBytes = await tx.build({ client: suiClient });
+  const b64     = btoa(String.fromCharCode(...txBytes));
   const legacyP = provider?.sui || provider;
   if (legacyP?.signAndExecuteTransactionBlock) {
     return await legacyP.signAndExecuteTransactionBlock({ transactionBlock: b64, options });
@@ -4152,8 +4155,7 @@ window.mlSubmitCreate = async function() {
 
       // 3. Sign & execute via connected wallet
       if (btn) btn.textContent = '✍️ Sign in wallet...';
-      const txBytes = await tx.build({ client: suiClient2 });
-      const result  = await suiSignAndExecute(txBytes);
+      const result  = await suiSignAndExecute(tx, suiClient2);
 
       if (result.effects?.status?.status !== 'success') {
         throw new Error(result.effects?.status?.error || 'TX failed on-chain');
@@ -4488,8 +4490,7 @@ async function mlExecuteBuyForToken(tokenId, agentAmount, sender, _unused, suiCl
   });
   tx.setGasBudget(25_000_000);
 
-  const txBytes = await tx.build({ client: suiClient });
-  const result  = await suiSignAndExecute(txBytes);
+  const result  = await suiSignAndExecute(tx, suiClient);
   if (result.effects?.status?.status !== 'success') {
     throw new Error(result.effects?.status?.error || 'Buy TX failed');
   }
@@ -4629,8 +4630,7 @@ window.mlExecuteSell = async function() {
       tx.setGasBudget(30_000_000);
 
       if (status) { status.textContent = '✍️ Sign in wallet...'; status.style.color='var(--cyan)'; }
-      const txBytes = await tx.build({ client: suiClient });
-      const result  = await suiSignAndExecute(txBytes, { showEffects: true });
+      const result  = await suiSignAndExecute(tx, suiClient, { showEffects: true });
       if (result.effects?.status?.status !== 'success') throw new Error(result.effects?.status?.error || 'Sell TX failed');
 
       await fetch(BACKEND + '/launchpad/record-trade', {
