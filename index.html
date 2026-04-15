@@ -3507,15 +3507,15 @@ window.__buildTx = async function(sender, txData) {
 
   } else if (txData.action === 'claim_eco_fees') {
     // Admin only — requires LP AdminCap
-    // withdraw_protocol_fees(&mut AgentPoolLP, &AdminCap, &mut TxContext)
-    // Sends all accumulated protocol_sui to the transaction sender
-    tx.moveCall({
+    // withdraw_protocol_fees returns Coin<SUI> that must be transferred
+    const [feeCoin] = tx.moveCall({
       target: `${LP_PKG}::pool_lp::withdraw_protocol_fees`,
       arguments: [
         tx.object(LP_POOL),
         tx.object('0xcaf008988b557cc9ddf4a5921e42d2440db13e108f05c884c44c57903bc7c4e5'), // LP AdminCap
       ]
     });
+    tx.transferObjects([feeCoin], sender);
     tx.setGasBudget(20_000_000);
 
   } else {
