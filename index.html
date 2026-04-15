@@ -4054,34 +4054,55 @@ window.mlSubmitCreate = async function() {
         if (errDiv) { errDiv.textContent = '❌ Sui SDK not loaded. Please refresh the page.'; errDiv.style.display='block'; }
         return;
       }
+      // Get suiClient (needed for coin fetch + tx.build)
+      let suiClient2 = window.suiClientInstance;
+      if (!suiClient2) { let w=0; while(!window.suiClientInstance && w<6000){await new Promise(r=>setTimeout(r,300));w+=300;} suiClient2=window.suiClientInstance; }
+      if (!suiClient2) { if (errDiv) { errDiv.textContent='❌ Sui client not ready — refresh the page'; errDiv.style.display='block'; } return; }
+
+      // Fetch AGENT coins for initial_payment arg (required by contract even if 0)
+      const agentCoinsRes = await suiClient2.getCoins({ owner: creator, coinType: AGENT_COIN_TYPE });
+      if (!agentCoinsRes.data?.length) {
+        if (errDiv) { errDiv.textContent='❌ No AGENT coins in wallet. You need AGENT to create a token.'; errDiv.style.display='block'; }
+        return;
+      }
+
       const tx = new Transaction();
       tx.setSender(creator);
 
-      // Name/symbol/desc must be ASCII ≤ 64 chars for Move string limits
+      // Encode strings to bytes (contract takes vector<u8>)
       const nameBytes = Array.from(new TextEncoder().encode(name.slice(0, 50)));
       const symBytes  = Array.from(new TextEncoder().encode(symbol.slice(0, 10)));
-      const descBytes = Array.from(new TextEncoder().encode((desc||'').slice(0, 300)));
       const imgBytes  = Array.from(new TextEncoder().encode((image||'').slice(0, 512)));
+      const descBytes = Array.from(new TextEncoder().encode((desc||'').slice(0, 300)));
 
+      // Build initial_payment coin — split exact amount from AGENT coins
+      const initialBuyRaw = initialBuy > 0 ? Math.floor(initialBuy * 1_000_000) : 0;
+      const primaryCoin = tx.object(agentCoinsRes.data[0].coinObjectId);
+      if (agentCoinsRes.data.length > 1) {
+        tx.mergeCoins(primaryCoin, agentCoinsRes.data.slice(1).map(c => tx.object(c.coinObjectId)));
+      }
+      const [paymentCoin] = tx.splitCoins(primaryCoin, [tx.pure.u64(initialBuyRaw)]);
+
+      // create_token args (must match Move contract exactly):
+      // manager, name, symbol, image, description, initial_payment, clock
       tx.moveCall({
         target: `${MEME_PACKAGE_ID}::launchpad::create_token`,
         typeArguments: [AGENT_COIN_TYPE],
         arguments: [
-          tx.object(MEME_MANAGER_ID),
-          tx.pure.vector('u8', nameBytes),
-          tx.pure.vector('u8', symBytes),
-          tx.pure.vector('u8', descBytes),
-          tx.pure.vector('u8', imgBytes),
+          tx.object(MEME_MANAGER_ID),            // 1. manager (shared)
+          tx.pure.vector('u8', nameBytes),        // 2. name
+          tx.pure.vector('u8', symBytes),         // 3. symbol
+          tx.pure.vector('u8', imgBytes),         // 4. image  ← correct order
+          tx.pure.vector('u8', descBytes),        // 5. description
+          paymentCoin,                            // 6. initial_payment Coin<AGENT>
+          tx.object('0x0000000000000000000000000000000000000000000000000000000000000006'), // 7. clock
         ],
       });
-      tx.setGasBudget(20_000_000);
+      tx.setGasBudget(30_000_000);
 
       // 3. Sign & execute via connected wallet
       if (btn) btn.textContent = '✍️ Sign in wallet...';
-      let suiClient = window.suiClientInstance;
-      if (!suiClient) { let w=0; while(!window.suiClientInstance && w<6000){await new Promise(r=>setTimeout(r,300));w+=300;} suiClient=window.suiClientInstance; }
-      if (!suiClient) throw new Error('Sui client not ready — please refresh the page');
-      const txBytes    = await tx.build({ client: suiClient });
+      const txBytes    = await tx.build({ client: suiClient2 });
       const b64        = btoa(String.fromCharCode(...txBytes));
       const walletApi  = window.suiWalletApi || window.suiWallet;
       if (!walletApi) throw new Error('No wallet provider found');
