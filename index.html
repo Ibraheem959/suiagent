@@ -2392,7 +2392,7 @@ window.lockerExecuteLock = async function() {
   const btn    = document.getElementById('lockBtn');
   try {
     if (!connectedWallet?.address) { status.textContent='⚠ Connect wallet first'; status.style.color='#ffc864'; return; }
-    if (LOCKER_PKG === '0xe9d60612d25afa147340de484bb8b52607a883647cea96a5823319cda2c1a725') {
+    if (false) {
       status.textContent='⏳ Lock contract deploying — check back soon'; status.style.color='#ffc864'; return;
     }
 
