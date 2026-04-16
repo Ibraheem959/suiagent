@@ -2193,14 +2193,16 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
       </div>
     </div>
 
-    <!-- UNLOCK PANEL -->
+    <!-- ══════ UNLOCK PANEL ══════ -->
     <div id="unlockPanel" style="display:none">
       <div style="margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <button onclick="lockerFetchLocks()" class="btn-cyan" style="padding:8px 20px;font-size:0.72rem;"><span>⟳ REFRESH LOCKS</span></button>
         <span style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:#4a7090">Connect wallet then click Refresh to see your locks</span>
       </div>
       <div id="unlockList" style="display:flex;flex-direction:column;gap:10px;min-height:60px;">
-        <div style="color:#4a5568;font-family:'Share Tech Mono',monospace;font-size:0.75rem;text-align:center;padding:24px;">No active locks — refresh after connecting wallet</div>
+        <div style="color:#4a5568;font-family:'Share Tech Mono',monospace;font-size:0.75rem;text-align:center;padding:24px;">
+          No active locks — refresh after connecting wallet
+        </div>
       </div>
       <div id="unlockStatus" style="margin-top:12px;font-family:'Share Tech Mono',monospace;font-size:0.78rem;min-height:22px;"></div>
     </div>
@@ -2237,20 +2239,18 @@ let lastBurnDigest= null;
 
 // ── Tab switch ────────────────────────────────────────────────────────────
 window.lockerSetTab = function(tab) {
-  document.getElementById('lockPanel').style.display  = tab === 'lock' ? '' : 'none';
-  document.getElementById('burnPanel').style.display  = tab === 'burn' ? '' : 'none';
+  document.getElementById('lockPanel').style.display   = tab === 'lock'   ? '' : 'none';
+  document.getElementById('burnPanel').style.display   = tab === 'burn'   ? '' : 'none';
   document.getElementById('unlockPanel').style.display = tab === 'unlock' ? '' : 'none';
   const lBtn = document.getElementById('lockTabBtn');
   const bBtn = document.getElementById('burnTabBtn');
-  lBtn.style.borderBottomColor = tab==='lock' ? 'var(--purple)' : 'transparent';
-  lBtn.style.color             = tab==='lock' ? 'var(--purple)' : '#4a5568';
-  bBtn.style.borderBottomColor = tab==='burn' ? '#ff465a'       : 'transparent';
-  bBtn.style.color             = tab==='burn' ? '#ff465a'       : '#4a5568';
   const uBtn = document.getElementById('unlockTabBtn');
-  if (uBtn) {
-    uBtn.style.borderBottomColor = tab==='unlock' ? 'var(--cyan)' : 'transparent';
-    uBtn.style.color             = tab==='unlock' ? 'var(--cyan)' : '#4a5568';
-  }
+  lBtn.style.borderBottomColor = tab==='lock'   ? 'var(--purple)' : 'transparent';
+  lBtn.style.color             = tab==='lock'   ? 'var(--purple)' : '#4a5568';
+  bBtn.style.borderBottomColor = tab==='burn'   ? '#ff465a'       : 'transparent';
+  bBtn.style.color             = tab==='burn'   ? '#ff465a'       : '#4a5568';
+  uBtn.style.borderBottomColor = tab==='unlock' ? 'var(--cyan)'   : 'transparent';
+  uBtn.style.color             = tab==='unlock' ? 'var(--cyan)'   : '#4a5568';
   if (tab === 'unlock') lockerFetchLocks();
 };
 
@@ -2487,7 +2487,7 @@ window.lockerExecuteLock = async function() {
       `Amount: <span style="color:var(--green)">${amtHuman.toLocaleString()} ${coinInfo.symbol}</span><br>` +
       `Unlocks: <span style="color:var(--cyan)">${unlockDate.toDateString()}</span> (${days} days)<br>` +
       `Lock Object: <span style="color:var(--purple);word-break:break-all">${lockId}</span><br>` +
-      `TX: <span style="color:#4a7cff;word-break:break-all">${result.digest}</span>`;
+      `TX: <span style="color:#4a7cff;word-break:break-all">${digest}</span>`;
 
     const isObj = lockId !== digest;
     document.getElementById('lockSuiscanLink').href = isObj
@@ -2561,7 +2561,120 @@ window.lockerExecuteBurn = async function() {
   }
 };
 
-// ── Copy proof links ──────────────────────────────────────────────────────
+// ── Fetch all LockedToken objects for connected wallet ─────────────────────
+window.lockerFetchLocks = async function() {
+  const list = document.getElementById('unlockList');
+  if (!list) return;
+  const wallet = typeof connectedWallet !== 'undefined' && connectedWallet?.address;
+  if (!wallet) {
+    list.innerHTML = '<div style="color:#ffc864;font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;text-align:center;padding:20px">⚠ Connect your wallet first</div>';
+    return;
+  }
+  list.innerHTML = '<div style="color:#4a7090;font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;text-align:center;padding:20px">⏳ Loading your locks…</div>';
+
+  try {
+    // Use MoveModule filter — works with generic types unlike StructType
+    let allObjs = [];
+    let cursor = null;
+    while (true) {
+      const query = {
+        filter: { MoveModule: { package: LOCKER_PKG, module: 'locker' } },
+        options: { showContent: true, showType: true }
+      };
+      const params = cursor
+        ? [wallet, query, cursor]
+        : [wallet, query];
+      const page = await rpcCall('suix_getOwnedObjects', params);
+      const items = (page?.data || []).filter(o => o?.data?.type?.includes('::locker::LockedToken'));
+      allObjs = allObjs.concat(items);
+      if (!page?.hasNextPage || !page?.nextCursor) break;
+      cursor = page.nextCursor;
+    }
+
+    if (allObjs.length === 0) {
+      list.innerHTML = '<div style="color:#4a5568;font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;text-align:center;padding:24px">No active locks found for this wallet</div>';
+      return;
+    }
+
+    const now = Date.now();
+    let html = '';
+    for (const obj of allObjs) {
+      const f = obj?.data?.content?.fields || {};
+      const objectId = obj?.data?.objectId;
+      const unlockMs = parseInt(f.unlock_time || 0);
+      const amount   = f.amount ? BigInt(f.amount) : 0n;
+      // Try to detect coin type from struct type
+      const fullType = obj?.data?.type || '';
+      const coinMatch = fullType.match(/<(.+)>/);
+      const coinType = coinMatch ? coinMatch[1] : 'Unknown';
+      const isAgent = coinType.includes('::agent::AGENT');
+      const isSui   = coinType.includes('0x2::sui::SUI');
+      const decimals = isAgent ? 6 : (isSui ? 9 : 9);
+      const symbol   = isAgent ? 'AGENT' : (isSui ? 'SUI' : coinType.split('::').pop());
+      const amtHuman = (Number(amount) / Math.pow(10, decimals)).toLocaleString(undefined, {maximumFractionDigits: 4});
+      const unlockDate = new Date(unlockMs);
+      const ready    = now >= unlockMs;
+      const remaining= unlockMs - now;
+      const daysLeft = Math.ceil(remaining / 86400000);
+
+      html += `<div style="background:var(--card);border:1px solid ${ready ? 'rgba(0,255,136,0.35)' : 'rgba(0,245,255,0.15)'};padding:16px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:14px;font-family:'Share Tech Mono',monospace;font-size:0.73rem">
+        <div style="flex:1;min-width:200px">
+          <div style="color:var(--cyan);margin-bottom:4px">🔒 ${amtHuman} <span style="color:${isAgent?'var(--purple)':'#88c0d0'}">${symbol}</span></div>
+          <div style="color:#4a7090;font-size:0.67rem;word-break:break-all">ID: ${objectId}</div>
+          <div style="margin-top:6px;color:${ready?'var(--green)':'#ffc864'}">
+            ${ready ? '✅ UNLOCKABLE NOW' : `🕐 Unlocks ${unlockDate.toUTCString()} (${daysLeft}d left)`}
+          </div>
+        </div>
+        <div>
+          ${ready
+            ? `<button onclick="lockerExecuteUnlock('${objectId}','${coinType}')" style="background:rgba(0,255,136,0.12);border:1.5px solid var(--green);color:var(--green);font-family:'Orbitron',sans-serif;font-size:0.7rem;padding:9px 20px;cursor:pointer;letter-spacing:0.08em">🔓 UNLOCK &amp; CLAIM</button>`
+            : `<div style="color:#4a5568;font-size:0.68rem">Locked until<br>${unlockDate.toDateString()}</div>`
+          }
+        </div>
+      </div>`;
+    }
+    list.innerHTML = html;
+  } catch(e) {
+    list.innerHTML = `<div style="color:#ff465a;font-family:'Share Tech Mono',monospace;font-size:0.75rem;text-align:center;padding:20px">Error: ${e.message}</div>`;
+  }
+};
+
+// ── Execute unlock ─────────────────────────────────────────────────────────
+window.lockerExecuteUnlock = async function(lockObjId, coinType) {
+  const status = document.getElementById('unlockStatus');
+  if (!connectedWallet?.address) { status.textContent='⚠ Connect wallet first'; status.style.color='#ffc864'; return; }
+  if (!LOCKER_PKG || LOCKER_PKG.length < 30) { status.textContent='⚠ Locker contract not set'; status.style.color='#ff465a'; return; }
+
+  try {
+    status.textContent = 'Building unlock transaction…'; status.style.color = '#c8daf0';
+
+    const { Transaction } = await import('https://cdn.jsdelivr.net/npm/@mysten/sui@1.21.1/+esm');
+    const tx = new Transaction();
+    tx.moveCall({
+      target: `${LOCKER_PKG}::locker::unlock`,
+      typeArguments: [coinType],
+      arguments: [
+        tx.object(lockObjId),
+        tx.object(CLOCK_ID),
+      ],
+    });
+
+    status.textContent = 'Waiting for wallet signature…'; status.style.color = '#c8daf0';
+    const result = await signAndExecuteTx(tx);
+    const digest = result.digest || result.effects?.transactionDigest;
+    if (!digest) throw new Error('No digest returned');
+
+    status.innerHTML = `✅ Tokens unlocked! <a href="https://suiscan.xyz/mainnet/tx/${digest}" target="_blank" style="color:var(--cyan);text-decoration:underline">View TX ↗</a>`;
+    status.style.color = 'var(--green)';
+
+    // Refresh list after a moment
+    setTimeout(lockerFetchLocks, 2500);
+  } catch(e) {
+    status.textContent = '✗ ' + (e.message || 'Unlock failed');
+    status.style.color = '#ff465a';
+  }
+};
+
 window.lockerCopySiteLink = function(type) {
   let url;
   if (type === 'lock' && lastLockId) {
@@ -2921,15 +3034,30 @@ function fmtUsdShort(n) {
   return '$' + n.toFixed(2);
 }
 
+let _cachedSuiPrice = 0;
 async function fetchSuiPrice() {
-  try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 5000);
-    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=sui&vs_currencies=usd', { signal: ctrl.signal });
-    clearTimeout(t);
-    const data = await res.json();
-    return data?.sui?.usd || 0;
-  } catch(e) { return 0; }
+  const sources = [
+    async () => {
+      const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=SUIUSDT', { signal: AbortSignal.timeout(4000) });
+      const d = await r.json();
+      return parseFloat(d.price) || 0;
+    },
+    async () => {
+      const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=sui&vs_currencies=usd', { signal: AbortSignal.timeout(5000) });
+      const d = await r.json();
+      return d?.sui?.usd || 0;
+    },
+    async () => {
+      const r = await fetch('https://hermes.pyth.network/v2/updates/price/latest?ids[]=0x23d7315113f5b1d3ba7a83604c44b94d79f4fd69af77f804fc7f920a6dc65744', { signal: AbortSignal.timeout(4000) });
+      const d = await r.json();
+      const p = d?.parsed?.[0]?.price;
+      return p ? parseFloat(p.price) * Math.pow(10, p.expo) : 0;
+    },
+  ];
+  for (const src of sources) {
+    try { const p = await src(); if (p > 0) { _cachedSuiPrice = p; return p; } } catch(e) {}
+  }
+  return _cachedSuiPrice || 3.5; // last cached or reasonable fallback
 }
 
 async function updatePriceBar() {
@@ -3229,7 +3357,7 @@ const LP_COIN_TYPE    = LP_PKG_SITE + '::pool_lp::POOL_LP';
 let lwChart      = null;
 let candleSeries = null;
 let currentTf    = '5m';
-let chartSuiUsd  = 1.78;
+let chartSuiUsd  = 3.5;
 let lpPoolData   = null;
 let lpPositionData = null;
 let withdrawPct  = 0;
@@ -3278,42 +3406,55 @@ function updateCandle(tf, ts, priceUsd, vol) {
 }
 
 async function fetchChartSuiPrice() {
-  try {
-    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=sui&vs_currencies=usd');
-    const d = await r.json();
-    if (d?.sui?.usd) chartSuiUsd = d.sui.usd;
-  } catch(e) {}
+  const sources = [
+    async () => { const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=SUIUSDT',{signal:AbortSignal.timeout(4000)}); const d=await r.json(); return parseFloat(d.price)||0; },
+    async () => { const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=sui&vs_currencies=usd',{signal:AbortSignal.timeout(5000)}); const d=await r.json(); return d?.sui?.usd||0; },
+  ];
+  for (const src of sources) {
+    try { const p = await src(); if (p > 0) { chartSuiUsd = p; return; } } catch(e) {}
+  }
 }
 
 async function seedCandlesFromChain() {
   try {
     const cs = document.getElementById('chartStatus');
     if (cs) cs.textContent = 'Loading trade history...';
-    let cursor = null;
-    let total  = 0;
-    const POOL_PKG = '0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48ce3cd6952';
-    for (let page = 0; page < 20; page++) {
-      const events = await rpcCall('suix_queryEvents', [{
-        MoveModule: { package: POOL_PKG, module: 'pool' }
-      }, cursor, 50, false]);
-      if (!events?.data?.length) break;
-      for (const e of events.data) {
-        const f     = e.parsedJson || {};
-        const isBuy = e.type?.includes('TokensBought');
-        const suiIn    = parseInt(f.sui_in    || f.sui_out  || 0);
-        const agentAmt = parseInt(f.agent_out || f.agent_in || 0);
-        if (!agentAmt) continue;
-        const priceSui = (suiIn/1e9) / (agentAmt/1e6);
-        const priceUsd = priceSui * chartSuiUsd;
-        const ts       = parseInt(e.timestampMs || Date.now());
-        const vol      = suiIn / 1e9;
-        Object.keys(TF_MS).forEach(tf => updateCandle(tf, ts, priceUsd, vol));
-        total++;
+    let total = 0;
+
+    const SOURCES = [
+      { pkg: '0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48ce3cd6952', mod: 'pool' },
+      { pkg: '0xf554dad1683cb25386ddf57f2d40f2774fb8287b17f467ebc657c5bc20f226e3', mod: 'pool_lp' },
+    ];
+
+    for (const src of SOURCES) {
+      let cursor = null;
+      for (let page = 0; page < 20; page++) {
+        const events = await rpcCall('suix_queryEvents', [{
+          MoveModule: { package: src.pkg, module: src.mod }
+        }, cursor, 50, false]);
+        if (!events?.data?.length) break;
+        for (const e of events.data) {
+          const f        = e.parsedJson || {};
+          const suiIn    = parseInt(f.sui_in  || 0);
+          const agentOut = parseInt(f.agent_out || 0);
+          const agentIn  = parseInt(f.agent_in || 0);
+          const suiOut   = parseInt(f.sui_out  || 0);
+          let suiVal, agentAmt;
+          if (suiIn > 0 && agentOut > 0)       { suiVal = suiIn;  agentAmt = agentOut; }
+          else if (agentIn > 0 && suiOut > 0)   { suiVal = suiOut; agentAmt = agentIn;  }
+          else continue;
+          const priceSui = (suiVal/1e9) / (agentAmt/1e6);
+          const priceUsd = priceSui * chartSuiUsd;
+          const ts       = parseInt(e.timestampMs || Date.now());
+          Object.keys(TF_MS).forEach(tf => updateCandle(tf, ts, priceUsd, suiVal/1e9));
+          total++;
+        }
+        cursor = events.nextCursor;
+        if (!events.hasNextPage) break;
       }
-      cursor = events.nextCursor;
-      if (!events.hasNextPage) break;
     }
-    lastEventCursor = cursor;
+
+    lastEventCursor = null; // pollNewCandles manages its own cursor
     if (cs) cs.textContent = 'Loaded ' + total + ' trades · Updates every 15s';
     renderCandles();
   } catch(e) {
@@ -5465,4 +5606,3 @@ setInterval(mlLoadTokens, 30000);
 </script>
 </body>
 </html>
-
