@@ -2392,7 +2392,7 @@ window.lockerExecuteLock = async function() {
   const btn    = document.getElementById('lockBtn');
   try {
     if (!connectedWallet?.address) { status.textContent='⚠ Connect wallet first'; status.style.color='#ffc864'; return; }
-    if (false) {
+    if (!LOCKER_PKG || LOCKER_PKG.length < 30) {
       status.textContent='⏳ Lock contract deploying — check back soon'; status.style.color='#ffc864'; return;
     }
 
@@ -2433,13 +2433,30 @@ window.lockerExecuteLock = async function() {
 
     status.textContent = 'Waiting for wallet signature…'; status.style.color = '#c8daf0';
     const result = await signAndExecuteTx(tx);
+    const digest = result.digest || result.effects?.transactionDigest;
+    if (!digest) throw new Error('No transaction digest returned');
 
-    // Find the LockedToken object ID from effects
-    const changes  = result.objectChanges || [];
-    const lockObj  = changes.find(o => o.type === 'created' && o.objectType?.includes('LockedToken'));
-    const lockId   = lockObj?.objectId || result.digest;
+    // Wait for RPC to index the tx, then fetch full details with objectChanges
+    status.textContent = 'Fetching lock object…'; status.style.color = '#c8daf0';
+    await new Promise(r => setTimeout(r, 2000));
+    let lockId = null;
+    try {
+      const txData = await rpcCall('sui_getTransactionBlock', [
+        digest,
+        { showObjectChanges: true, showEffects: true }
+      ]);
+      const changes = txData?.objectChanges || [];
+      const lockObj = changes.find(o => o.type === 'created' && o.objectType?.includes('LockedToken'));
+      lockId = lockObj?.objectId || null;
+    } catch(e) { console.warn('Could not fetch objectChanges:', e.message); }
+    // Fallback: scan effects for created objects
+    if (!lockId) {
+      const created = result.effects?.created || [];
+      lockId = created.find(o => o.reference?.objectId)?.reference?.objectId || null;
+    }
+    if (!lockId) lockId = digest; // last resort: use tx digest
     lastLockId     = lockId;
-    lastLockDigest = result.digest;
+    lastLockDigest = digest;
 
     const unlockDate = new Date(Date.now() + days * 86400000);
     document.getElementById('lockResultBody').innerHTML =
@@ -2449,7 +2466,11 @@ window.lockerExecuteLock = async function() {
       `Lock Object: <span style="color:var(--purple);word-break:break-all">${lockId}</span><br>` +
       `TX: <span style="color:#4a7cff;word-break:break-all">${result.digest}</span>`;
 
-    document.getElementById('lockSuiscanLink').href = `https://suiscan.xyz/mainnet/object/${lockId}`;
+    const isObj = lockId !== digest;
+    document.getElementById('lockSuiscanLink').href = isObj
+      ? `https://suiscan.xyz/mainnet/object/${lockId}`
+      : `https://suiscan.xyz/mainnet/tx/${digest}`;
+    document.getElementById('lockSuiscanLink').textContent = isObj ? '🔍 VIEW LOCK OBJECT ON SUISCAN' : '🔍 VIEW TX ON SUISCAN';
     document.getElementById('lockResult').style.display = '';
 
     status.textContent = ''; btn.disabled = false; btn.textContent = '🔒 LOCK TOKENS — SIGN WITH WALLET';
@@ -5421,4 +5442,3 @@ setInterval(mlLoadTokens, 30000);
 </script>
 </body>
 </html>
-
