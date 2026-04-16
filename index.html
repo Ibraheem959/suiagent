@@ -503,6 +503,7 @@
     <a href="#setup" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Setup</a>
     <a href="#live" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Live</a>
     <a href="#memelab" class="text-xs font-mono transition-colors tracking-widest uppercase" style="color:var(--green);text-shadow:0 0 8px rgba(0,255,136,0.4)">Meme Lab</a>
+    <a href="#locker" class="text-xs font-mono transition-colors tracking-widest uppercase" style="color:var(--purple);text-shadow:0 0 8px rgba(180,79,255,0.3)">Locker</a>
     <a href="https://x.com/SUI__AGENT" target="_blank" class="text-xs font-mono text-slate-400 hover:text-purple-400 transition-colors" title="Twitter / X">𝕏</a>
     <a href="https://t.me/+AHZzczUoOeYzMThk" target="_blank" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors" title="Telegram">TG</a>
   </div>
@@ -2025,6 +2026,582 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
     </div>
   </div>
 </section>
+
+<!-- ══════════════════════════════════════ LOCKER ══════════════════════════════════════ -->
+<section id="locker" style="padding:100px 24px;background:var(--bg)">
+  <div style="max-width:860px;margin:0 auto">
+    <div class="section-label mb-3">◈ TOKEN LOCKER &amp; BURN</div>
+    <h2 class="font-orbitron text-3xl font-black mb-4 glow-purple">Lock or Burn Any Sui Token</h2>
+    <p class="font-mono text-sm text-slate-400 mb-10" style="max-width:560px;line-height:1.8">
+      Connect your wallet, pick any token you hold, set your amount and lock duration.
+      Every lock is fully on-chain — verify the proof on SuiScan at any time.
+      Burn sends tokens to a provably-dead address with no known private key.
+    </p>
+
+    <!-- tabs -->
+    <div style="display:flex;gap:0;margin-bottom:28px;border-bottom:1px solid rgba(180,79,255,0.2)">
+      <button id="lockTabBtn"  onclick="lockerSetTab('lock')"
+        style="padding:10px 28px;font-family:'Orbitron',sans-serif;font-size:0.72rem;letter-spacing:0.1em;background:transparent;cursor:pointer;border:none;border-bottom:2px solid var(--purple);color:var(--purple)">
+        🔒 LOCK
+      </button>
+      <button id="burnTabBtn" onclick="lockerSetTab('burn')"
+        style="padding:10px 28px;font-family:'Orbitron',sans-serif;font-size:0.72rem;letter-spacing:0.1em;background:transparent;cursor:pointer;border:none;border-bottom:2px solid transparent;color:#4a5568">
+        🔥 BURN
+      </button>
+    </div>
+
+    <!-- wallet banner -->
+    <div id="lockerWalletBanner" style="display:none;background:rgba(0,255,136,0.07);border:1px solid rgba(0,255,136,0.25);padding:8px 14px;margin-bottom:18px;font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--green);display:flex;align-items:center;gap:8px;">
+      <span>●</span><span id="lockerWalletAddr">—</span>
+    </div>
+
+    <!-- LOCK panel -->
+    <div id="lockPanel">
+      <div style="background:var(--card);border:1px solid rgba(180,79,255,0.2);padding:28px;max-width:560px">
+
+        <!-- connect prompt -->
+        <div id="lockConnectPrompt" style="text-align:center;padding:20px 0">
+          <p class="font-mono text-sm text-slate-400 mb-4">Connect your Slush wallet to see your tokens</p>
+          <button onclick="connectWallet().then(lockerOnWalletConnect)" class="btn-cyan text-xs"><span>CONNECT WALLET</span></button>
+        </div>
+
+        <!-- form (hidden until connected) -->
+        <div id="lockForm" style="display:none">
+          <!-- coin picker -->
+          <label class="font-mono text-xs text-slate-400 mb-1 block">SELECT TOKEN</label>
+          <select id="lockCoinSelect" onchange="lockerOnCoinSelect('lock')"
+            style="width:100%;background:#07111f;border:1px solid rgba(180,79,255,0.3);color:#c8daf0;font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:9px 12px;margin-bottom:16px;cursor:pointer">
+            <option value="">Loading coins…</option>
+          </select>
+          <div id="lockCoinBalance" class="font-mono text-xs text-slate-500 mb-16" style="margin-top:-12px;margin-bottom:12px"></div>
+
+          <!-- amount -->
+          <label class="font-mono text-xs text-slate-400 mb-1 block">AMOUNT TO LOCK</label>
+          <input id="lockAmount" type="number" placeholder="0.00" min="0" step="any"
+            style="width:100%;background:#07111f;border:1px solid rgba(180,79,255,0.3);color:#c8daf0;font-family:'Share Tech Mono',monospace;font-size:0.9rem;padding:9px 12px;margin-bottom:6px"/>
+          <div style="display:flex;gap:6px;margin-bottom:16px">
+            <button onclick="lockerSetPct('lock',25)"  class="font-mono text-xs" style="flex:1;padding:5px;background:rgba(180,79,255,0.08);border:1px solid rgba(180,79,255,0.25);color:var(--purple);cursor:pointer">25%</button>
+            <button onclick="lockerSetPct('lock',50)"  class="font-mono text-xs" style="flex:1;padding:5px;background:rgba(180,79,255,0.08);border:1px solid rgba(180,79,255,0.25);color:var(--purple);cursor:pointer">50%</button>
+            <button onclick="lockerSetPct('lock',75)"  class="font-mono text-xs" style="flex:1;padding:5px;background:rgba(180,79,255,0.08);border:1px solid rgba(180,79,255,0.25);color:var(--purple);cursor:pointer">75%</button>
+            <button onclick="lockerSetPct('lock',100)" class="font-mono text-xs" style="flex:1;padding:5px;background:rgba(180,79,255,0.08);border:1px solid rgba(180,79,255,0.25);color:var(--purple);cursor:pointer">100%</button>
+          </div>
+
+          <!-- duration -->
+          <label class="font-mono text-xs text-slate-400 mb-1 block">LOCK DURATION</label>
+          <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+            <button onclick="lockerSetDuration(7)"   class="font-mono text-xs" style="padding:5px 10px;background:rgba(180,79,255,0.08);border:1px solid rgba(180,79,255,0.25);color:var(--purple);cursor:pointer">7d</button>
+            <button onclick="lockerSetDuration(30)"  class="font-mono text-xs" style="padding:5px 10px;background:rgba(180,79,255,0.08);border:1px solid rgba(180,79,255,0.25);color:var(--purple);cursor:pointer">30d</button>
+            <button onclick="lockerSetDuration(90)"  class="font-mono text-xs" style="padding:5px 10px;background:rgba(180,79,255,0.08);border:1px solid rgba(180,79,255,0.25);color:var(--purple);cursor:pointer">90d</button>
+            <button onclick="lockerSetDuration(180)" class="font-mono text-xs" style="padding:5px 10px;background:rgba(180,79,255,0.08);border:1px solid rgba(180,79,255,0.25);color:var(--purple);cursor:pointer">180d</button>
+            <button onclick="lockerSetDuration(365)" class="font-mono text-xs" style="padding:5px 10px;background:rgba(180,79,255,0.08);border:1px solid rgba(180,79,255,0.25);color:var(--purple);cursor:pointer">1y</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+            <input id="lockDays" type="number" placeholder="Days" min="1" step="1"
+              style="width:120px;background:#07111f;border:1px solid rgba(180,79,255,0.3);color:#c8daf0;font-family:'Share Tech Mono',monospace;font-size:0.85rem;padding:7px 10px"/>
+            <span class="font-mono text-xs text-slate-500">days from now</span>
+          </div>
+          <div id="lockUnlockPreview" class="font-mono text-xs text-slate-500 mb-16" style="margin-bottom:14px"></div>
+
+          <button id="lockBtn" onclick="lockerExecuteLock()"
+            style="width:100%;padding:13px;font-family:'Orbitron',sans-serif;font-size:0.78rem;font-weight:700;letter-spacing:0.1em;background:linear-gradient(135deg,rgba(180,79,255,0.15),rgba(180,79,255,0.05));border:1.5px solid var(--purple);color:var(--purple);cursor:pointer;transition:all 0.2s"
+            onmouseover="this.style.background='linear-gradient(135deg,rgba(180,79,255,0.3),rgba(180,79,255,0.1))'"
+            onmouseout="this.style.background='linear-gradient(135deg,rgba(180,79,255,0.15),rgba(180,79,255,0.05))'">
+            🔒 LOCK TOKENS — SIGN WITH WALLET
+          </button>
+          <div id="lockStatus" class="font-mono text-xs text-center mt-3" style="min-height:16px;color:#4a5568"></div>
+        </div>
+
+        <!-- result -->
+        <div id="lockResult" style="display:none;margin-top:18px;background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.2);padding:16px">
+          <div class="font-mono text-xs" style="color:var(--green);margin-bottom:10px">✅ TOKEN LOCKED ON-CHAIN</div>
+          <div id="lockResultBody" class="font-mono text-xs text-slate-400" style="line-height:2"></div>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            <a id="lockSuiscanLink" href="#" target="_blank"
+              style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;padding:6px 12px;border:1px solid rgba(0,245,255,0.3);color:var(--cyan);text-decoration:none">
+              🔍 VIEW ON SUISCAN
+            </a>
+            <button onclick="lockerCopySiteLink('lock')"
+              style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;padding:6px 12px;border:1px solid rgba(180,79,255,0.3);color:var(--purple);background:transparent;cursor:pointer">
+              🔗 COPY LOCK PROOF LINK
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BURN panel -->
+    <div id="burnPanel" style="display:none">
+      <div style="background:var(--card);border:1px solid rgba(255,70,90,0.2);padding:28px;max-width:560px">
+
+        <div style="background:rgba(255,70,90,0.06);border:1px solid rgba(255,70,90,0.2);padding:10px 14px;margin-bottom:20px;font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:#ff8a95">
+          ⚠️ BURN IS PERMANENT. Tokens are sent to a provably dead address with no known private key. This action cannot be undone.
+        </div>
+
+        <!-- connect prompt -->
+        <div id="burnConnectPrompt" style="text-align:center;padding:20px 0">
+          <p class="font-mono text-sm text-slate-400 mb-4">Connect your Slush wallet to see your tokens</p>
+          <button onclick="connectWallet().then(lockerOnWalletConnect)" class="btn-cyan text-xs"><span>CONNECT WALLET</span></button>
+        </div>
+
+        <!-- form -->
+        <div id="burnForm" style="display:none">
+          <label class="font-mono text-xs text-slate-400 mb-1 block">SELECT TOKEN TO BURN</label>
+          <select id="burnCoinSelect" onchange="lockerOnCoinSelect('burn')"
+            style="width:100%;background:#07111f;border:1px solid rgba(255,70,90,0.3);color:#c8daf0;font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:9px 12px;margin-bottom:16px;cursor:pointer">
+            <option value="">Loading coins…</option>
+          </select>
+          <div id="burnCoinBalance" class="font-mono text-xs text-slate-500 mb-16" style="margin-top:-12px;margin-bottom:12px"></div>
+
+          <label class="font-mono text-xs text-slate-400 mb-1 block">AMOUNT TO BURN</label>
+          <input id="burnAmount" type="number" placeholder="0.00" min="0" step="any"
+            style="width:100%;background:#07111f;border:1px solid rgba(255,70,90,0.3);color:#c8daf0;font-family:'Share Tech Mono',monospace;font-size:0.9rem;padding:9px 12px;margin-bottom:6px"/>
+          <div style="display:flex;gap:6px;margin-bottom:20px">
+            <button onclick="lockerSetPct('burn',25)"  class="font-mono text-xs" style="flex:1;padding:5px;background:rgba(255,70,90,0.08);border:1px solid rgba(255,70,90,0.25);color:#ff465a;cursor:pointer">25%</button>
+            <button onclick="lockerSetPct('burn',50)"  class="font-mono text-xs" style="flex:1;padding:5px;background:rgba(255,70,90,0.08);border:1px solid rgba(255,70,90,0.25);color:#ff465a;cursor:pointer">50%</button>
+            <button onclick="lockerSetPct('burn',75)"  class="font-mono text-xs" style="flex:1;padding:5px;background:rgba(255,70,90,0.08);border:1px solid rgba(255,70,90,0.25);color:#ff465a;cursor:pointer">75%</button>
+            <button onclick="lockerSetPct('burn',100)" class="font-mono text-xs" style="flex:1;padding:5px;background:rgba(255,70,90,0.08);border:1px solid rgba(255,70,90,0.25);color:#ff465a;cursor:pointer">100%</button>
+          </div>
+
+          <button id="burnBtn" onclick="lockerExecuteBurn()"
+            style="width:100%;padding:13px;font-family:'Orbitron',sans-serif;font-size:0.78rem;font-weight:700;letter-spacing:0.1em;background:linear-gradient(135deg,rgba(255,70,90,0.15),rgba(255,70,90,0.05));border:1.5px solid #ff465a;color:#ff465a;cursor:pointer;transition:all 0.2s"
+            onmouseover="this.style.background='linear-gradient(135deg,rgba(255,70,90,0.3),rgba(255,70,90,0.1))'"
+            onmouseout="this.style.background='linear-gradient(135deg,rgba(255,70,90,0.15),rgba(255,70,90,0.05))'">
+            🔥 BURN TOKENS — SIGN WITH WALLET
+          </button>
+          <div id="burnStatus" class="font-mono text-xs text-center mt-3" style="min-height:16px;color:#4a5568"></div>
+        </div>
+
+        <!-- result -->
+        <div id="burnResult" style="display:none;margin-top:18px;background:rgba(255,70,90,0.04);border:1px solid rgba(255,70,90,0.2);padding:16px">
+          <div class="font-mono text-xs" style="color:#ff8a95;margin-bottom:10px">🔥 TOKENS BURNED — PERMANENTLY REMOVED</div>
+          <div id="burnResultBody" class="font-mono text-xs text-slate-400" style="line-height:2"></div>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            <a id="burnSuiscanLink" href="#" target="_blank"
+              style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;padding:6px 12px;border:1px solid rgba(0,245,255,0.3);color:var(--cyan);text-decoration:none">
+              🔍 VIEW TX ON SUISCAN
+            </a>
+            <button onclick="lockerCopySiteLink('burn')"
+              style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;padding:6px 12px;border:1px solid rgba(255,70,90,0.3);color:#ff465a;background:transparent;cursor:pointer">
+              🔗 COPY BURN PROOF LINK
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- lock viewer (shown when ?lock= param is in URL) -->
+    <div id="lockViewer" style="display:none;margin-top:40px;max-width:560px">
+      <div class="section-label mb-3" style="font-size:0.6rem">◈ LOCK VERIFICATION</div>
+      <div style="background:var(--card);border:1px solid rgba(180,79,255,0.2);padding:24px">
+        <div id="lockViewerBody" class="font-mono text-xs text-slate-400" style="line-height:2.2"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// TOKEN LOCKER + BURN  (runs after main wallet code loads)
+// ══════════════════════════════════════════════════════════
+(function(){
+
+// ── Config ──────────────────────────────────────────────────────────────
+// After deploying move/locker, replace this with the real package ID:
+const LOCKER_PKG   = '0xe9d60612d25afa147340de484bb8b52607a883647cea96a5823319cda2c1a725';
+const CLOCK_ID     = '0x0000000000000000000000000000000000000000000000000000000000000006';
+// Provably-dead address (no known private key on any chain)
+const BURN_ADDR    = '0x000000000000000000000000000000000000000000000000000000000000dead';
+const SUI_TYPE     = '0x2::sui::SUI';
+
+// ── State ────────────────────────────────────────────────────────────────
+let lockerCoins   = [];   // [{type, symbol, decimals, balance, objects:[]}]
+let lastLockId    = null;
+let lastLockDigest= null;
+let lastBurnDigest= null;
+
+// ── Tab switch ────────────────────────────────────────────────────────────
+window.lockerSetTab = function(tab) {
+  document.getElementById('lockPanel').style.display  = tab === 'lock' ? '' : 'none';
+  document.getElementById('burnPanel').style.display  = tab === 'burn' ? '' : 'none';
+  const lBtn = document.getElementById('lockTabBtn');
+  const bBtn = document.getElementById('burnTabBtn');
+  lBtn.style.borderBottomColor = tab==='lock' ? 'var(--purple)' : 'transparent';
+  lBtn.style.color             = tab==='lock' ? 'var(--purple)' : '#4a5568';
+  bBtn.style.borderBottomColor = tab==='burn' ? '#ff465a'       : 'transparent';
+  bBtn.style.color             = tab==='burn' ? '#ff465a'       : '#4a5568';
+};
+
+// ── Called after wallet connects ──────────────────────────────────────────
+window.lockerOnWalletConnect = async function() {
+  const wallet = typeof connectedWallet !== 'undefined' && connectedWallet?.address;
+  if (!wallet) return;
+
+  // show wallet banner
+  const banner = document.getElementById('lockerWalletBanner');
+  banner.style.display = 'flex';
+  document.getElementById('lockerWalletAddr').textContent = wallet.slice(0,10)+'...'+wallet.slice(-8);
+
+  // hide connect prompts, show forms
+  document.getElementById('lockConnectPrompt').style.display = 'none';
+  document.getElementById('lockForm').style.display          = '';
+  document.getElementById('burnConnectPrompt').style.display = 'none';
+  document.getElementById('burnForm').style.display          = '';
+
+  // fetch coins
+  await lockerFetchCoins(wallet);
+};
+
+// ── Fetch all coins for wallet ────────────────────────────────────────────
+async function lockerFetchCoins(wallet) {
+  try {
+    // suix_getAllCoins pages through all coin types
+    let allCoins = [];
+    let cursor = null;
+    for (let i = 0; i < 10; i++) {
+      const params = cursor ? [wallet, cursor, 50] : [wallet, null, 50];
+      const res = await rpcCall('suix_getAllCoins', params);
+      if (!res?.data) break;
+      allCoins = allCoins.concat(res.data);
+      if (!res.nextCursor || !res.hasNextPage) break;
+      cursor = res.nextCursor;
+    }
+
+    // Group by coin type
+    const byType = {};
+    for (const c of allCoins) {
+      const t = c.coinType;
+      if (!byType[t]) byType[t] = { type: t, symbol: lockerSymbol(t), decimals: lockerDecimals(t), balance: 0n, objects: [] };
+      byType[t].balance  += BigInt(c.balance);
+      byType[t].objects.push({ id: c.coinObjectId, balance: BigInt(c.balance) });
+    }
+
+    lockerCoins = Object.values(byType).filter(c => c.balance > 0n);
+    lockerCoins.sort((a,b) => (a.symbol > b.symbol ? 1 : -1));
+
+    lockerPopulateSelect('lockCoinSelect');
+    lockerPopulateSelect('burnCoinSelect');
+    lockerOnCoinSelect('lock');
+    lockerOnCoinSelect('burn');
+  } catch(e) {
+    console.error('lockerFetchCoins:', e);
+  }
+}
+
+function lockerSymbol(type) {
+  // "0x2::sui::SUI" → "SUI"
+  // "0xabc...::token::MYTOKEN" → "MYTOKEN"
+  const parts = type.split('::');
+  return parts[parts.length - 1] || type.slice(0,12);
+}
+
+function lockerDecimals(type) {
+  if (type === SUI_TYPE) return 9;
+  // AGENT is 6 decimals; most Sui tokens are 9; default 9
+  if (type.includes('::agent::AGENT')) return 6;
+  return 9;
+}
+
+function lockerFormatBalance(raw, decimals) {
+  const div = 10 ** decimals;
+  const val = Number(raw) / div;
+  if (val >= 1e6) return val.toLocaleString(undefined,{maximumFractionDigits:2});
+  if (val >= 1)   return val.toLocaleString(undefined,{maximumFractionDigits:4});
+  return val.toFixed(decimals > 6 ? 8 : 4);
+}
+
+function lockerPopulateSelect(selectId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  sel.innerHTML = '';
+  if (!lockerCoins.length) {
+    sel.innerHTML = '<option value="">No tokens found in wallet</option>';
+    return;
+  }
+  lockerCoins.forEach((c, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `${c.symbol}  —  ${lockerFormatBalance(c.balance, c.decimals)}`;
+    sel.appendChild(opt);
+  });
+}
+
+window.lockerOnCoinSelect = function(tab) {
+  const sel = document.getElementById(tab === 'lock' ? 'lockCoinSelect' : 'burnCoinSelect');
+  const balEl = document.getElementById(tab === 'lock' ? 'lockCoinBalance' : 'burnCoinBalance');
+  if (!sel || !balEl) return;
+  const idx = parseInt(sel.value);
+  if (isNaN(idx) || !lockerCoins[idx]) { balEl.textContent = ''; return; }
+  const c = lockerCoins[idx];
+  balEl.textContent = `Balance: ${lockerFormatBalance(c.balance, c.decimals)} ${c.symbol}`;
+};
+
+// ── % preset buttons ──────────────────────────────────────────────────────
+window.lockerSetPct = function(tab, pct) {
+  const sel   = document.getElementById(tab === 'lock' ? 'lockCoinSelect' : 'burnCoinSelect');
+  const input = document.getElementById(tab === 'lock' ? 'lockAmount'     : 'burnAmount');
+  if (!sel || !input) return;
+  const idx = parseInt(sel.value);
+  if (isNaN(idx) || !lockerCoins[idx]) return;
+  const c   = lockerCoins[idx];
+  const val = Number(c.balance) * pct / 100 / (10 ** c.decimals);
+  input.value = val.toFixed(c.decimals > 6 ? 6 : c.decimals);
+};
+
+// ── Duration presets ──────────────────────────────────────────────────────
+window.lockerSetDuration = function(days) {
+  const inp = document.getElementById('lockDays');
+  if (!inp) return;
+  inp.value = days;
+  lockerUpdateUnlockPreview();
+};
+
+function lockerUpdateUnlockPreview() {
+  const days = parseInt(document.getElementById('lockDays')?.value || '0');
+  const el   = document.getElementById('lockUnlockPreview');
+  if (!el) return;
+  if (!days || days <= 0) { el.textContent = ''; return; }
+  const unlockDate = new Date(Date.now() + days * 86400000);
+  el.textContent = `Unlocks: ${unlockDate.toUTCString()}`;
+}
+document.getElementById('lockDays')?.addEventListener('input', lockerUpdateUnlockPreview);
+
+// ── Build coin split helper ───────────────────────────────────────────────
+// Returns { coinArg, totalNeededRaw } for use in Transaction
+async function lockerBuildCoinSplit(tx, coinInfo, amountRaw) {
+  // Merge all coin objects of this type into one, then split the exact amount
+  const objs = coinInfo.objects;
+  if (coinInfo.type === SUI_TYPE) {
+    // For SUI, use tx.gas and splitCoins
+    return tx.splitCoins(tx.gas, [tx.pure.u64(amountRaw)]);
+  }
+  if (objs.length === 1) {
+    const [splitCoin] = tx.splitCoins(tx.object(objs[0].id), [tx.pure.u64(amountRaw)]);
+    return splitCoin;
+  }
+  // Multiple objects: merge all into first, then split
+  const primary = tx.object(objs[0].id);
+  const rest    = objs.slice(1).map(o => tx.object(o.id));
+  tx.mergeCoins(primary, rest);
+  const [splitCoin] = tx.splitCoins(primary, [tx.pure.u64(amountRaw)]);
+  return splitCoin;
+}
+
+// ── Execute LOCK ──────────────────────────────────────────────────────────
+window.lockerExecuteLock = async function() {
+  const status = document.getElementById('lockStatus');
+  const btn    = document.getElementById('lockBtn');
+  try {
+    if (!connectedWallet?.address) { status.textContent='⚠ Connect wallet first'; status.style.color='#ffc864'; return; }
+    if (LOCKER_PKG === '0xe9d60612d25afa147340de484bb8b52607a883647cea96a5823319cda2c1a725') {
+      status.textContent='⏳ Lock contract deploying — check back soon'; status.style.color='#ffc864'; return;
+    }
+
+    const sel   = document.getElementById('lockCoinSelect');
+    const amtIn = document.getElementById('lockAmount');
+    const daysIn= document.getElementById('lockDays');
+    const idx   = parseInt(sel?.value);
+    if (isNaN(idx) || !lockerCoins[idx]) { status.textContent='⚠ Select a token'; status.style.color='#ffc864'; return; }
+    const coinInfo  = lockerCoins[idx];
+    const amtHuman  = parseFloat(amtIn?.value || '0');
+    const days      = parseInt(daysIn?.value || '0');
+    if (!amtHuman || amtHuman <= 0) { status.textContent='⚠ Enter an amount'; status.style.color='#ffc864'; return; }
+    if (!days || days <= 0)         { status.textContent='⚠ Set lock duration'; status.style.color='#ffc864'; return; }
+
+    const amtRaw   = BigInt(Math.floor(amtHuman * (10 ** coinInfo.decimals)));
+    const durMs    = BigInt(days) * 86400000n;
+    if (amtRaw > coinInfo.balance) { status.textContent='⚠ Insufficient balance'; status.style.color='#ff465a'; return; }
+
+    btn.disabled = true; btn.textContent = '⏳ Signing…';
+    status.textContent = 'Building transaction…'; status.style.color = '#c8daf0';
+
+    const Transaction = window.__SuiTransaction;
+    if (!Transaction) throw new Error('Transaction builder not ready — refresh the page');
+    const tx = new Transaction();
+    tx.setGasBudget(10_000_000);
+
+    const coinArg = await lockerBuildCoinSplit(tx, coinInfo, amtRaw.toString());
+
+    tx.moveCall({
+      target: `${LOCKER_PKG}::locker::lock`,
+      typeArguments: [coinInfo.type],
+      arguments: [
+        coinArg,
+        tx.pure.u64(durMs.toString()),
+        tx.object(CLOCK_ID),
+      ],
+    });
+
+    status.textContent = 'Waiting for wallet signature…'; status.style.color = '#c8daf0';
+    const result = await signAndExecuteTx(tx);
+
+    // Find the LockedToken object ID from effects
+    const changes  = result.objectChanges || [];
+    const lockObj  = changes.find(o => o.type === 'created' && o.objectType?.includes('LockedToken'));
+    const lockId   = lockObj?.objectId || result.digest;
+    lastLockId     = lockId;
+    lastLockDigest = result.digest;
+
+    const unlockDate = new Date(Date.now() + days * 86400000);
+    document.getElementById('lockResultBody').innerHTML =
+      `Token: <span style="color:#c8daf0">${coinInfo.symbol}</span><br>` +
+      `Amount: <span style="color:var(--green)">${amtHuman.toLocaleString()} ${coinInfo.symbol}</span><br>` +
+      `Unlocks: <span style="color:var(--cyan)">${unlockDate.toDateString()}</span> (${days} days)<br>` +
+      `Lock Object: <span style="color:var(--purple);word-break:break-all">${lockId}</span><br>` +
+      `TX: <span style="color:#4a7cff;word-break:break-all">${result.digest}</span>`;
+
+    document.getElementById('lockSuiscanLink').href = `https://suiscan.xyz/mainnet/object/${lockId}`;
+    document.getElementById('lockResult').style.display = '';
+
+    status.textContent = ''; btn.disabled = false; btn.textContent = '🔒 LOCK TOKENS — SIGN WITH WALLET';
+    lockerFetchCoins(connectedWallet.address);
+  } catch(e) {
+    console.error('lockerExecuteLock:', e);
+    status.textContent = '❌ ' + (e.message || 'Lock failed'); status.style.color = '#ff465a';
+    btn.disabled = false; btn.textContent = '🔒 LOCK TOKENS — SIGN WITH WALLET';
+  }
+};
+
+// ── Execute BURN ──────────────────────────────────────────────────────────
+window.lockerExecuteBurn = async function() {
+  const status = document.getElementById('burnStatus');
+  const btn    = document.getElementById('burnBtn');
+  try {
+    if (!connectedWallet?.address) { status.textContent='⚠ Connect wallet first'; status.style.color='#ffc864'; return; }
+
+    const sel   = document.getElementById('burnCoinSelect');
+    const amtIn = document.getElementById('burnAmount');
+    const idx   = parseInt(sel?.value);
+    if (isNaN(idx) || !lockerCoins[idx]) { status.textContent='⚠ Select a token'; status.style.color='#ffc864'; return; }
+    const coinInfo = lockerCoins[idx];
+    const amtHuman = parseFloat(amtIn?.value || '0');
+    if (!amtHuman || amtHuman <= 0) { status.textContent='⚠ Enter an amount'; status.style.color='#ffc864'; return; }
+
+    const amtRaw = BigInt(Math.floor(amtHuman * (10 ** coinInfo.decimals)));
+    if (amtRaw > coinInfo.balance) { status.textContent='⚠ Insufficient balance'; status.style.color='#ff465a'; return; }
+
+    const confirmed = window.confirm(
+      `BURN ${amtHuman.toLocaleString()} ${coinInfo.symbol}?\n\nThis is permanent and cannot be undone.\nTokens will be sent to a dead address.\n\nConfirm?`
+    );
+    if (!confirmed) { status.textContent = 'Cancelled'; status.style.color = '#4a5568'; return; }
+
+    btn.disabled = true; btn.textContent = '⏳ Signing…';
+    status.textContent = 'Building transaction…'; status.style.color = '#c8daf0';
+
+    const Transaction = window.__SuiTransaction;
+    if (!Transaction) throw new Error('Transaction builder not ready — refresh the page');
+    const tx = new Transaction();
+    tx.setGasBudget(5_000_000);
+
+    const coinArg = await lockerBuildCoinSplit(tx, coinInfo, amtRaw.toString());
+    tx.transferObjects([coinArg], BURN_ADDR);
+
+    status.textContent = 'Waiting for wallet signature…'; status.style.color = '#c8daf0';
+    const result = await signAndExecuteTx(tx);
+    lastBurnDigest = result.digest;
+
+    document.getElementById('burnResultBody').innerHTML =
+      `Token: <span style="color:#c8daf0">${coinInfo.symbol}</span><br>` +
+      `Amount burned: <span style="color:#ff8a95">${amtHuman.toLocaleString()} ${coinInfo.symbol}</span><br>` +
+      `Dead address: <span style="color:#4a5568;font-size:0.65rem;word-break:break-all">${BURN_ADDR}</span><br>` +
+      `TX: <span style="color:#4a7cff;word-break:break-all">${result.digest}</span>`;
+
+    document.getElementById('burnSuiscanLink').href = `https://suiscan.xyz/mainnet/tx/${result.digest}`;
+    document.getElementById('burnResult').style.display = '';
+
+    status.textContent = ''; btn.disabled = false; btn.textContent = '🔥 BURN TOKENS — SIGN WITH WALLET';
+    lockerFetchCoins(connectedWallet.address);
+  } catch(e) {
+    console.error('lockerExecuteBurn:', e);
+    status.textContent = '❌ ' + (e.message || 'Burn failed'); status.style.color = '#ff465a';
+    btn.disabled = false; btn.textContent = '🔥 BURN TOKENS — SIGN WITH WALLET';
+  }
+};
+
+// ── Copy proof links ──────────────────────────────────────────────────────
+window.lockerCopySiteLink = function(type) {
+  let url;
+  if (type === 'lock' && lastLockId) {
+    url = location.origin + location.pathname + '?lock=' + lastLockId + '#locker';
+  } else if (type === 'burn' && lastBurnDigest) {
+    url = 'https://suiscan.xyz/mainnet/tx/' + lastBurnDigest;
+  } else { alert('Complete a transaction first.'); return; }
+  navigator.clipboard.writeText(url)
+    .then(() => alert('Link copied! Share this to prove your ' + (type === 'lock' ? 'lock.' : 'burn.')))
+    .catch(() => prompt('Copy this link:', url));
+};
+
+// ── Lock Viewer: load from ?lock= URL param ───────────────────────────────
+async function lockerCheckUrlParam() {
+  const params = new URLSearchParams(window.location.search);
+  const lockId = params.get('lock');
+  if (!lockId) return;
+
+  const viewer = document.getElementById('lockViewer');
+  const body   = document.getElementById('lockViewerBody');
+  if (!viewer || !body) return;
+  viewer.style.display = '';
+  body.innerHTML = '⏳ Loading lock data from Sui mainnet…';
+
+  try {
+    const res = await rpcCall('sui_getObject', [lockId, { showContent: true, showType: true }]);
+    const f   = res?.data?.content?.fields || {};
+    const ot  = res?.data?.type || '';
+
+    if (!f.unlock_time) {
+      body.innerHTML = '⚠ Object not found or not a LockedToken.<br>ID: ' + lockId; return;
+    }
+
+    const unlockMs  = parseInt(f.unlock_time);
+    const lockedMs  = parseInt(f.locked_at);
+    const amount    = BigInt(f.amount || 0);
+    const owner     = f.owner || '—';
+    const unlockDate= new Date(unlockMs);
+    const lockedDate= new Date(lockedMs);
+    const now       = Date.now();
+    const remaining = unlockMs - now;
+    const status    = remaining > 0
+      ? `🔒 LOCKED — ${Math.ceil(remaining/86400000)} days remaining`
+      : '🔓 UNLOCKABLE — lock period has passed';
+
+    const coinTypeMatch = ot.match(/LockedToken<(.+)>/);
+    const coinType = coinTypeMatch ? coinTypeMatch[1] : '—';
+    const sym = lockerSymbol(coinType);
+    const dec = lockerDecimals(coinType);
+
+    body.innerHTML =
+      `Status: <span style="color:${remaining>0?'var(--purple)':'var(--green)'}">${status}</span><br>` +
+      `Owner: <span style="color:#c8daf0;word-break:break-all">${owner}</span><br>` +
+      `Token: <span style="color:var(--cyan)">${sym}</span><br>` +
+      `Amount: <span style="color:var(--cyan)">${lockerFormatBalance(amount, dec)} ${sym}</span><br>` +
+      `Locked at: <span style="color:#c8daf0">${lockedDate.toUTCString()}</span><br>` +
+      `Unlocks at: <span style="color:var(--purple)">${unlockDate.toUTCString()}</span><br>` +
+      `Lock Object: <span style="color:#4a5568;font-size:0.65rem;word-break:break-all">${lockId}</span><br>` +
+      `<a href="https://suiscan.xyz/mainnet/object/${lockId}" target="_blank" ` +
+      `style="color:var(--cyan);font-size:0.7rem">🔍 Verify on SuiScan →</a>`;
+  } catch(e) {
+    body.innerHTML = '❌ Could not load lock data: ' + e.message;
+  }
+}
+
+// ── Auto-detect if wallet is already connected on page load ──────────────
+function lockerAutoInit() {
+  const wallet = typeof connectedWallet !== 'undefined' && connectedWallet?.address;
+  if (wallet) lockerOnWalletConnect();
+  lockerCheckUrlParam();
+}
+
+// Run after a short delay to let main wallet code initialize
+setTimeout(lockerAutoInit, 1200);
+
+// Re-check when wallet state changes (poll lightly)
+setInterval(() => {
+  const wallet = typeof connectedWallet !== 'undefined' && connectedWallet?.address;
+  const shown  = document.getElementById('lockForm')?.style.display !== 'none';
+  if (wallet && !shown) lockerOnWalletConnect();
+}, 2000);
+
+})();
+</script>
 
 <!-- ══════════════════════════════════════ FOOTER ══════════════════════════════════════ -->
 <footer style="padding:60px 24px 40px;background:var(--bg2);border-top:1px solid rgba(0,245,255,0.08)">
