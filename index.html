@@ -2048,6 +2048,10 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         style="padding:10px 28px;font-family:'Orbitron',sans-serif;font-size:0.72rem;letter-spacing:0.1em;background:transparent;cursor:pointer;border:none;border-bottom:2px solid transparent;color:#4a5568">
         🔥 BURN
       </button>
+      <button id="unlockTabBtn" onclick="lockerSetTab('unlock')"
+        style="padding:10px 28px;font-family:'Orbitron',sans-serif;font-size:0.72rem;letter-spacing:0.1em;background:transparent;cursor:pointer;border:none;border-bottom:2px solid transparent;color:#4a5568">
+        🔓 UNLOCK
+      </button>
     </div>
 
     <!-- wallet banner -->
@@ -2189,6 +2193,18 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
       </div>
     </div>
 
+    <!-- UNLOCK PANEL -->
+    <div id="unlockPanel" style="display:none">
+      <div style="margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <button onclick="lockerFetchLocks()" class="btn-cyan" style="padding:8px 20px;font-size:0.72rem;"><span>⟳ REFRESH LOCKS</span></button>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:#4a7090">Connect wallet then click Refresh to see your locks</span>
+      </div>
+      <div id="unlockList" style="display:flex;flex-direction:column;gap:10px;min-height:60px;">
+        <div style="color:#4a5568;font-family:'Share Tech Mono',monospace;font-size:0.75rem;text-align:center;padding:24px;">No active locks — refresh after connecting wallet</div>
+      </div>
+      <div id="unlockStatus" style="margin-top:12px;font-family:'Share Tech Mono',monospace;font-size:0.78rem;min-height:22px;"></div>
+    </div>
+
     <!-- lock viewer (shown when ?lock= param is in URL) -->
     <div id="lockViewer" style="display:none;margin-top:40px;max-width:560px">
       <div class="section-label mb-3" style="font-size:0.6rem">◈ LOCK VERIFICATION</div>
@@ -2223,12 +2239,19 @@ let lastBurnDigest= null;
 window.lockerSetTab = function(tab) {
   document.getElementById('lockPanel').style.display  = tab === 'lock' ? '' : 'none';
   document.getElementById('burnPanel').style.display  = tab === 'burn' ? '' : 'none';
+  document.getElementById('unlockPanel').style.display = tab === 'unlock' ? '' : 'none';
   const lBtn = document.getElementById('lockTabBtn');
   const bBtn = document.getElementById('burnTabBtn');
   lBtn.style.borderBottomColor = tab==='lock' ? 'var(--purple)' : 'transparent';
   lBtn.style.color             = tab==='lock' ? 'var(--purple)' : '#4a5568';
   bBtn.style.borderBottomColor = tab==='burn' ? '#ff465a'       : 'transparent';
   bBtn.style.color             = tab==='burn' ? '#ff465a'       : '#4a5568';
+  const uBtn = document.getElementById('unlockTabBtn');
+  if (uBtn) {
+    uBtn.style.borderBottomColor = tab==='unlock' ? 'var(--cyan)' : 'transparent';
+    uBtn.style.color             = tab==='unlock' ? 'var(--cyan)' : '#4a5568';
+  }
+  if (tab === 'unlock') lockerFetchLocks();
 };
 
 // ── Called after wallet connects ──────────────────────────────────────────
