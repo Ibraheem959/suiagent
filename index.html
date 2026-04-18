@@ -2648,7 +2648,18 @@ window.lockerExecuteUnlock = async function(lockObjId, coinType) {
   try {
     status.textContent = 'Building unlock transaction…'; status.style.color = '#c8daf0';
 
-    const { Transaction } = await import('https://cdn.jsdelivr.net/npm/@mysten/sui@1.21.1/+esm');
+    // Reuse the Sui SDK already loaded by the wallet-connect code (esm.sh).
+    // Wait up to 5s in case unlock is clicked before the SDK finishes loading.
+    let Transaction = window.__SuiTransaction;
+    if (!Transaction) {
+      let waited = 0;
+      while (!window.__SuiTransaction && waited < 5000) {
+        await new Promise(r => setTimeout(r, 300));
+        waited += 300;
+      }
+      Transaction = window.__SuiTransaction;
+      if (!Transaction) throw new Error('Sui SDK failed to load. Check your connection and try again.');
+    }
     const tx = new Transaction();
     tx.moveCall({
       target: `${LOCKER_PKG}::locker::unlock`,
