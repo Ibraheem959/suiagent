@@ -837,12 +837,16 @@
 
     <!-- HOLDERS PANEL -->
     <div id="mlHoldersPanel" style="display:none;">
+      <div id="mlHoldersNote" class="font-mono text-[10px]" style="color:#5a7090;margin-bottom:6px;line-height:1.4;">
+        Holders = wallets currently holding the MemeBalance NFT. Buyers who later transferred their NFT off-curve (regular Sui transfer, not a SELL) won't appear here.
+      </div>
       <div id="mlHoldersList" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;"></div>
     </div>
 
     <!-- TRADES PANEL -->
     <div id="mlTradesPanel" style="display:none;">
-      <div class="font-mono text-xs text-slate-500 mb-2">RECENT TRADES (last 50)</div>
+      <div id="mlTradesHeader" class="font-mono text-[10px]" style="color:#8ba8c8;background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:8px;margin-bottom:8px;line-height:1.5;"></div>
+      <div class="font-mono text-xs text-slate-500 mb-2">RECENT BUYS &amp; SELLS (last 50, on-curve only)</div>
       <div id="mlTradesList" class="font-mono text-xs text-slate-500" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">Loading…</div>
     </div>
 
@@ -4807,10 +4811,10 @@ function mlRenderGrid() {
           <div class="font-mono text-xs" style="color:var(--cyan)">$${t.symbol}</div>
         </div>
         <div style="text-align:right;">
-          <div class="font-mono text-xs font-bold" style="color:var(--green)">${t.marketCapUsd ? fmtUsdShort(t.marketCapUsd) : "$\u2014"}</div>
+          <div class="font-mono text-xs font-bold" style="color:var(--green)" title="Market Cap = current price × tokens already sold from the curve">${t.marketCapUsd ? fmtUsdShort(t.marketCapUsd) : "$\u2014"}</div>
           <div class="font-mono text-[10px]" style="color:var(--cyan);opacity:0.85">${mlFmtAgent(t.marketCap)} AGENT</div>
-          <div class="font-mono text-[10px] text-slate-500">mcap (real)</div>
-          <div class="font-mono text-[10px]" style="color:#5a7090;margin-top:2px;" title="Fully Diluted Valuation = price \u00D7 1B supply">FDV ${t.fdvUsd ? fmtUsdShort(t.fdvUsd) : "$\u2014"}</div>
+          <div class="font-mono text-[10px] text-slate-500">MC</div>
+          <div class="font-mono text-[10px]" style="color:#5a7090;margin-top:2px;" title="Fully Diluted Valuation = current price \u00D7 1B total supply">FDV ${t.fdvUsd ? fmtUsdShort(t.fdvUsd) : "$\u2014"}</div>
         </div>
       </div>
       <div class="ml-progress-bar" style="margin-bottom:6px;">
@@ -4818,17 +4822,17 @@ function mlRenderGrid() {
       </div>
       <div style="display:flex;justify-content:space-between;">
         <div class="font-mono text-xs text-slate-500">${(t.progress||0).toFixed(1)}% to grad</div>
-        <div class="font-mono text-xs text-slate-500">${t.holders||0} holders</div>
+        <div class="font-mono text-xs text-slate-500" title="Wallets currently holding the MemeBalance NFT (some buyers may have transferred theirs off-curve)">${t.holders||0} holders${(t.buys && t.buys > (t.holders||0)) ? ` <span style="color:#5a7090">(of ${t.buys} buyers)</span>` : ''}</div>
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:6px;">
-        <div class="font-mono text-xs" style="color:var(--cyan)">${t.price?.toFixed(8)||'—'} AGENT
+        <div class="font-mono text-xs" style="color:var(--cyan)" title="Spot price on the bonding curve">${t.price?.toFixed(8)||'—'} AGENT
           ${t.priceChange24hPct != null ? `<span style="margin-left:6px;color:${t.priceChange24hPct >= 0 ? 'var(--green)' : '#ff465a'}">${t.priceChange24hPct >= 0 ? '+' : ''}${t.priceChange24hPct.toFixed(2)}%</span>` : ''}
         </div>
-        <div class="font-mono text-xs text-slate-500">${t.trades||0} trades</div>
+        <div class="font-mono text-xs text-slate-500" title="On-curve buys + sells. Off-curve transfers not counted.">${t.trades||0} trades</div>
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:4px;">
-        <div class="font-mono text-[10px]" style="color:var(--cyan);opacity:0.85" title="24h trading volume">VOL 24h: ${t.volume24hUsd ? fmtUsdShort(t.volume24hUsd) : '$\u2014'}</div>
-        <div class="font-mono text-[10px] text-slate-500">${mlFmtAgent(t.volume24hAgent||0)} AGENT</div>
+        <div class="font-mono text-[10px]" style="color:#8ba8c8;opacity:0.9" title="Total AGENT actually paid into the curve (what users spent)">RAISED: ${mlFmtAgent(t.agentRaised||0)} AGENT${t.agentRaisedUsd ? ` <span style="color:#5a7090">(${fmtUsdShort(t.agentRaisedUsd)})</span>` : ''}</div>
+        ${(t.volume24hAgent && t.volume24hAgent > 0) ? `<div class="font-mono text-[10px]" style="color:var(--cyan);opacity:0.85" title="24h trading volume">VOL 24h: ${t.volume24hUsd ? fmtUsdShort(t.volume24hUsd) : mlFmtAgent(t.volume24hAgent) + ' AGT'}</div>` : ''}
       </div>
     </div>
   `).join('');
@@ -5179,7 +5183,7 @@ window.mlOpenToken = async function(id) {
 
     set('mlModalPrice',    (token.price||0).toFixed(8) + ' AGENT');
     set('mlModalPriceUsd', token.priceUsd ? '$' + token.priceUsd.toFixed(10) : '');
-    set('mlModalMcap',     (token.marketCapUsd ? fmtUsdShort(token.marketCapUsd) + '  ·  ' : '') + mlFmtAgent(token.marketCap) + ' AGENT  —  FDV ' + (token.fdvUsd ? fmtUsdShort(token.fdvUsd) + ' / ' : '') + mlFmtAgent(token.fdv||0) + ' AGENT');
+    set('mlModalMcap',     'MC ' + (token.marketCapUsd ? fmtUsdShort(token.marketCapUsd) + ' · ' : '') + mlFmtAgent(token.marketCap) + ' AGT  ·  RAISED ' + mlFmtAgent(token.agentRaised||0) + ' AGT  ·  FDV ' + (token.fdvUsd ? fmtUsdShort(token.fdvUsd) : mlFmtAgent(token.fdv||0) + ' AGT'));
     set('mlModalHolders',  token.holdersCount || 0);
 
     // 24h price change tile
@@ -5323,12 +5327,24 @@ async function mlLoadTrades() {
   if (!list) return;
   const tid = mlActiveTokenData?.onChainId ?? mlActiveToken;
   if (tid == null) { list.innerHTML = '<div class="text-slate-500">No token id.</div>'; return; }
+
+  // Header: token id + manager id + suiscan link (so user doesn't have to hunt for the CA)
+  const hdr = document.getElementById('mlTradesHeader');
+  const mgr = mlActiveTokenData?.managerId;
+  if (hdr) {
+    hdr.innerHTML =
+      '<div>Token ID: <span style="color:var(--cyan)">' + tid + '</span> &nbsp;·&nbsp; Symbol: <span style="color:var(--cyan)">$' + (mlActiveTokenData?.symbol||'') + '</span></div>' +
+      (mgr ? '<div style="margin-top:4px;">Launchpad CA: <span class="font-mono" style="color:#8ba8c8;font-size:9px;word-break:break-all;">' + mgr + '</span></div>' +
+             '<div style="margin-top:4px;"><a href="https://suiscan.xyz/mainnet/object/' + mgr + '" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:underline;">🔎 Verify trades on Suiscan</a></div>'
+           : '');
+  }
+
   list.innerHTML = '<div class="text-slate-500">Loading…</div>';
   try {
     const r = await fetch(BACKEND + '/launchpad/token/' + tid + '/trades?limit=50');
     const j = await r.json();
     const trades = (j && j.trades) || [];
-    if (!trades.length) { list.innerHTML = '<div class="text-slate-500">No trades yet.</div>'; return; }
+    if (!trades.length) { list.innerHTML = '<div class="text-slate-500">No on-curve trades yet. (Off-curve transfers don\'t appear here.)</div>'; return; }
     const sym = mlActiveTokenData?.symbol || '';
     const usdRate = mlActiveTokenData?.agentUsd || 0;
     list.innerHTML = trades.map(t => {
