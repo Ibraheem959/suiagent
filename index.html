@@ -5719,34 +5719,46 @@ window.mlExecuteSell = async function() {
         throw new Error(`All your balances are locked (anti-snipe / creator lock). Try again in ~${mins} min.`);
       }
 
-      // ── Pick a whole-object subset that sums to ≥ requested amount ──
-      // The on-chain split_balance / merge_balance are `entry` functions that
-      // transfer their result to the sender (no return value), so they cannot
-      // be chained inside a PTB. We therefore sell whole MemeBalance objects.
-      // Strategy: sort ASCENDING and accumulate until we hit `amount`.
-      // Result: actual sold amount may be slightly more than requested (capped
-      // at +5% slippage; otherwise abort and tell the user).
+      // ── v16: EXACT-AMOUNT sell using v3.2's sell_meme_partial ──────
+      // sell_meme_partial(manager, meme_balance, amount, &Clock) sells
+      // the EXACT requested amount and transfers any remainder back to
+      // the seller as a new MemeBalance — all in one move call.
+      //
+      // Strategy:
+      //   • If a single spendable object holds >= amount → one partial sell.
+      //   • Otherwise sell whole objects (sell_meme) for the larger ones
+      //     and finish with sell_meme_partial on the last object for the
+      //     residual. Achieves exact amount in one PTB, multiple calls.
       const available = spendable.reduce((s,o)=>s+o.amount,0);
       if (amount > available) throw new Error(`Only ${available} ${mlActiveTokenData?.symbol||'tokens'} unlocked & available to sell`);
 
+      // Prefer the smallest single object that fully covers `amount`
       const sortedAsc = [...spendable].sort((a,b)=>a.amount-b.amount);
-      const toUse = [];
-      let acc = 0;
-      // First pass: take smallest objects until we reach amount
-      for (const obj of sortedAsc) {
-        if (acc >= amount) break;
-        toUse.push(obj);
-        acc += obj.amount;
+      const singleCover = sortedAsc.find(o => o.amount >= amount);
+
+      // Build the call plan: list of { obj, sellAmount, kind: 'whole'|'partial' }
+      const plan = [];
+      if (singleCover) {
+        if (singleCover.amount === amount) {
+          plan.push({ obj: singleCover, sellAmount: amount, kind: 'whole' });
+        } else {
+          plan.push({ obj: singleCover, sellAmount: amount, kind: 'partial' });
+        }
+      } else {
+        // Combine objects: take largest first to minimize call count
+        const sortedDesc = [...spendable].sort((a,b)=>b.amount-a.amount);
+        let remaining = amount;
+        for (const obj of sortedDesc) {
+          if (remaining <= 0) break;
+          if (obj.amount <= remaining) {
+            plan.push({ obj, sellAmount: obj.amount, kind: 'whole' });
+            remaining -= obj.amount;
+          } else {
+            plan.push({ obj, sellAmount: remaining, kind: 'partial' });
+            remaining = 0;
+          }
+        }
       }
-      // If we have an exact-match single object, prefer it
-      const exact = spendable.find(o => o.amount === amount);
-      if (exact) { toUse.length = 0; toUse.push(exact); acc = exact.amount; }
-      const overshootPct = amount > 0 ? ((acc - amount) / amount * 100) : 0;
-      if (overshootPct > 5 && !confirm(
-        `Heads-up: this contract sells whole MemeBalance NFTs (no on-chain partial-sell).\n\n` +
-        `You asked to sell ${amount} ${mlActiveTokenData?.symbol||'tokens'}, but the closest whole-object combo is ${acc} (+${overshootPct.toFixed(1)}%).\n\n` +
-        `Continue and sell ${acc}?`
-      )) { throw new Error('Cancelled (no exact-amount object available).'); }
 
       let Transaction = window.__SuiTransaction;
       if (!Transaction) {
@@ -5763,19 +5775,34 @@ window.mlExecuteSell = async function() {
       const tx = new Transaction();
       tx.setSender(wallet);
 
-      // v3.2: sell_meme(manager, meme_balance, &Clock) — referrer removed, Clock added
-      for (const obj of toUse) {
-        tx.moveCall({
-          target: `${MEME_PACKAGE_ID}::launchpad::sell_meme`,
-          typeArguments: [AGENT_COIN_TYPE],
-          arguments: [
-            tx.object(MEME_MANAGER_ID),
-            tx.object(obj.objectId),
-            tx.object('0x0000000000000000000000000000000000000000000000000000000000000006'), // SUI Clock — REQUIRED by v3.2 sell_meme signature
-          ],
-        });
+      const SUI_CLOCK = '0x0000000000000000000000000000000000000000000000000000000000000006';
+
+      // v3.2: use sell_meme_partial for exact amounts, sell_meme when consuming whole objects
+      for (const step of plan) {
+        if (step.kind === 'partial') {
+          tx.moveCall({
+            target: `${MEME_PACKAGE_ID}::launchpad::sell_meme_partial`,
+            typeArguments: [AGENT_COIN_TYPE],
+            arguments: [
+              tx.object(MEME_MANAGER_ID),
+              tx.object(step.obj.objectId),
+              tx.pure.u64(step.sellAmount),   // EXACT amount
+              tx.object(SUI_CLOCK),
+            ],
+          });
+        } else {
+          tx.moveCall({
+            target: `${MEME_PACKAGE_ID}::launchpad::sell_meme`,
+            typeArguments: [AGENT_COIN_TYPE],
+            arguments: [
+              tx.object(MEME_MANAGER_ID),
+              tx.object(step.obj.objectId),
+              tx.object(SUI_CLOCK),
+            ],
+          });
+        }
       }
-      tx.setGasBudget(20_000_000 + 10_000_000 * toUse.length);
+      tx.setGasBudget(20_000_000 + 12_000_000 * plan.length);
 
       if (status) { status.textContent = '✍️ Sign in wallet...'; status.style.color='var(--cyan)'; }
       const result  = await window.suiSignAndExecute(tx, suiClient, { showEffects: true });
