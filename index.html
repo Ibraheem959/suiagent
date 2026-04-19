@@ -5476,21 +5476,27 @@ window.mlUpdateBuyQuote = async function() {
   const el = document.getElementById('mlBuyQuote');
   if (!el) return;
   if (!amount || amount <= 0) { el.style.display='none'; return; }
+  el.style.display='block'; el.textContent = '⏳ Fetching quote...';
   try {
-    const res  = await fetch(BACKEND + '/launchpad/token/' + mlActiveToken + '/quote?type=buy&amount=' + amount);
+    // Backend wants raw u64 AGENT (6 decimals) and uses ?token_id= & action=
+    const tid = mlActiveTokenData?.onChainId ?? mlActiveToken;
+    const agentRaw = Math.floor(amount * 1_000_000);
+    const res  = await fetch(BACKEND + '/launchpad/quote?token_id=' + tid + '&action=buy&amount=' + agentRaw);
     const data = await res.json();
-    if (data.error) { el.textContent = '❌ ' + data.error; el.style.display='block'; return; }
-    el.style.display = 'block';
-    const impactNum  = parseFloat(data.priceImpact) || 0;
-    const impactCol  = impactNum > 30 ? '#ff465a' : impactNum > 10 ? '#f5a623' : 'var(--green)';
-    const effPrice   = data.memeOut > 0 ? (data.agentIn / data.memeOut).toFixed(8) : '—';
+    if (data.error) { el.textContent = '❌ ' + data.error; return; }
+    const memeOut    = parseInt(data.out || 0);                 // meme has 0 decimals → raw == human
+    const agentFee   = amount * 0.01;                           // FEE_BPS = 100 = 1%
+    const curPrice   = mlActiveTokenData?.price || 0;
+    const effPrice   = memeOut > 0 ? (amount / memeOut) : 0;
+    const impactPct  = (curPrice > 0 && effPrice > 0) ? ((effPrice - curPrice) / curPrice * 100) : 0;
+    const impactCol  = impactPct > 30 ? '#ff465a' : impactPct > 10 ? '#f5a623' : 'var(--green)';
     el.innerHTML =
-      `You receive: <span style="color:var(--green);font-weight:bold">${mlFmtAgent(data.memeOut)} ${mlActiveTokenData?.symbol||'tokens'}</span><br>` +
-      `Fee: ${(data.agentFee||0).toFixed(4)} AGENT (1%) · ` +
-      `Impact: <span style="color:${impactCol}">${data.priceImpact||'?'}</span><br>` +
-      `Effective price: <b>${effPrice} AGENT/token</b> · New spot: ${(data.newPrice||0).toFixed(8)} AGENT/token` +
-      (impactNum > 30 ? `<br><span style="color:#ff465a">⚠ High price impact — large buy moves the bonding curve significantly</span>` : '');
-  } catch { el.textContent = '⏳ Fetching quote...'; el.style.display='block'; }
+      `You receive: <span style="color:var(--green);font-weight:bold">${mlFmtAgent(memeOut)} $${mlActiveTokenData?.symbol||'tokens'}</span><br>` +
+      `Fee: ${agentFee.toFixed(4)} AGENT (1%) · ` +
+      `Impact: <span style="color:${impactCol}">${impactPct.toFixed(2)}%</span><br>` +
+      `Effective price: <b>${effPrice ? effPrice.toFixed(8) : '—'} AGENT/token</b>` +
+      (impactPct > 30 ? `<br><span style="color:#ff465a">⚠ High price impact — large buy moves the curve a lot</span>` : '');
+  } catch (e) { el.textContent = '❌ Quote failed: ' + (e.message||e); }
 };
 
 window.mlUpdateSellQuote = async function() {
@@ -5499,23 +5505,26 @@ window.mlUpdateSellQuote = async function() {
   const el = document.getElementById('mlSellQuote');
   if (!el) return;
   if (!amount || amount <= 0) { el.style.display='none'; return; }
+  el.style.display='block'; el.textContent = '⏳ Fetching quote...';
   try {
-    const res  = await fetch(BACKEND + '/launchpad/token/' + mlActiveToken + '/quote?type=sell&amount=' + amount);
+    // Sell quote: amount is meme tokens (no decimals), backend returns raw AGENT (6 decimals)
+    const tid = mlActiveTokenData?.onChainId ?? mlActiveToken;
+    const memeRaw = Math.floor(amount); // meme has 0 decimals
+    const res  = await fetch(BACKEND + '/launchpad/quote?token_id=' + tid + '&action=sell&amount=' + memeRaw);
     const data = await res.json();
-    if (data.error) { el.textContent = '❌ ' + data.error; el.style.display='block'; return; }
-    // Fallback: if backend returns 0, estimate from current token price
-    let agentOut = data.agentOut || data.agent_out || 0;
-    let agentFee = data.agentFee || data.agent_fee || 0;
-    let rate     = data.pricePerToken || data.price_per_token || 0;
-    if (!agentOut && mlActiveTokenData?.price) {
-      rate     = mlActiveTokenData.price;
-      agentOut = rate * amount * 0.99;
-      agentFee = rate * amount * 0.01;
-    }
-    el.style.display = 'block';
-    el.innerHTML = `You receive: <span style="color:var(--cyan);font-weight:bold">${agentOut.toFixed(4)} AGENT</span><br>` +
+    if (data.error) { el.textContent = '❌ ' + data.error; return; }
+    let grossAgent = parseInt(data.out || 0) / 1_000_000; // raw → human AGENT, BEFORE fee
+    // If backend devInspect returns 0 (e.g. price too low), estimate from spot price
+    if (!grossAgent && mlActiveTokenData?.price) grossAgent = mlActiveTokenData.price * amount;
+    const agentFee = grossAgent * 0.01;          // FEE_BPS = 100 = 1%
+    const agentOut = grossAgent - agentFee;       // net to user
+    const rate     = amount > 0 ? grossAgent / amount : 0;
+    const usdRate  = mlActiveTokenData?.agentUsd || 0;
+    const usdLine  = usdRate ? ` (≈$${(agentOut * usdRate).toFixed(2)})` : '';
+    el.innerHTML =
+      `You receive: <span style="color:var(--cyan);font-weight:bold">${agentOut.toFixed(4)} AGENT</span>${usdLine}<br>` +
       `Fee: ${agentFee.toFixed(4)} AGENT (1%) · Rate: ${rate.toFixed(8)} AGENT each`;
-  } catch { el.textContent = '⏳ Fetching quote...'; el.style.display='block'; }
+  } catch (e) { el.textContent = '❌ Quote failed: ' + (e.message||e); }
 };
 
 // ── Copy token CA ──
@@ -5560,6 +5569,7 @@ async function mlExecuteBuyForToken(tokenId, agentAmount, sender, _unused, suiCl
       tx.pure.u64(parseInt(token.onChainId)),
       paymentCoin,
       tx.pure.address(referrer),
+      tx.object(CLOCK_ID),                 // ← REQUIRED by Move signature
     ],
   });
   tx.setGasBudget(25_000_000);
@@ -5642,16 +5652,34 @@ window.mlExecuteSell = async function() {
       if (!token?.onChainId) throw new Error('No on-chain token ID');
       if (!mlSellMemeObjects.length) throw new Error('No MemeBalance objects in wallet for this token');
 
-      // Pick objects to satisfy requested sell amount
-      let remaining = amount;
-      const toUse   = [];
-      for (const obj of mlSellMemeObjects.sort((a,b)=>b.amount-a.amount)) {
-        if (remaining <= 0) break;
-        toUse.push(obj);
-        remaining -= obj.amount;
-      }
+      // ── Pick a whole-object subset that sums to ≥ requested amount ──
+      // The on-chain split_balance / merge_balance are `entry` functions that
+      // transfer their result to the sender (no return value), so they cannot
+      // be chained inside a PTB. We therefore sell whole MemeBalance objects.
+      // Strategy: sort ASCENDING and accumulate until we hit `amount`.
+      // Result: actual sold amount may be slightly more than requested (capped
+      // at +5% slippage; otherwise abort and tell the user).
       const available = mlSellMemeObjects.reduce((s,o)=>s+o.amount,0);
-      if (amount > available) throw new Error(`Only ${available} tokens available to sell`);
+      if (amount > available) throw new Error(`Only ${available} ${mlActiveTokenData?.symbol||'tokens'} available to sell`);
+
+      const sortedAsc = [...mlSellMemeObjects].sort((a,b)=>a.amount-b.amount);
+      const toUse = [];
+      let acc = 0;
+      // First pass: take smallest objects until we reach amount
+      for (const obj of sortedAsc) {
+        if (acc >= amount) break;
+        toUse.push(obj);
+        acc += obj.amount;
+      }
+      // If we have an exact-match single object, prefer it
+      const exact = mlSellMemeObjects.find(o => o.amount === amount);
+      if (exact) { toUse.length = 0; toUse.push(exact); acc = exact.amount; }
+      const overshootPct = amount > 0 ? ((acc - amount) / amount * 100) : 0;
+      if (overshootPct > 5 && !confirm(
+        `Heads-up: this contract sells whole MemeBalance NFTs (no on-chain partial-sell).\n\n` +
+        `You asked to sell ${amount} ${mlActiveTokenData?.symbol||'tokens'}, but the closest whole-object combo is ${acc} (+${overshootPct.toFixed(1)}%).\n\n` +
+        `Continue and sell ${acc}?`
+      )) { throw new Error('Cancelled (no exact-amount object available).'); }
 
       let Transaction = window.__SuiTransaction;
       if (!Transaction) {
@@ -5668,40 +5696,20 @@ window.mlExecuteSell = async function() {
       const tx = new Transaction();
       tx.setSender(wallet);
 
-      // Merge all picked objects, then split to sell exactly `amount`
-      const primaryObj = tx.object(toUse[0].objectId);
-      if (toUse.length > 1) {
-        tx.moveCall({
-          target: `${MEME_PACKAGE_ID}::launchpad::merge_balance`,
-          typeArguments: [AGENT_COIN_TYPE],
-          arguments: [tx.object(MEME_MANAGER_ID), primaryObj, ...toUse.slice(1).map(o=>tx.object(o.objectId))],
-        });
-      }
-
-      // If we need to sell less than what's in primaryObj, split first
-      const primaryTotal = toUse.reduce((s,o)=>s+o.amount,0);
-      let sellObj = primaryObj;
-      if (primaryTotal > amount) {
-        const [split, rest] = tx.moveCall({
-          target: `${MEME_PACKAGE_ID}::launchpad::split_balance`,
-          typeArguments: [AGENT_COIN_TYPE],
-          arguments: [tx.object(MEME_MANAGER_ID), primaryObj, tx.pure.u64(amount)],
-        });
-        tx.transferObjects([rest], wallet); // return remainder
-        sellObj = split;
-      }
-
+      // Sell each picked object as its own moveCall (sell_meme accepts one balance)
       const referrer = mlUrlRef || '0x0000000000000000000000000000000000000000000000000000000000000000';
-      tx.moveCall({
-        target: `${MEME_PACKAGE_ID}::launchpad::sell_meme`,
-        typeArguments: [AGENT_COIN_TYPE],
-        arguments: [
-          tx.object(MEME_MANAGER_ID),
-          sellObj,
-          tx.pure.address(referrer),
-        ],
-      });
-      tx.setGasBudget(30_000_000);
+      for (const obj of toUse) {
+        tx.moveCall({
+          target: `${MEME_PACKAGE_ID}::launchpad::sell_meme`,
+          typeArguments: [AGENT_COIN_TYPE],
+          arguments: [
+            tx.object(MEME_MANAGER_ID),
+            tx.object(obj.objectId),
+            tx.pure.address(referrer),
+          ],
+        });
+      }
+      tx.setGasBudget(20_000_000 + 10_000_000 * toUse.length);
 
       if (status) { status.textContent = '✍️ Sign in wallet...'; status.style.color='var(--cyan)'; }
       const result  = await window.suiSignAndExecute(tx, suiClient, { showEffects: true });
