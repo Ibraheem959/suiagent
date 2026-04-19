@@ -4980,7 +4980,7 @@ window.suiSignAndExecute = async function suiSignAndExecute(tx, suiClient, opts)
     return await stdFeat.signAndExecuteTransactionBlock({
       transactionBlock: tx,
       options,
-      account: provider.accounts?.[0],
+      account: provider.accounts?.[0] || { address: connectedWallet.address },
       chain: 'sui:mainnet',
     });
   }
