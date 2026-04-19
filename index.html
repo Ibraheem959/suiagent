@@ -4689,8 +4689,8 @@ async function fetchSwapQuote() {
 const BACKEND = API_URL; // alias to existing backend constant
 
 // ── On-Chain Contract IDs (set after deploy) ──
-const MEME_PACKAGE_ID = '0x0eda172aa92cec5b85f7aae5bb6adaf84bb7223479ec4540c4af02fd533cb60a';
-const MEME_MANAGER_ID = '0xf79371f4a982de7a09ae753e626c745442da76c1f05439dea2ea4848e5658631';
+const MEME_PACKAGE_ID = '0x44a5d89f8b22fe477cfb66f1957347c861c075680d3dfffcef9e95ff742b4678';
+const MEME_MANAGER_ID = '0xb8687c9337f515a2a1243a219b50e8194caa0ba8cf87dfc1c99201caa93afb00';
 const AGENT_COIN_TYPE = '0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT';
 const MEME_ONCHAIN    = MEME_PACKAGE_ID !== 'PENDING_DEPLOY' && MEME_MANAGER_ID !== 'PENDING_DEPLOY';
 
@@ -5256,7 +5256,7 @@ window.mlOpenToken = async function(id) {
     // ── Token CA (on-chain ID) ──
     const caEl = document.getElementById('mlTokenCA');
     if (caEl) {
-      if (token.onChainId) {
+      if (token.onChainId != null) {
         caEl.textContent = `meme_${token.onChainId} (on-chain ID: ${token.onChainId})`;
       } else if (token.id) {
         caEl.textContent = token.id + (token.onChain ? '' : ' [virtual — no on-chain ID yet]');
@@ -5270,7 +5270,7 @@ window.mlOpenToken = async function(id) {
     if (expEl && token.managerId) {
       expEl.href = 'https://suiscan.xyz/mainnet/object/' + token.managerId;
       expEl.style.display = 'inline-block';
-      expEl.title = 'Verify this token\'s on-chain state inside the Launchpad object (token id: ' + (token.onChainId || token.id) + ')';
+      expEl.title = 'Verify this token\'s on-chain state inside the Launchpad object (token id: ' + (token.onChainId ?? token.id) + ')';
     } else if (expEl) {
       expEl.style.display = 'none';
     }
@@ -5447,7 +5447,7 @@ async function mlFetchSellObjects(wallet, tokenId) {
   try {
     const token = mlActiveTokenData;
     const onChainId = token?.onChainId;
-    if (!onChainId) { if (balEl) balEl.textContent = 'No on-chain ID'; return; }
+    if (onChainId == null) { if (balEl) balEl.textContent = 'No on-chain ID'; return; }
     const r = await fetch(`${BACKEND}/launchpad/meme-objects/${wallet}/${onChainId}`);
     const d = await r.json();
     mlSellMemeObjects = d.objects || [];
@@ -5555,7 +5555,7 @@ window.mlCopyCA = function() {
 // ── Helper: build & execute buy PTB for a token ──
 async function mlExecuteBuyForToken(tokenId, agentAmount, sender, _unused, suiClient) {
   const token = mlActiveTokenData || (await fetch(BACKEND+'/launchpad/token/'+tokenId).then(r=>r.json()).catch(()=>null));
-  if (!token?.onChainId) throw new Error('Cannot find on-chain token ID');
+  if (token?.onChainId == null) throw new Error('Cannot find on-chain token ID');
 
   let Transaction = window.__SuiTransaction;
   if (!Transaction) {
@@ -5666,7 +5666,7 @@ window.mlExecuteSell = async function() {
   try {
     if (MEME_ONCHAIN) {
       const token     = mlActiveTokenData;
-      if (!token?.onChainId) throw new Error('No on-chain token ID');
+      if (token?.onChainId == null) throw new Error('No on-chain token ID');
       if (!mlSellMemeObjects.length) throw new Error('No MemeBalance objects in wallet for this token');
 
       // ── Pick a whole-object subset that sums to ≥ requested amount ──
