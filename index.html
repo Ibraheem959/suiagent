@@ -669,9 +669,10 @@
         → <b style="color:#ffc864">Costs 1,000,000 $AGENT to launch</b> (paid to ecosystem on create)<br>
         → Your meme launches with a bonding curve priced in $AGENT<br>
         → Starting price: ~0.0000155 AGENT per token (10B tokens for sale)<br>
-        → 1% fee on every buy/sell · 25% of fee goes to referrer<br>
-        → At 15M $AGENT raised → automatically listed on AGENT DEX<br>
-        → At graduation: <b>70% seeds the DEX pool · 20% to ecosystem · 10% to dev</b>
+        → 1% fee on every buy/sell · <b style="color:#00ff88">70% to token creator · 30% to ecosystem</b> (forever)<br>
+        → Anti-snipe: buys in the first 5s are locked for 10 minutes<br>
+        → Creator's initial buy is locked for 1 hour (anti-rug)<br>
+        → At 15M $AGENT raised → automatically listed on AGENT DEX
       </div>
     </div>
 
@@ -798,13 +799,10 @@
         </button>
       </div>
 
-      <!-- Referral -->
-      <div style="background:rgba(180,79,255,0.06);border:1px solid rgba(180,79,255,0.2);padding:12px;margin-top:10px;">
-        <div class="font-mono text-xs font-bold mb-2" style="color:var(--purple);">🔗 YOUR REFERRAL LINK</div>
-        <div class="font-mono text-xs text-slate-400 mb-2" style="line-height:1.6;">Share — earn <strong style="color:var(--green)">25% of 1% fee</strong> on every referred trade (paid on-chain).</div>
-        <div id="mlMyRefLink" class="font-mono text-xs" style="color:var(--purple);word-break:break-all;margin-bottom:8px;">Connect wallet to see your link</div>
-        <button onclick="mlCopyRefLink()" class="btn-cyan" style="font-size:0.65rem;padding:6px 14px;">📋 Copy Referral Link</button>
-        <div id="mlRefStats" class="font-mono text-xs text-slate-500 mt-2"></div>
+      <!-- Creator Earnings (replaces referral) -->
+      <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);padding:12px;margin-top:10px;">
+        <div class="font-mono text-xs font-bold mb-2" style="color:var(--green);">💰 CREATOR EARNINGS</div>
+        <div class="font-mono text-xs text-slate-400" style="line-height:1.6;">If you launched this token, you earn <strong style="color:var(--green)">70% of every 1% trade fee</strong> — paid instantly on-chain to your wallet on each buy and sell, forever (pre &amp; post-graduation).</div>
       </div>
     </div>
 
@@ -887,7 +885,7 @@
     <span class="font-mono text-xs px-8 text-slate-500">◈</span>
     <span class="font-mono text-xs px-8" style="color:var(--purple)">15M AGENT GRADUATION THRESHOLD</span>
     <span class="font-mono text-xs px-8 text-slate-500">◈</span>
-    <span class="font-mono text-xs px-8" style="color:var(--cyan)">1% FEE · 25% REFERRAL REWARDS</span>
+    <span class="font-mono text-xs px-8" style="color:var(--cyan)">1% FEE · 70% TO CREATOR · 30% TO ECOSYSTEM</span>
   </div>
 </div>
 
@@ -1963,19 +1961,19 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
 
     <!-- Fee info -->
     <div class="reveal card p-6 rounded-none mt-10" style="border-color:rgba(180,79,255,0.2)">
-      <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ FEE STRUCTURE & REFERRALS</div>
+      <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ FEE STRUCTURE & CREATOR REWARDS</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
         <div>
           <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--cyan)">1% TRADE FEE</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">Every buy and sell pays 1% fee (deducted from payment). Fee keeps the ecosystem running.</p>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">Every buy and sell pays 1% fee — deducted from payment. The other 99% drives the bonding curve as normal.</p>
         </div>
         <div>
-          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--purple)">25% REFERRAL SHARE</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">Refer traders with your link — you earn 25% of every 1% fee from your referrals. Share your link via <code>/ref</code> in the bot.</p>
+          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--green)">70% TO CREATOR · FOREVER</div>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">Token creators earn 70% of every 1% fee on every trade — paid instantly to your wallet. Aligns long-term incentives so devs build, not dump. The other 30% goes to the ecosystem treasury.</p>
         </div>
         <div>
           <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--green)">GRADUATION → DEX</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">At 15M AGENT raised, token graduates: 70% seeds the MEME/AGENT pool on the DEX, 20% to ecosystem treasury, 10% to dev. Launching a new token costs 1,000,000 AGENT.</p>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">At 15M AGENT raised, token graduates: 70% seeds the MEME/AGENT pool on the AGENT DEX, 20% ecosystem, 10% dev. Launching a new token costs 1,000,000 AGENT. <b style="color:#ffc864">Anti-snipe</b>: first 5 seconds of buys are locked for 10 min · creator's initial buy locked 1 hour.</p>
         </div>
         <div>
           <div class="font-orbitron text-sm font-bold mb-2" style="color:#ffa07a">ON-CHAIN TOKENS</div>
@@ -4690,8 +4688,8 @@ async function fetchSwapQuote() {
 const BACKEND = API_URL; // alias to existing backend constant
 
 // ── On-Chain Contract IDs (set after deploy) ──
-const MEME_PACKAGE_ID = '0x44a5d89f8b22fe477cfb66f1957347c861c075680d3dfffcef9e95ff742b4678';
-const MEME_MANAGER_ID = '0xb8687c9337f515a2a1243a219b50e8194caa0ba8cf87dfc1c99201caa93afb00';
+const MEME_PACKAGE_ID = '0xecd1be65a57c9994554068e1c7997c0a567137f26a33e30350c29ca64b8d618f';
+const MEME_MANAGER_ID = '0x723b051fb8cb97dde8e1d2d710578a1ef9cc57bcbae58700144bdb4015ffe433';
 const AGENT_COIN_TYPE = '0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT';
 const MEME_ONCHAIN    = MEME_PACKAGE_ID !== 'PENDING_DEPLOY' && MEME_MANAGER_ID !== 'PENDING_DEPLOY';
 
@@ -4705,9 +4703,10 @@ let mlBuyWalletAgentBalance = 0;   // AGENT balance in raw (6 decimals)
 let mlSellMemeObjects       = [];  // user's on-chain MemeBalance objects for active token
 let mlImageDataUrl          = null; // base64 data URL if file was uploaded
 
-// Read referral from URL: ?ref=0x...
-const mlUrlRef = new URLSearchParams(window.location.search).get('ref') || null;
-if (mlUrlRef) {
+// Referral system removed in v14 (v3.2 contract has no referrer param).
+// mlUrlRef kept as `null` so any leftover code paths don't crash.
+const mlUrlRef = null;
+if (false) {
   window.addEventListener('DOMContentLoaded', () => {
     const banner = document.createElement('div');
     banner.style.cssText = 'background:rgba(0,255,136,0.1);border-bottom:1px solid rgba(0,255,136,0.3);padding:8px 20px;text-align:center;font-family:Share Tech Mono,monospace;font-size:0.75rem;color:#00ff88;position:relative;z-index:60;';
@@ -5506,14 +5505,20 @@ window.mlUpdateBuyQuote = async function() {
     // Impact is meaningful only when effPrice >= curPrice (true for any buy on a linear curve).
     // If effPrice < curPrice, the cached spot is stale vs on-chain — hide impact rather than show nonsense.
     const impactPct  = (curPrice > 0 && effPrice > curPrice) ? ((effPrice - curPrice) / curPrice * 100) : null;
-    const impactCol  = impactPct == null ? '#5a7090' : impactPct > 30 ? '#ff465a' : impactPct > 10 ? '#f5a623' : 'var(--green)';
+    const impactCol  = impactPct == null ? '#5a7090' : impactPct > 20 ? '#ff465a' : impactPct > 5 ? '#f5a623' : 'var(--green)';
     const impactStr  = impactPct == null ? '—' : impactPct.toFixed(2) + '%';
+    let warning = '';
+    if (impactPct != null && impactPct > 20) {
+      warning = `<br><div style="background:rgba(255,70,90,0.1);border:1px solid rgba(255,70,90,0.4);padding:8px;margin-top:8px;color:#ff465a;line-height:1.5">⚠ <b>VERY HIGH PRICE IMPACT (${impactPct.toFixed(1)}%)</b><br>You're paying far above current spot price. <b>If you sell immediately you will get back significantly less AGENT than you put in.</b> Consider splitting into smaller buys or waiting for more buyers.</div>`;
+    } else if (impactPct != null && impactPct > 5) {
+      warning = `<br><div style="background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.35);padding:8px;margin-top:8px;color:#f5a623;line-height:1.5">⚠ <b>Moderate price impact (${impactPct.toFixed(1)}%)</b> — your buy is large relative to the curve. Round-trip sell would lose ~${Math.min(impactPct, 50).toFixed(0)}% to slippage.</div>`;
+    }
     el.innerHTML =
       `You receive: <span style="color:var(--green);font-weight:bold">${mlFmtAgent(memeOut)} $${mlActiveTokenData?.symbol||'tokens'}</span><br>` +
       `Fee: ${agentFee.toFixed(4)} AGENT (1%) · ` +
       `Impact: <span style="color:${impactCol}" title="(effective price - current spot) / current spot">${impactStr}</span><br>` +
       `Effective price: <b>${effPrice ? effPrice.toFixed(8) : '—'} AGENT/token</b>` +
-      (impactPct != null && impactPct > 30 ? `<br><span style="color:#ff465a">⚠ High price impact — large buy moves the curve a lot</span>` : '');
+      warning;
   } catch (e) { el.textContent = '❌ Quote failed: ' + (e.message||e); }
 };
 
@@ -5578,7 +5583,7 @@ async function mlExecuteBuyForToken(tokenId, agentAmount, sender, _unused, suiCl
     tx.mergeCoins(primary, coinsRes.data.slice(1).map(c => tx.object(c.coinObjectId)));
   }
   const [paymentCoin] = tx.splitCoins(primary, [agentRaw]);
-  const referrer = mlUrlRef || '0x0000000000000000000000000000000000000000000000000000000000000000';
+  // v3.2 contract: referrer removed. buy_meme(manager, token_id, payment, &Clock)
   tx.moveCall({
     target: `${MEME_PACKAGE_ID}::launchpad::buy_meme`,
     typeArguments: [AGENT_COIN_TYPE],
@@ -5586,8 +5591,7 @@ async function mlExecuteBuyForToken(tokenId, agentAmount, sender, _unused, suiCl
       tx.object(MEME_MANAGER_ID),
       tx.pure.u64(parseInt(token.onChainId)),
       paymentCoin,
-      tx.pure.address(referrer),
-      tx.object('0x0000000000000000000000000000000000000000000000000000000000000006'), // SUI Clock — REQUIRED by Move signature (literal because CLOCK_ID const is in a different <script> block scope)
+      tx.object('0x0000000000000000000000000000000000000000000000000000000000000006'), // SUI Clock — REQUIRED by v3.2 buy_meme signature
     ],
   });
   tx.setGasBudget(25_000_000);
@@ -5599,7 +5603,7 @@ async function mlExecuteBuyForToken(tokenId, agentAmount, sender, _unused, suiCl
   // Notify backend to update cache
   await fetch(BACKEND + '/launchpad/record-trade', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ txDigest: result.digest, tokenId, referrer: mlUrlRef || null }),
+    body: JSON.stringify({ txDigest: result.digest, tokenId }),
   }).catch(() => {});
   return result;
 }
@@ -5714,8 +5718,7 @@ window.mlExecuteSell = async function() {
       const tx = new Transaction();
       tx.setSender(wallet);
 
-      // Sell each picked object as its own moveCall (sell_meme accepts one balance)
-      const referrer = mlUrlRef || '0x0000000000000000000000000000000000000000000000000000000000000000';
+      // v3.2: sell_meme(manager, meme_balance, &Clock) — referrer removed, Clock added
       for (const obj of toUse) {
         tx.moveCall({
           target: `${MEME_PACKAGE_ID}::launchpad::sell_meme`,
@@ -5723,7 +5726,7 @@ window.mlExecuteSell = async function() {
           arguments: [
             tx.object(MEME_MANAGER_ID),
             tx.object(obj.objectId),
-            tx.pure.address(referrer),
+            tx.object('0x0000000000000000000000000000000000000000000000000000000000000006'), // SUI Clock — REQUIRED by v3.2 sell_meme signature
           ],
         });
       }
@@ -5735,7 +5738,7 @@ window.mlExecuteSell = async function() {
 
       await fetch(BACKEND + '/launchpad/record-trade', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ txDigest: result.digest, tokenId: mlActiveToken, referrer: mlUrlRef||null }),
+        body: JSON.stringify({ txDigest: result.digest, tokenId: mlActiveToken }),
       }).catch(() => {});
 
       if (status) { status.textContent = '✅ Sold! AGENT credited to your wallet.'; status.style.color='var(--green)'; }
@@ -5760,36 +5763,14 @@ window.mlExecuteSell = async function() {
   }
 };
 
-function mlUpdateRefLink() {
-  const refWallet = mlMyWallet || mlUrlRef || (typeof connectedWallet !== 'undefined' && connectedWallet?.address);
-  const linkEl = document.getElementById('mlMyRefLink');
-  const statsEl = document.getElementById('mlRefStats');
-  if (!refWallet) {
-    if (linkEl) linkEl.textContent = 'Use bot /ref command or connect wallet to see your link';
-    return;
-  }
-  const refUrl = location.origin + location.pathname + '?id=' + (mlActiveToken||'') + '&ref=' + refWallet + '#memelab';
-  if (linkEl) linkEl.textContent = refUrl;
-  if (statsEl && mlActiveToken) {
-    fetch(BACKEND + '/launchpad/referral/' + refWallet)
-      .then(r => r.json())
-      .then(d => { if (statsEl) statsEl.textContent = 'Earned: ' + (d.totalEarned?.toFixed(2)||0) + ' AGENT ($' + (d.totalEarnedUsd?.toFixed(2)||0) + ') · ' + (d.totalReferrals||0) + ' referrals'; })
-      .catch(() => {});
-  }
-}
-
+// ── v14: referral system removed (v3.2 contract has no referrer param) ──
+function mlUpdateRefLink() { /* no-op */ }
 window.mlCopyRefLink = function() {
-  const refWallet = mlMyWallet || mlUrlRef || (typeof connectedWallet !== 'undefined' && connectedWallet?.address);
-  if (!refWallet) { alert('Use the Telegram bot: /ref — to get your personal referral link'); return; }
-  const refUrl = location.origin + location.pathname + '?id=' + (mlActiveToken||'') + '&ref=' + refWallet + '#memelab';
-  navigator.clipboard.writeText(refUrl).then(() => alert('Referral link copied! Share to earn 25% of every trade fee.')).catch(() => prompt('Copy your referral link:', refUrl));
+  alert('Referrals removed. Token creators now earn 70% of every fee directly on-chain.');
 };
-
 window.mlShareToken = function() {
   if (!mlActiveToken) return;
-  const refWallet = mlMyWallet || (typeof connectedWallet !== 'undefined' && connectedWallet?.address);
-  const ref = refWallet ? '&ref=' + refWallet : '';
-  const url = location.origin + location.pathname + '?id=' + mlActiveToken + ref + '#memelab';
+  const url = location.origin + location.pathname + '?id=' + mlActiveToken + '#memelab';
   navigator.clipboard.writeText(url).then(() => alert('Link copied!')).catch(() => prompt('Copy this link:', url));
 };
 
