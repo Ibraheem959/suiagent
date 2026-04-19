@@ -698,19 +698,39 @@
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
-      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:12px;text-align:center;">
-        <div class="font-mono text-xs text-slate-500">PRICE</div>
-        <div class="font-orbitron text-sm font-bold" style="color:var(--cyan)" id="mlModalPrice">—</div>
-        <div class="font-mono text-xs text-slate-500" id="mlModalPriceUsd">—</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:10px;text-align:center;">
+        <div class="font-mono text-[10px] text-slate-500">PRICE</div>
+        <div class="font-orbitron text-xs font-bold" style="color:var(--cyan)" id="mlModalPrice">—</div>
+        <div class="font-mono text-[10px] text-slate-500" id="mlModalPriceUsd">—</div>
       </div>
-      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:12px;text-align:center;">
-        <div class="font-mono text-xs text-slate-500">MKT CAP</div>
-        <div class="font-orbitron text-sm font-bold" style="color:var(--green)" id="mlModalMcap">—</div>
+      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:10px;text-align:center;">
+        <div class="font-mono text-[10px] text-slate-500">24h Δ</div>
+        <div class="font-orbitron text-xs font-bold" id="mlModalPriceChg" style="color:#5a7090">—</div>
+        <div class="font-mono text-[10px] text-slate-500" id="mlModalVol24h">vol —</div>
       </div>
-      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:12px;text-align:center;">
-        <div class="font-mono text-xs text-slate-500">HOLDERS</div>
-        <div class="font-orbitron text-sm font-bold text-white" id="mlModalHolders">—</div>
+      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:10px;text-align:center;">
+        <div class="font-mono text-[10px] text-slate-500">MKT CAP</div>
+        <div class="font-orbitron text-xs font-bold" style="color:var(--green)" id="mlModalMcap">—</div>
+      </div>
+      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:10px;text-align:center;">
+        <div class="font-mono text-[10px] text-slate-500">HOLDERS</div>
+        <div class="font-orbitron text-xs font-bold text-white" id="mlModalHolders">—</div>
+      </div>
+    </div>
+
+    <!-- YOUR POSITION (only visible when wallet has balance) -->
+    <div id="mlYourPositionBox" style="display:none;background:rgba(180,79,255,0.06);border:1px solid rgba(180,79,255,0.25);padding:10px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div class="font-mono text-[10px]" style="color:var(--purple)">YOUR POSITION</div>
+          <div class="font-orbitron text-sm font-bold text-white" id="mlYourPositionAmount">—</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="font-mono text-[10px] text-slate-500">VALUE</div>
+          <div class="font-mono text-xs font-bold" style="color:var(--green)" id="mlYourPositionValue">—</div>
+          <div class="font-mono text-[10px] text-slate-500" id="mlYourPositionValueAgent">—</div>
+        </div>
       </div>
     </div>
 
@@ -732,6 +752,7 @@
       <button class="ml-tab-btn active" id="mlBuyTab" onclick="mlSetTradeTab('buy')">BUY</button>
       <button class="ml-tab-btn" id="mlSellTab" onclick="mlSetTradeTab('sell')">SELL</button>
       <button class="ml-tab-btn" id="mlHoldersTab" onclick="mlSetTradeTab('holders')">HOLDERS</button>
+      <button class="ml-tab-btn" id="mlTradesTab" onclick="mlSetTradeTab('trades')">TRADES</button>
       <button class="ml-tab-btn" id="mlInfoTab" onclick="mlSetTradeTab('info')">INFO</button>
     </div>
 
@@ -763,6 +784,9 @@
           <div style="display:flex;align-items:center;gap:8px;">
             <div class="font-mono text-xs" style="color:var(--cyan);word-break:break-all;flex:1;" id="mlTokenCA">—</div>
             <button onclick="mlCopyCA()" class="copy-btn" style="font-size:0.6rem;padding:3px 8px;flex-shrink:0;">COPY</button>
+          </div>
+          <div style="margin-top:6px;">
+            <a id="mlExplorerLink" href="#" target="_blank" rel="noopener" class="font-mono text-xs" style="color:var(--purple);text-decoration:underline;display:none;">🔎 View Launchpad on Sui Explorer</a>
           </div>
         </div>
 
@@ -814,6 +838,12 @@
     <!-- HOLDERS PANEL -->
     <div id="mlHoldersPanel" style="display:none;">
       <div id="mlHoldersList" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- TRADES PANEL -->
+    <div id="mlTradesPanel" style="display:none;">
+      <div class="font-mono text-xs text-slate-500 mb-2">RECENT TRADES (last 50)</div>
+      <div id="mlTradesList" class="font-mono text-xs text-slate-500" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">Loading…</div>
     </div>
 
     <!-- INFO PANEL -->
@@ -4791,8 +4821,14 @@ function mlRenderGrid() {
         <div class="font-mono text-xs text-slate-500">${t.holders||0} holders</div>
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:6px;">
-        <div class="font-mono text-xs" style="color:var(--cyan)">${t.price?.toFixed(8)||'—'} AGENT</div>
+        <div class="font-mono text-xs" style="color:var(--cyan)">${t.price?.toFixed(8)||'—'} AGENT
+          ${t.priceChange24hPct != null ? `<span style="margin-left:6px;color:${t.priceChange24hPct >= 0 ? 'var(--green)' : '#ff465a'}">${t.priceChange24hPct >= 0 ? '+' : ''}${t.priceChange24hPct.toFixed(2)}%</span>` : ''}
+        </div>
         <div class="font-mono text-xs text-slate-500">${t.trades||0} trades</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <div class="font-mono text-[10px]" style="color:var(--cyan);opacity:0.85" title="24h trading volume">VOL 24h: ${t.volume24hUsd ? fmtUsdShort(t.volume24hUsd) : '$\u2014'}</div>
+        <div class="font-mono text-[10px] text-slate-500">${mlFmtAgent(t.volume24hAgent||0)} AGENT</div>
       </div>
     </div>
   `).join('');
@@ -5146,6 +5182,23 @@ window.mlOpenToken = async function(id) {
     set('mlModalMcap',     (token.marketCapUsd ? fmtUsdShort(token.marketCapUsd) + '  ·  ' : '') + mlFmtAgent(token.marketCap) + ' AGENT  —  FDV ' + (token.fdvUsd ? fmtUsdShort(token.fdvUsd) + ' / ' : '') + mlFmtAgent(token.fdv||0) + ' AGENT');
     set('mlModalHolders',  token.holdersCount || 0);
 
+    // 24h price change tile
+    const pcEl = document.getElementById('mlModalPriceChg');
+    if (pcEl) {
+      const c = token.priceChange24hPct;
+      if (c == null) { pcEl.textContent = '—'; pcEl.style.color = '#5a7090'; }
+      else {
+        const sign = c >= 0 ? '+' : '';
+        pcEl.textContent = sign + c.toFixed(2) + '%';
+        pcEl.style.color = c >= 0 ? 'var(--green)' : '#ff465a';
+      }
+    }
+    set('mlModalVol24h', 'vol ' + (token.volume24hUsd ? fmtUsdShort(token.volume24hUsd) : (mlFmtAgent(token.volume24hAgent||0) + ' AGT')));
+
+    // Reset YOUR POSITION until wallet objects fetch resolves
+    const ypBox = document.getElementById('mlYourPositionBox');
+    if (ypBox) ypBox.style.display = 'none';
+
     const prog = token.progress || 0;
     set('mlModalProgress',    prog.toFixed(2) + '%');
     const pb = document.getElementById('mlModalProgressBar'); if (pb) pb.style.width = prog + '%';
@@ -5194,6 +5247,37 @@ window.mlOpenToken = async function(id) {
       }
     }
 
+    // ── Sui Explorer link to the LaunchpadManager (token lives in its tokens table) ──
+    const expEl = document.getElementById('mlExplorerLink');
+    if (expEl && token.managerId) {
+      expEl.href = 'https://suiscan.xyz/mainnet/object/' + token.managerId;
+      expEl.style.display = 'inline-block';
+      expEl.title = 'Verify this token\'s on-chain state inside the Launchpad object (token id: ' + (token.onChainId || token.id) + ')';
+    } else if (expEl) {
+      expEl.style.display = 'none';
+    }
+
+    // ── Refresh holders from the dedicated, accurate endpoint (cache busts every 60s server-side) ──
+    (async () => {
+      try {
+        const tid = token.onChainId ?? token.id;
+        if (tid == null) return;
+        const r = await fetch(BACKEND + '/launchpad/token/' + tid + '/holders');
+        if (!r.ok) return;
+        const j = await r.json();
+        if (!j || !Array.isArray(j.holders)) return;
+        // Update count badge
+        const hcEl = document.getElementById('mlModalHolders');
+        if (hcEl) hcEl.textContent = j.count || 0;
+        // Re-render holders list with fresh data
+        const hd = document.getElementById('mlHoldersList');
+        if (hd) {
+          if (!j.holders.length) hd.innerHTML = '<div class="font-mono text-xs text-slate-500">No holders yet. Be the first!</div>';
+          else hd.innerHTML = j.holders.map((h,i) => '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.06);"><div class="font-mono text-xs" style="color:' + (i===0?'var(--green)':'#8ba8c8') + '">' + (i===0?'👑 ':'') + h.wallet.slice(0,8) + '...' + h.wallet.slice(-6) + '</div><div class="font-mono text-xs" style="color:var(--cyan)">' + mlFmtAgent(h.balance) + ' $' + token.symbol + '</div></div>').join('');
+        }
+      } catch (_) {}
+    })();
+
     const sellLbl = document.getElementById('mlSellSymbolLabel');
     if (sellLbl) sellLbl.textContent = token.symbol;
 
@@ -5225,12 +5309,58 @@ window.mlCloseTokenModal = function() {
 };
 
 window.mlSetTradeTab = function(tab) {
-  ['mlBuyPanel','mlSellPanel','mlHoldersPanel','mlInfoPanel'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-  ['mlBuyTab','mlSellTab','mlHoldersTab','mlInfoTab'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+  ['mlBuyPanel','mlSellPanel','mlHoldersPanel','mlTradesPanel','mlInfoPanel'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  ['mlBuyTab','mlSellTab','mlHoldersTab','mlTradesTab','mlInfoTab'].forEach(id => document.getElementById(id)?.classList.remove('active'));
   const p = document.getElementById('ml' + tab.charAt(0).toUpperCase() + tab.slice(1) + 'Panel'); if (p) p.style.display = 'block';
   document.getElementById('ml' + tab.charAt(0).toUpperCase() + tab.slice(1) + 'Tab')?.classList.add('active');
+  if (tab === 'trades') mlLoadTrades();
 };
 function mlSetTradeTab(tab) { window.mlSetTradeTab(tab); }
+
+// ── Lazy-load recent trades for the active token ──
+async function mlLoadTrades() {
+  const list = document.getElementById('mlTradesList');
+  if (!list) return;
+  const tid = mlActiveTokenData?.onChainId ?? mlActiveToken;
+  if (tid == null) { list.innerHTML = '<div class="text-slate-500">No token id.</div>'; return; }
+  list.innerHTML = '<div class="text-slate-500">Loading…</div>';
+  try {
+    const r = await fetch(BACKEND + '/launchpad/token/' + tid + '/trades?limit=50');
+    const j = await r.json();
+    const trades = (j && j.trades) || [];
+    if (!trades.length) { list.innerHTML = '<div class="text-slate-500">No trades yet.</div>'; return; }
+    const sym = mlActiveTokenData?.symbol || '';
+    const usdRate = mlActiveTokenData?.agentUsd || 0;
+    list.innerHTML = trades.map(t => {
+      const isBuy = t.type === 'BUY';
+      const color = isBuy ? 'var(--green)' : '#ff465a';
+      const wallet = t.wallet ? (t.wallet.slice(0,6) + '…' + t.wallet.slice(-4)) : '—';
+      const ago = mlTimeAgo(t.ts);
+      const usd = usdRate ? (' (≈$' + (t.agent * usdRate).toFixed(2) + ')') : '';
+      const txLink = t.tx
+        ? '<a href="https://suiscan.xyz/mainnet/tx/' + t.tx + '" target="_blank" rel="noopener" style="color:#5a7090;text-decoration:underline;">tx</a>'
+        : '';
+      return '<div style="display:grid;grid-template-columns:48px 1fr auto;gap:8px;align-items:center;padding:6px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.06);">' +
+        '<div class="font-mono text-[10px] font-bold" style="color:' + color + '">' + t.type + '</div>' +
+        '<div class="font-mono text-[11px]"><span style="color:#8ba8c8">' + wallet + '</span> · ' +
+          '<span style="color:var(--cyan)">' + mlFmtAgent(t.agent) + ' AGENT</span>' + usd + ' → ' +
+          '<span style="color:var(--cyan)">' + mlFmtAgent(t.meme) + ' $' + sym + '</span></div>' +
+        '<div class="font-mono text-[10px] text-slate-500">' + ago + ' ' + txLink + '</div>' +
+        '</div>';
+    }).join('');
+  } catch (e) {
+    list.innerHTML = '<div class="text-slate-500">Error: ' + (e.message||e) + '</div>';
+  }
+}
+
+function mlTimeAgo(ts) {
+  if (!ts) return '—';
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s/60) + 'm';
+  if (s < 86400) return Math.floor(s/3600) + 'h';
+  return Math.floor(s/86400) + 'd';
+}
 
 window.mlSetAmount = function(n) { const el = document.getElementById('mlBuyAmount'); if (el) { el.value = n; mlUpdateBuyQuote(); } };
 
@@ -5298,6 +5428,24 @@ async function mlFetchSellObjects(wallet, tokenId) {
         infoEl.textContent = 'No MemeBalance objects found for this token in your wallet.';
       } else {
         infoEl.innerHTML = `${mlSellMemeObjects.length} MemeBalance object${mlSellMemeObjects.length>1?'s':''} in wallet. Total: ${mlFmtAgent(total)} tokens.`;
+      }
+    }
+
+    // ── Update the always-visible YOUR POSITION block ──
+    const ypBox = document.getElementById('mlYourPositionBox');
+    if (ypBox) {
+      if (total > 0) {
+        ypBox.style.display = 'block';
+        const px      = token?.price || 0;
+        const usdRate = token?.agentUsd || 0;
+        const valueAgent = total * px;
+        const valueUsd   = valueAgent * usdRate;
+        const setIf = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+        setIf('mlYourPositionAmount',      mlFmtAgent(total) + ' $' + (token?.symbol || ''));
+        setIf('mlYourPositionValue',       valueUsd ? '$' + valueUsd.toFixed(2) : '—');
+        setIf('mlYourPositionValueAgent',  mlFmtAgent(valueAgent) + ' AGENT');
+      } else {
+        ypBox.style.display = 'none';
       }
     }
   } catch(e) {
