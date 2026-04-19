@@ -4777,8 +4777,9 @@ function mlRenderGrid() {
           <div class="font-mono text-xs" style="color:var(--cyan)">$${t.symbol}</div>
         </div>
         <div style="text-align:right;">
-          <div class="font-mono text-xs font-bold" style="color:var(--green)">${mlFmtAgent(t.marketCap)}</div>
-          <div class="font-mono text-xs text-slate-500">mcap</div>
+          <div class="font-mono text-xs font-bold" style="color:var(--green)">${t.marketCapUsd ? fmtUsdShort(t.marketCapUsd) : "$\u2014"}</div>
+          <div class="font-mono text-[10px]" style="color:var(--cyan);opacity:0.85">${mlFmtAgent(t.marketCap)} AGENT</div>
+          <div class="font-mono text-[10px] text-slate-500">mcap</div>
         </div>
       </div>
       <div class="ml-progress-bar" style="margin-bottom:6px;">
@@ -5141,7 +5142,7 @@ window.mlOpenToken = async function(id) {
 
     set('mlModalPrice',    (token.price||0).toFixed(8) + ' AGENT');
     set('mlModalPriceUsd', token.priceUsd ? '$' + token.priceUsd.toFixed(10) : '');
-    set('mlModalMcap',     mlFmtAgent(token.marketCap) + ' AGENT');
+    set('mlModalMcap',     (token.marketCapUsd ? fmtUsdShort(token.marketCapUsd) + '  ·  ' : '') + mlFmtAgent(token.marketCap) + ' AGENT');
     set('mlModalHolders',  token.holdersCount || 0);
 
     const prog = token.progress || 0;
