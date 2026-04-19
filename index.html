@@ -5066,16 +5066,29 @@ window.mlSubmitCreate = async function() {
       const imgBytes  = Array.from(new TextEncoder().encode((image||'').slice(0, 512)));
       const descBytes = Array.from(new TextEncoder().encode((desc||'').slice(0, 300)));
 
-      // Build initial_payment coin — split exact amount from AGENT coins
-      const initialBuyRaw = initialBuy > 0 ? Math.floor(initialBuy * 1_000_000) : 0;
+      // NEW CONTRACT: requires 1M AGENT creation_fee (paid to manager.admin)
+      // Build creation_fee + initial_payment coins by splitting from merged AGENT
+      const CREATION_FEE_RAW = 1_000_000_000_000; // 1,000,000 AGENT * 1e6 decimals
+      const initialBuyRaw    = initialBuy > 0 ? Math.floor(initialBuy * 1_000_000) : 0;
+      const totalNeeded      = BigInt(CREATION_FEE_RAW) + BigInt(initialBuyRaw);
+      const totalOwned       = agentCoinsRes.data.reduce((s, c) => s + BigInt(c.balance), 0n);
+      if (totalOwned < totalNeeded) {
+        const owned = (Number(totalOwned) / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 6 });
+        const need  = (Number(totalNeeded) / 1_000_000).toLocaleString();
+        if (errDiv) { errDiv.textContent = `❌ Need ${need} AGENT (1,000,000 creation fee${initialBuyRaw>0?` + ${initialBuy} initial buy`:''}). You have ${owned}.`; errDiv.style.display='block'; }
+        return;
+      }
       const primaryCoin = tx.object(agentCoinsRes.data[0].coinObjectId);
       if (agentCoinsRes.data.length > 1) {
         tx.mergeCoins(primaryCoin, agentCoinsRes.data.slice(1).map(c => tx.object(c.coinObjectId)));
       }
-      const [paymentCoin] = tx.splitCoins(primaryCoin, [tx.pure.u64(initialBuyRaw)]);
+      const [creationFeeCoin, paymentCoin] = tx.splitCoins(primaryCoin, [
+        tx.pure.u64(CREATION_FEE_RAW),
+        tx.pure.u64(initialBuyRaw),
+      ]);
 
-      // create_token args (must match Move contract exactly):
-      // manager, name, symbol, image, description, initial_payment, clock
+      // create_token args (must match new Move contract exactly):
+      // manager, name, symbol, image, description, creation_fee, initial_payment, clock
       tx.moveCall({
         target: `${MEME_PACKAGE_ID}::launchpad::create_token`,
         typeArguments: [AGENT_COIN_TYPE],
@@ -5083,13 +5096,14 @@ window.mlSubmitCreate = async function() {
           tx.object(MEME_MANAGER_ID),            // 1. manager (shared)
           tx.pure.vector('u8', nameBytes),        // 2. name
           tx.pure.vector('u8', symBytes),         // 3. symbol
-          tx.pure.vector('u8', imgBytes),         // 4. image  ← correct order
+          tx.pure.vector('u8', imgBytes),         // 4. image
           tx.pure.vector('u8', descBytes),        // 5. description
-          paymentCoin,                            // 6. initial_payment Coin<AGENT>
-          tx.object('0x0000000000000000000000000000000000000000000000000000000000000006'), // 7. clock
+          creationFeeCoin,                        // 6. creation_fee Coin<AGENT> (1M AGENT)
+          paymentCoin,                            // 7. initial_payment Coin<AGENT>
+          tx.object('0x0000000000000000000000000000000000000000000000000000000000000006'), // 8. clock
         ],
       });
-      tx.setGasBudget(30_000_000);
+      tx.setGasBudget(50_000_000);
 
       // 3. Sign & execute via connected wallet
       if (btn) btn.textContent = '✍️ Sign in wallet...';
