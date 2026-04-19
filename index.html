@@ -600,7 +600,7 @@
   <div class="ml-modal-box ml-animate-fade">
     <button onclick="mlCloseCreateModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#4a5568;font-size:1.1rem;cursor:pointer;">✕</button>
     <div class="font-orbitron text-lg font-bold text-white mb-1">🚀 LAUNCH A MEME</div>
-    <div class="font-mono text-xs mb-6" style="color:var(--cyan)">Tokens trade exclusively in $AGENT · 1% fee · Graduate at 15M $AGENT</div>
+    <div class="font-mono text-xs mb-6" style="color:var(--cyan)">Tokens trade exclusively in $AGENT · 1% fee · Graduate at 15M $AGENT · <span style="color:#ffc864">Requires 1,000,000 $AGENT to launch</span></div>
 
     <!-- Connected wallet banner -->
     <div id="mlCreateWalletBanner" style="display:none;background:rgba(0,255,136,0.07);border:1px solid rgba(0,255,136,0.25);padding:8px 12px;margin-bottom:4px;align-items:center;gap:8px;">
@@ -666,11 +666,12 @@
     <div style="background:rgba(0,245,255,0.05);border:1px solid rgba(0,245,255,0.15);padding:12px;margin-top:14px;">
       <div class="font-mono text-xs" style="color:var(--cyan);line-height:1.7">
         ⚠ <strong>HOW IT WORKS</strong><br>
+        → <b style="color:#ffc864">Costs 1,000,000 $AGENT to launch</b> (paid to ecosystem on create)<br>
         → Your meme launches with a bonding curve priced in $AGENT<br>
-        → Starting price: ~0.0000188 AGENT per token<br>
+        → Starting price: ~0.0000155 AGENT per token (10B tokens for sale)<br>
         → 1% fee on every buy/sell · 25% of fee goes to referrer<br>
         → At 15M $AGENT raised → automatically listed on AGENT DEX<br>
-        → 2% eco tax at graduation goes to ecosystem treasury
+        → At graduation: <b>70% seeds the DEX pool · 20% to ecosystem · 10% to dev</b>
       </div>
     </div>
 
@@ -1974,7 +1975,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         </div>
         <div>
           <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--green)">GRADUATION → DEX</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">At 15M AGENT raised, token graduates: 2% eco tax sent to treasury, remaining listed as MEME/AGENT pair on the DEX.</p>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">At 15M AGENT raised, token graduates: 70% seeds the MEME/AGENT pool on the DEX, 20% to ecosystem treasury, 10% to dev. Launching a new token costs 1,000,000 AGENT.</p>
         </div>
         <div>
           <div class="font-orbitron text-sm font-bold mb-2" style="color:#ffa07a">ON-CHAIN TOKENS</div>
@@ -4764,14 +4765,14 @@ window.mlPreviewInitialBuy = function(val) {
   if (!el) return;
   const agentAmount = parseFloat(val);
   if (!agentAmount || agentAmount <= 0) { el.style.display='none'; return; }
-  // Bonding curve starting price: ~0.0000188 AGENT per token
-  const BASE_PRICE = 0.0000188;
+  // Bonding curve starting price: ~0.0000155 AGENT per token (v3 contract: 10B supply, BASE_PRICE_MILLI=15500)
+  const BASE_PRICE = 0.0000155;
   const tokensEst  = Math.floor(agentAmount * 0.99 / BASE_PRICE);
   const agentFee   = (agentAmount * 0.01).toFixed(4);
   el.style.display = 'block';
   el.innerHTML =
     `✅ Spending <b>${agentAmount} AGENT</b> → you receive approximately <b>${mlFmtAgent(tokensEst)} tokens</b><br>` +
-    `Fee: ${agentFee} AGENT (1%) · Starting price: 0.0000188 AGENT/token`;
+    `Fee: ${agentFee} AGENT (1%) · Starting price: 0.0000155 AGENT/token · <span style="color:#ffc864">+ 1M AGENT launch fee</span>`;
 };
 
 function mlRenderGrid() {
