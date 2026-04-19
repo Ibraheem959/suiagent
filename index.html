@@ -4779,7 +4779,8 @@ function mlRenderGrid() {
         <div style="text-align:right;">
           <div class="font-mono text-xs font-bold" style="color:var(--green)">${t.marketCapUsd ? fmtUsdShort(t.marketCapUsd) : "$\u2014"}</div>
           <div class="font-mono text-[10px]" style="color:var(--cyan);opacity:0.85">${mlFmtAgent(t.marketCap)} AGENT</div>
-          <div class="font-mono text-[10px] text-slate-500">mcap</div>
+          <div class="font-mono text-[10px] text-slate-500">mcap (real)</div>
+          <div class="font-mono text-[10px]" style="color:#5a7090;margin-top:2px;" title="Fully Diluted Valuation = price \u00D7 1B supply">FDV ${t.fdvUsd ? fmtUsdShort(t.fdvUsd) : "$\u2014"}</div>
         </div>
       </div>
       <div class="ml-progress-bar" style="margin-bottom:6px;">
@@ -5142,7 +5143,7 @@ window.mlOpenToken = async function(id) {
 
     set('mlModalPrice',    (token.price||0).toFixed(8) + ' AGENT');
     set('mlModalPriceUsd', token.priceUsd ? '$' + token.priceUsd.toFixed(10) : '');
-    set('mlModalMcap',     (token.marketCapUsd ? fmtUsdShort(token.marketCapUsd) + '  ·  ' : '') + mlFmtAgent(token.marketCap) + ' AGENT');
+    set('mlModalMcap',     (token.marketCapUsd ? fmtUsdShort(token.marketCapUsd) + '  ·  ' : '') + mlFmtAgent(token.marketCap) + ' AGENT  —  FDV ' + (token.fdvUsd ? fmtUsdShort(token.fdvUsd) + ' / ' : '') + mlFmtAgent(token.fdv||0) + ' AGENT');
     set('mlModalHolders',  token.holdersCount || 0);
 
     const prog = token.progress || 0;
