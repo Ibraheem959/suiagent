@@ -5452,14 +5452,50 @@ async function mlFetchSellObjects(wallet, tokenId) {
     const d = await r.json();
     mlSellMemeObjects = d.objects || [];
     const total = d.total || 0;
-    if (balEl) balEl.textContent = mlFmtAgent(total) + ' ' + (token?.symbol || '');
+    // v15: split into spendable vs locked using v3.2 unlockAtMs field
+    const nowMs = Date.now();
+    const lockedObjs    = mlSellMemeObjects.filter(o => o.isLocked || (o.unlockAtMs && o.unlockAtMs > nowMs));
+    const spendableObjs = mlSellMemeObjects.filter(o => !o.isLocked && (!o.unlockAtMs || o.unlockAtMs <= nowMs));
+    const lockedTotal    = lockedObjs.reduce((s,o) => s + (o.amount || 0), 0);
+    const spendableTotal = spendableObjs.reduce((s,o) => s + (o.amount || 0), 0);
+    // Soonest unlock time across locked balances
+    const soonestUnlock = lockedObjs.length
+      ? Math.min(...lockedObjs.map(o => o.unlockAtMs || 0).filter(x => x > 0))
+      : 0;
+    const fmtUnlock = (ms) => {
+      if (!ms) return '';
+      const d = new Date(ms);
+      const mins = Math.max(0, Math.round((ms - Date.now()) / 60000));
+      const hh = String(d.getHours()).padStart(2,'0');
+      const mm = String(d.getMinutes()).padStart(2,'0');
+      if (mins < 60) return `${mins} min (at ${hh}:${mm})`;
+      const hrs = Math.floor(mins/60), rem = mins % 60;
+      return `${hrs}h ${rem}m (at ${hh}:${mm})`;
+    };
+    if (balEl) {
+      if (lockedTotal > 0) {
+        balEl.innerHTML = `${mlFmtAgent(spendableTotal)} ${token?.symbol||''} <span style="color:#ff9966;font-size:11px;">(🔒 ${mlFmtAgent(lockedTotal)} locked)</span>`;
+      } else {
+        balEl.textContent = mlFmtAgent(total) + ' ' + (token?.symbol || '');
+      }
+    }
     if (infoEl) {
       if (mlSellMemeObjects.length === 0) {
         infoEl.textContent = 'No MemeBalance objects found for this token in your wallet.';
+      } else if (lockedTotal > 0) {
+        const anyCreator = lockedObjs.some(o => o.lockType === 'creator');
+        const lockLabel  = anyCreator ? 'Creator lock' : 'Anti-snipe lock';
+        infoEl.innerHTML =
+          `${mlSellMemeObjects.length} MemeBalance object${mlSellMemeObjects.length>1?'s':''} in wallet. ` +
+          `Total: ${mlFmtAgent(total)} tokens.<br>` +
+          `<span style="color:#ff9966;">🔒 ${lockLabel}: ${mlFmtAgent(lockedTotal)} unlock in ${fmtUnlock(soonestUnlock)}.</span>`;
       } else {
         infoEl.innerHTML = `${mlSellMemeObjects.length} MemeBalance object${mlSellMemeObjects.length>1?'s':''} in wallet. Total: ${mlFmtAgent(total)} tokens.`;
       }
     }
+    // Make the spendable list available to the sell PTB so we never spend a locked balance
+    window.mlSellSpendable = spendableObjs;
+    window.mlSellLockedTotal = lockedTotal;
 
     // ── Update the always-visible YOUR POSITION block ──
     const ypBox = document.getElementById('mlYourPositionBox');
@@ -5674,6 +5710,15 @@ window.mlExecuteSell = async function() {
       if (token?.onChainId == null) throw new Error('No on-chain token ID');
       if (!mlSellMemeObjects.length) throw new Error('No MemeBalance objects in wallet for this token');
 
+      // v15: only consider SPENDABLE balances (filter out anti-snipe / creator-locked)
+      const nowMs = Date.now();
+      const spendable = mlSellMemeObjects.filter(o => !o.isLocked && (!o.unlockAtMs || o.unlockAtMs <= nowMs));
+      if (!spendable.length) {
+        const soonest = Math.min(...mlSellMemeObjects.map(o => o.unlockAtMs || Infinity));
+        const mins = isFinite(soonest) ? Math.max(0, Math.round((soonest - nowMs)/60000)) : 0;
+        throw new Error(`All your balances are locked (anti-snipe / creator lock). Try again in ~${mins} min.`);
+      }
+
       // ── Pick a whole-object subset that sums to ≥ requested amount ──
       // The on-chain split_balance / merge_balance are `entry` functions that
       // transfer their result to the sender (no return value), so they cannot
@@ -5681,10 +5726,10 @@ window.mlExecuteSell = async function() {
       // Strategy: sort ASCENDING and accumulate until we hit `amount`.
       // Result: actual sold amount may be slightly more than requested (capped
       // at +5% slippage; otherwise abort and tell the user).
-      const available = mlSellMemeObjects.reduce((s,o)=>s+o.amount,0);
-      if (amount > available) throw new Error(`Only ${available} ${mlActiveTokenData?.symbol||'tokens'} available to sell`);
+      const available = spendable.reduce((s,o)=>s+o.amount,0);
+      if (amount > available) throw new Error(`Only ${available} ${mlActiveTokenData?.symbol||'tokens'} unlocked & available to sell`);
 
-      const sortedAsc = [...mlSellMemeObjects].sort((a,b)=>a.amount-b.amount);
+      const sortedAsc = [...spendable].sort((a,b)=>a.amount-b.amount);
       const toUse = [];
       let acc = 0;
       // First pass: take smallest objects until we reach amount
@@ -5694,7 +5739,7 @@ window.mlExecuteSell = async function() {
         acc += obj.amount;
       }
       // If we have an exact-match single object, prefer it
-      const exact = mlSellMemeObjects.find(o => o.amount === amount);
+      const exact = spendable.find(o => o.amount === amount);
       if (exact) { toUse.length = 0; toUse.push(exact); acc = exact.amount; }
       const overshootPct = amount > 0 ? ((acc - amount) / amount * 100) : 0;
       if (overshootPct > 5 && !confirm(
