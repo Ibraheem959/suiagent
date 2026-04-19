@@ -4689,8 +4689,8 @@ async function fetchSwapQuote() {
 const BACKEND = API_URL; // alias to existing backend constant
 
 // ── On-Chain Contract IDs (set after deploy) ──
-const MEME_PACKAGE_ID = '0x26ca03f974e84e306fb8e6e4c435a725a7e7035151614e3dfb840739725bec58';
-const MEME_MANAGER_ID = '0xccb6c62363da72ed061f0c0670cffbb5261c328c519c4c34500b3c681078eeb2';
+const MEME_PACKAGE_ID = '0x0eda172aa92cec5b85f7aae5bb6adaf84bb7223479ec4540c4af02fd533cb60a';
+const MEME_MANAGER_ID = '0xf79371f4a982de7a09ae753e626c745442da76c1f05439dea2ea4848e5658631';
 const AGENT_COIN_TYPE = '0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT';
 const MEME_ONCHAIN    = MEME_PACKAGE_ID !== 'PENDING_DEPLOY' && MEME_MANAGER_ID !== 'PENDING_DEPLOY';
 
@@ -5488,14 +5488,17 @@ window.mlUpdateBuyQuote = async function() {
     const agentFee   = amount * 0.01;                           // FEE_BPS = 100 = 1%
     const curPrice   = mlActiveTokenData?.price || 0;
     const effPrice   = memeOut > 0 ? (amount / memeOut) : 0;
-    const impactPct  = (curPrice > 0 && effPrice > 0) ? ((effPrice - curPrice) / curPrice * 100) : 0;
-    const impactCol  = impactPct > 30 ? '#ff465a' : impactPct > 10 ? '#f5a623' : 'var(--green)';
+    // Impact is meaningful only when effPrice >= curPrice (true for any buy on a linear curve).
+    // If effPrice < curPrice, the cached spot is stale vs on-chain — hide impact rather than show nonsense.
+    const impactPct  = (curPrice > 0 && effPrice > curPrice) ? ((effPrice - curPrice) / curPrice * 100) : null;
+    const impactCol  = impactPct == null ? '#5a7090' : impactPct > 30 ? '#ff465a' : impactPct > 10 ? '#f5a623' : 'var(--green)';
+    const impactStr  = impactPct == null ? '—' : impactPct.toFixed(2) + '%';
     el.innerHTML =
       `You receive: <span style="color:var(--green);font-weight:bold">${mlFmtAgent(memeOut)} $${mlActiveTokenData?.symbol||'tokens'}</span><br>` +
       `Fee: ${agentFee.toFixed(4)} AGENT (1%) · ` +
-      `Impact: <span style="color:${impactCol}">${impactPct.toFixed(2)}%</span><br>` +
+      `Impact: <span style="color:${impactCol}" title="(effective price - current spot) / current spot">${impactStr}</span><br>` +
       `Effective price: <b>${effPrice ? effPrice.toFixed(8) : '—'} AGENT/token</b>` +
-      (impactPct > 30 ? `<br><span style="color:#ff465a">⚠ High price impact — large buy moves the curve a lot</span>` : '');
+      (impactPct != null && impactPct > 30 ? `<br><span style="color:#ff465a">⚠ High price impact — large buy moves the curve a lot</span>` : '');
   } catch (e) { el.textContent = '❌ Quote failed: ' + (e.message||e); }
 };
 
@@ -5569,7 +5572,7 @@ async function mlExecuteBuyForToken(tokenId, agentAmount, sender, _unused, suiCl
       tx.pure.u64(parseInt(token.onChainId)),
       paymentCoin,
       tx.pure.address(referrer),
-      tx.object(CLOCK_ID),                 // ← REQUIRED by Move signature
+      tx.object('0x0000000000000000000000000000000000000000000000000000000000000006'), // SUI Clock — REQUIRED by Move signature (literal because CLOCK_ID const is in a different <script> block scope)
     ],
   });
   tx.setGasBudget(25_000_000);
