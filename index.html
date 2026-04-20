@@ -600,7 +600,7 @@
   <div class="ml-modal-box ml-animate-fade">
     <button onclick="mlCloseCreateModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#4a5568;font-size:1.1rem;cursor:pointer;">✕</button>
     <div class="font-orbitron text-lg font-bold text-white mb-1">🚀 LAUNCH A MEME</div>
-    <div class="font-mono text-xs mb-6" style="color:var(--cyan)">Tokens trade exclusively in $AGENT · 1% fee · Graduate at 15M $AGENT · <span style="color:#ffc864">Requires 1,000,000 $AGENT to launch</span></div>
+    <div class="font-mono text-xs mb-6" style="color:var(--cyan)">Tokens trade exclusively in $AGENT · 1% fee · Graduate at 10M $AGENT · <span style="color:#ffc864">Requires 500,000 $AGENT to launch</span></div>
 
     <!-- Connected wallet banner -->
     <div id="mlCreateWalletBanner" style="display:none;background:rgba(0,255,136,0.07);border:1px solid rgba(0,255,136,0.25);padding:8px 12px;margin-bottom:4px;align-items:center;gap:8px;">
@@ -666,13 +666,13 @@
     <div style="background:rgba(0,245,255,0.05);border:1px solid rgba(0,245,255,0.15);padding:12px;margin-top:14px;">
       <div class="font-mono text-xs" style="color:var(--cyan);line-height:1.7">
         ⚠ <strong>HOW IT WORKS</strong><br>
-        → <b style="color:#ffc864">Costs 1,000,000 $AGENT to launch</b> (paid to ecosystem on create)<br>
+        → <b style="color:#ffc864">Costs 500,000 $AGENT to launch</b> (paid to ecosystem on create)<br>
         → Your meme launches with a bonding curve priced in $AGENT<br>
-        → Starting price: ~0.0000155 AGENT per token (10B tokens for sale)<br>
+        → Starting price: ~0.000318 AGENT per token (8B tokens for sale on the curve · 2B reserved for the DEX pool at graduation)<br>
         → 1% fee on every buy/sell · <b style="color:#00ff88">70% to token creator · 30% to ecosystem</b> (forever)<br>
         → Anti-snipe: buys in the first 5s are locked for 10 minutes<br>
         → Creator's initial buy is locked for 1 hour (anti-rug)<br>
-        → At 15M $AGENT raised → automatically listed on AGENT DEX
+        → At 10M $AGENT raised → automatically listed on AGENT DEX
       </div>
     </div>
 
@@ -744,7 +744,7 @@
       <div class="ml-progress-bar"><div class="ml-progress-fill" id="mlModalProgressBar" style="width:0%"></div></div>
       <div style="display:flex;justify-content:space-between;margin-top:4px;">
         <span class="font-mono text-xs text-slate-500" id="mlModalAgentRaised">0 AGENT raised</span>
-        <span class="font-mono text-xs text-slate-500">15,000,000 AGENT goal</span>
+        <span class="font-mono text-xs text-slate-500">10,000,000 AGENT goal</span>
       </div>
     </div>
 
@@ -883,7 +883,7 @@
     <span class="font-mono text-xs px-8 text-slate-500">◈</span>
     <span class="font-mono text-xs px-8" style="color:var(--green)">🚀 MEME LAB — LAUNCH MEMES IN $AGENT</span>
     <span class="font-mono text-xs px-8 text-slate-500">◈</span>
-    <span class="font-mono text-xs px-8" style="color:var(--purple)">15M AGENT GRADUATION THRESHOLD</span>
+    <span class="font-mono text-xs px-8" style="color:var(--purple)">10M AGENT GRADUATION THRESHOLD</span>
     <span class="font-mono text-xs px-8 text-slate-500">◈</span>
     <span class="font-mono text-xs px-8" style="color:var(--cyan)">1% FEE · 70% TO CREATOR · 30% TO ECOSYSTEM</span>
   </div>
@@ -1888,7 +1888,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         <h2 class="font-orbitron font-black" style="font-size:2.5rem;color:#fff;letter-spacing:0.05em">MEME <span style="color:var(--green);text-shadow:0 0 30px var(--green)">LAB</span></h2>
       </div>
       <p style="color:#6a8bad;font-weight:300;max-width:520px;margin:0 auto 24px;line-height:1.6;">
-        Launch meme tokens that trade exclusively in <span style="color:var(--cyan)">$AGENT</span>. Bonding curve, 15M AGENT graduation, then listed on the AGENT DEX.
+        Launch meme tokens that trade exclusively in <span style="color:var(--cyan)">$AGENT</span>. Constant-product curve, 10M AGENT graduation, then listed on the AGENT DEX.
       </p>
       <!-- Stats -->
       <div style="display:flex;justify-content:center;gap:32px;flex-wrap:wrap;margin-bottom:28px;">
@@ -1898,7 +1898,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         <div style="width:1px;background:var(--border);height:40px;margin:auto 0;"></div>
         <div style="text-align:center"><div class="font-orbitron text-xl font-bold" style="color:var(--purple)" id="mlHeroVol">—</div><div class="font-mono text-xs text-slate-500 mt-1">TOTAL VOLUME</div></div>
         <div style="width:1px;background:var(--border);height:40px;margin:auto 0;"></div>
-        <div style="text-align:center"><div class="font-orbitron text-lg font-bold" style="color:var(--green)">15M</div><div class="font-mono text-xs text-slate-500 mt-1">GRAD THRESHOLD</div></div>
+        <div style="text-align:center"><div class="font-orbitron text-lg font-bold" style="color:var(--green)">10M</div><div class="font-mono text-xs text-slate-500 mt-1">GRAD THRESHOLD</div></div>
       </div>
       <!-- How it works strip -->
       <div style="display:flex;justify-content:center;gap:0;flex-wrap:wrap;max-width:800px;margin:0 auto 28px;">
@@ -1912,7 +1912,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         </div>
         <div style="flex:1;min-width:140px;padding:12px;border:1px solid rgba(0,245,255,0.1);background:rgba(0,245,255,0.03);">
           <div class="font-orbitron text-xs" style="color:var(--green)">3. GRADUATE</div>
-          <div class="font-mono text-xs text-slate-500 mt-1">15M AGENT raised</div>
+          <div class="font-mono text-xs text-slate-500 mt-1">10M AGENT raised</div>
         </div>
         <div style="flex:1;min-width:140px;padding:12px;border:1px solid rgba(0,245,255,0.1);background:rgba(0,245,255,0.03);">
           <div class="font-orbitron text-xs" style="color:var(--green)">4. DEX LISTING</div>
@@ -1973,7 +1973,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         </div>
         <div>
           <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--green)">GRADUATION → DEX</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">At 15M AGENT raised, token graduates: 70% seeds the MEME/AGENT pool on the AGENT DEX, 20% ecosystem, 10% dev. Launching a new token costs 1,000,000 AGENT. <b style="color:#ffc864">Anti-snipe</b>: first 5 seconds of buys are locked for 10 min · creator's initial buy locked 1 hour.</p>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">At 10M AGENT raised, the token auto-graduates in the triggering buy: <b style="color:var(--cyan)">4M</b> seeds the MEME/AGENT pool on the AGENT DEX (paired with 2B reserved tokens), <b style="color:#ff465a">2.5M $AGENT is permanently burned</b>, <b style="color:var(--green)">1.5M</b> goes to the creator and <b style="color:var(--purple)">2M</b> to the ecosystem — all instant on-chain. Launching a new token costs <b>500,000 AGENT</b>. <b style="color:#ffc864">Anti-snipe</b>: first 5 seconds of buys are locked for 10 min · creator's initial buy locked 1 hour.</p>
         </div>
         <div>
           <div class="font-orbitron text-sm font-bold mb-2" style="color:#ffa07a">ON-CHAIN TOKENS</div>
@@ -4759,19 +4759,26 @@ function mlFmtAgent(n) {
 }
 
 // Live preview for the initial buy field — shows tokens received for AGENT spent
+// v4 constant-product curve: x*y=k with virtual reserves
+//   x0 = VIRT_AGENT_SEED = 3,413,000 AGENT (human)
+//   y0 = VIRT_MEME_SEED  = 10,730,000,000 atoms
+//   buy: agentInNet = agentIn * 0.99 (1% fee)
+//        memeOut    = y0 * agentInNet / (x0 + agentInNet)
+//   start price ≈ x0/y0 ≈ 0.000318 AGENT/token
 window.mlPreviewInitialBuy = function(val) {
   const el = document.getElementById('mlInitialBuyPreview');
   if (!el) return;
   const agentAmount = parseFloat(val);
   if (!agentAmount || agentAmount <= 0) { el.style.display='none'; return; }
-  // Bonding curve starting price: ~0.0000155 AGENT per token (v3 contract: 10B supply, BASE_PRICE_MILLI=15500)
-  const BASE_PRICE = 0.0000155;
-  const tokensEst  = Math.floor(agentAmount * 0.99 / BASE_PRICE);
+  const X0 = 3_413_000;          // virt AGENT seed (human)
+  const Y0 = 10_730_000_000;     // virt MEME seed (atoms)
+  const agentInNet = agentAmount * 0.99;
+  const tokensEst  = Math.floor(Y0 * agentInNet / (X0 + agentInNet));
   const agentFee   = (agentAmount * 0.01).toFixed(4);
   el.style.display = 'block';
   el.innerHTML =
     `✅ Spending <b>${agentAmount} AGENT</b> → you receive approximately <b>${mlFmtAgent(tokensEst)} tokens</b><br>` +
-    `Fee: ${agentFee} AGENT (1%) · Starting price: 0.0000155 AGENT/token · <span style="color:#ffc864">+ 1M AGENT launch fee</span>`;
+    `Fee: ${agentFee} AGENT (1%) · Starting price: ~0.000318 AGENT/token · <span style="color:#ffc864">+ 500K AGENT launch fee</span>`;
 };
 
 function mlRenderGrid() {
@@ -4814,7 +4821,7 @@ function mlRenderGrid() {
           <div class="font-mono text-xs font-bold" style="color:var(--green)" title="Market Cap = current price × tokens already sold from the curve">${t.marketCapUsd ? fmtUsdShort(t.marketCapUsd) : "$\u2014"}</div>
           <div class="font-mono text-[10px]" style="color:var(--cyan);opacity:0.85">${mlFmtAgent(t.marketCap)} AGENT</div>
           <div class="font-mono text-[10px] text-slate-500">MC</div>
-          <div class="font-mono text-[10px]" style="color:#5a7090;margin-top:2px;" title="Fully Diluted Valuation = current price \u00D7 1B total supply">FDV ${t.fdvUsd ? fmtUsdShort(t.fdvUsd) : "$\u2014"}</div>
+          <div class="font-mono text-[10px]" style="color:#5a7090;margin-top:2px;" title="Fully Diluted Valuation = current price \u00D7 10B total supply (8B circulating + 2B LP reserve)">FDV ${t.fdvUsd ? fmtUsdShort(t.fdvUsd) : "$\u2014"}</div>
         </div>
       </div>
       <div class="ml-progress-bar" style="margin-bottom:6px;">
@@ -5066,16 +5073,17 @@ window.mlSubmitCreate = async function() {
       const imgBytes  = Array.from(new TextEncoder().encode((image||'').slice(0, 512)));
       const descBytes = Array.from(new TextEncoder().encode((desc||'').slice(0, 300)));
 
-      // NEW CONTRACT: requires 1M AGENT creation_fee (paid to manager.admin)
-      // Build creation_fee + initial_payment coins by splitting from merged AGENT
-      const CREATION_FEE_RAW = 1_000_000_000_000; // 1,000,000 AGENT * 1e6 decimals
+      // v4 CONTRACT: requires 500K AGENT creation_fee (paid to ecosystem)
+      // Build creation_fee + initial_payment coins by splitting from merged AGENT.
+      // Initial buy is now OPTIONAL in v4 (no minimum), so initialBuyRaw can be 0.
+      const CREATION_FEE_RAW = 500_000_000_000; // 500,000 AGENT * 1e6 decimals
       const initialBuyRaw    = initialBuy > 0 ? Math.floor(initialBuy * 1_000_000) : 0;
       const totalNeeded      = BigInt(CREATION_FEE_RAW) + BigInt(initialBuyRaw);
       const totalOwned       = agentCoinsRes.data.reduce((s, c) => s + BigInt(c.balance), 0n);
       if (totalOwned < totalNeeded) {
         const owned = (Number(totalOwned) / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 6 });
         const need  = (Number(totalNeeded) / 1_000_000).toLocaleString();
-        if (errDiv) { errDiv.textContent = `❌ Need ${need} AGENT (1,000,000 creation fee${initialBuyRaw>0?` + ${initialBuy} initial buy`:''}). You have ${owned}.`; errDiv.style.display='block'; }
+        if (errDiv) { errDiv.textContent = `❌ Need ${need} AGENT (500,000 creation fee${initialBuyRaw>0?` + ${initialBuy} initial buy`:''}). You have ${owned}.`; errDiv.style.display='block'; }
         return;
       }
       const primaryCoin = tx.object(agentCoinsRes.data[0].coinObjectId);
@@ -5087,7 +5095,7 @@ window.mlSubmitCreate = async function() {
         tx.pure.u64(initialBuyRaw),
       ]);
 
-      // create_token args (must match new Move contract exactly):
+      // create_token args (v4 ABI — same shape as v3.2):
       // manager, name, symbol, image, description, creation_fee, initial_payment, clock
       tx.moveCall({
         target: `${MEME_PACKAGE_ID}::launchpad::create_token`,
@@ -5098,8 +5106,8 @@ window.mlSubmitCreate = async function() {
           tx.pure.vector('u8', symBytes),         // 3. symbol
           tx.pure.vector('u8', imgBytes),         // 4. image
           tx.pure.vector('u8', descBytes),        // 5. description
-          creationFeeCoin,                        // 6. creation_fee Coin<AGENT> (1M AGENT)
-          paymentCoin,                            // 7. initial_payment Coin<AGENT>
+          creationFeeCoin,                        // 6. creation_fee Coin<AGENT> (500K AGENT in v4)
+          paymentCoin,                            // 7. initial_payment Coin<AGENT> (optional in v4, can be 0)
           tx.object('0x0000000000000000000000000000000000000000000000000000000000000006'), // 8. clock
         ],
       });
@@ -5538,7 +5546,8 @@ window.mlUpdateBuyQuote = async function() {
     const agentFee   = amount * 0.01;                           // FEE_BPS = 100 = 1%
     const curPrice   = mlActiveTokenData?.price || 0;
     const effPrice   = memeOut > 0 ? (amount / memeOut) : 0;
-    // Impact is meaningful only when effPrice >= curPrice (true for any buy on a linear curve).
+    // Impact is meaningful only when effPrice >= curPrice (true for any buy on a
+    // constant-product curve since each token bought pushes price up monotonically).
     // If effPrice < curPrice, the cached spot is stale vs on-chain — hide impact rather than show nonsense.
     const impactPct  = (curPrice > 0 && effPrice > curPrice) ? ((effPrice - curPrice) / curPrice * 100) : null;
     const impactCol  = impactPct == null ? '#5a7090' : impactPct > 20 ? '#ff465a' : impactPct > 5 ? '#f5a623' : 'var(--green)';
@@ -5619,7 +5628,9 @@ async function mlExecuteBuyForToken(tokenId, agentAmount, sender, _unused, suiCl
     tx.mergeCoins(primary, coinsRes.data.slice(1).map(c => tx.object(c.coinObjectId)));
   }
   const [paymentCoin] = tx.splitCoins(primary, [agentRaw]);
-  // v3.2 contract: referrer removed. buy_meme(manager, token_id, payment, &Clock)
+  // v4 contract: buy_meme(manager, token_id, payment, &Clock) — same call shape as v3.2.
+  // Gas budget bumped to 60M because the *triggering* buy at graduation also runs the
+  // inline Option D+ distribution (creator/eco/burn-park transfers) in the same tx.
   tx.moveCall({
     target: `${MEME_PACKAGE_ID}::launchpad::buy_meme`,
     typeArguments: [AGENT_COIN_TYPE],
@@ -5627,10 +5638,10 @@ async function mlExecuteBuyForToken(tokenId, agentAmount, sender, _unused, suiCl
       tx.object(MEME_MANAGER_ID),
       tx.pure.u64(parseInt(token.onChainId)),
       paymentCoin,
-      tx.object('0x0000000000000000000000000000000000000000000000000000000000000006'), // SUI Clock — REQUIRED by v3.2 buy_meme signature
+      tx.object('0x0000000000000000000000000000000000000000000000000000000000000006'), // SUI Clock
     ],
   });
-  tx.setGasBudget(25_000_000);
+  tx.setGasBudget(60_000_000);
 
   const result  = await window.suiSignAndExecute(tx, suiClient);
   if (result.effects?.status?.status !== 'success') {
