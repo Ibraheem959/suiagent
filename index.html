@@ -383,7 +383,7 @@
     .nav-links { display: none; }
   }
 
-  /* ═══════ MEMELAND v10 ═══════ */
+  /* ═══════ MEMELAND v11 ═══════ */
   .btn-green {
     background: rgba(0,255,136,0.1);
     border: 1.5px solid var(--green);
@@ -1818,7 +1818,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════ MEMELAND v10 ══════════════════════════════════════ -->
+<!-- ══════════════════════════════════════ MEMELAND v11 ══════════════════════════════════════ -->
 <section id="memelab" style="padding:100px 24px;background:var(--bg2)">
   <div style="max-width:1200px;margin:0 auto">
 
@@ -4624,7 +4624,7 @@ async function fetchSwapQuote() {
 
 
 // ══════════════════════════════════════
-// MEMELAND v10 — Cetus CLMM Launchpad
+// MEMELAND v11 — Cetus CLMM Launchpad
 // ══════════════════════════════════════
 (function() {
 const BACKEND = API_URL; // alias to existing backend constant
@@ -4889,16 +4889,28 @@ window.mlHandleImageUpload = async function(input) {
     if (previewDiv) previewDiv.style.display = 'block';
     if (previewImg) previewImg.src = localUrl;
   } catch (_) {}
-  try {
-    // Read file → base64 (browser can't talk to catbox directly: no CORS).
-    // Send via our backend proxy which forwards to catbox server-side.
+
+  // ── Direct browser upload to kappa.lol (it sends Access-Control-Allow-Origin: *) ──
+  // This bypasses our backend proxy entirely → no body-size limits, no Railway IP bans.
+  // Files are permanent. Fall back to the backend proxy if direct upload fails.
+  const errors = [];
+  async function _uploadDirectKappa() {
+    const fd = new FormData();
+    fd.append('file', file, file.name);
+    const r = await fetch('https://kappa.lol/api/upload', { method: 'POST', body: fd });
+    const text = await r.text();
+    if (!r.ok) throw new Error('kappa.lol HTTP ' + r.status + ': ' + text.slice(0, 120));
+    let j; try { j = JSON.parse(text); } catch { throw new Error('kappa.lol non-JSON: ' + text.slice(0, 120)); }
+    // kappa.lol returns { id, ext, link, ... } where `link` directly serves the image
+    const url = j.link || (j.id ? ('https://kappa.lol/' + j.id) : null);
+    if (!url || !/^https?:\/\//i.test(url)) throw new Error('kappa.lol no link in reply');
+    return { url, host: 'kappa.lol' };
+  }
+
+  async function _uploadViaProxy() {
     const dataBase64 = await new Promise((resolve, reject) => {
       const r = new FileReader();
-      r.onload  = () => {
-        const s = String(r.result || '');
-        const i = s.indexOf(',');
-        resolve(i >= 0 ? s.slice(i + 1) : s);
-      };
+      r.onload  = () => { const s = String(r.result || ''); const i = s.indexOf(','); resolve(i >= 0 ? s.slice(i + 1) : s); };
       r.onerror = () => reject(new Error('file read failed'));
       r.readAsDataURL(file);
     });
@@ -4908,22 +4920,40 @@ window.mlHandleImageUpload = async function(input) {
       body:    JSON.stringify({ filename: file.name, contentType: file.type, dataBase64 }),
     });
     const j = await res.json().catch(() => ({}));
-    if (!res.ok || !j.url) throw new Error(j.error || ('upload failed (' + res.status + ')'));
-    if (urlInput)   urlInput.value = j.url;
-    if (previewImg) previewImg.src = j.url;
-    const hostTag = j.host ? ' (' + j.host + ')' : '';
-    if (nameEl) { nameEl.textContent = '✓ ' + file.name + hostTag; nameEl.style.color = '#4ade80'; }
-    mlImageDataUrl = null; // we use the real URL from the input field, not a data URL
-  } catch (err) {
-    // Surface the real error so the user knows what to do (vs a generic message)
-    const raw = (err?.message || String(err) || 'unknown error');
-    let short = raw;
-    if (raw.length > 90) short = raw.slice(0, 87) + '…';
+    if (!res.ok || !j.url) throw new Error(j.error || ('proxy HTTP ' + res.status));
+    return { url: j.url, host: j.host || 'proxy' };
+  }
+
+  let result = null;
+  try {
+    if (nameEl) { nameEl.textContent = '⏳ uploading ' + file.name + ' (kappa.lol)…'; }
+    result = await _uploadDirectKappa();
+  } catch (e) {
+    errors.push('direct: ' + (e.message || e));
+    console.warn('[memeland] direct upload failed, trying backend proxy', e);
+  }
+  if (!result) {
+    try {
+      if (nameEl) { nameEl.textContent = '⏳ uploading ' + file.name + ' (fallback hosts)…'; }
+      result = await _uploadViaProxy();
+    } catch (e) {
+      errors.push('proxy: ' + (e.message || e));
+    }
+  }
+
+  if (result) {
+    if (urlInput)   urlInput.value = result.url;
+    if (previewImg) previewImg.src = result.url;
+    if (nameEl) { nameEl.textContent = '✓ ' + file.name + ' (' + result.host + ')'; nameEl.style.color = '#4ade80'; }
+    mlImageDataUrl = null;
+  } else {
+    const raw = errors.join(' | ');
+    const short = raw.length > 140 ? raw.slice(0, 137) + '…' : raw;
     if (nameEl) {
-      nameEl.innerHTML = '❌ upload failed: <span style="opacity:0.85">' + short.replace(/[<>&]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])) + '</span> — or paste a URL';
+      nameEl.innerHTML = '❌ upload failed: <span style="opacity:0.85">' + short.replace(/[<>&]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])) + '</span>';
       nameEl.style.color = '#f87171';
     }
-    console.error('[memeland] image upload', err);
+    console.error('[memeland] all uploads failed', errors);
   }
 };
 
