@@ -383,7 +383,7 @@
     .nav-links { display: none; }
   }
 
-  /* ═══════ MEMELAND v6 ═══════ */
+  /* ═══════ MEMELAND v7 ═══════ */
   .btn-green {
     background: rgba(0,255,136,0.1);
     border: 1.5px solid var(--green);
@@ -1807,7 +1807,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════ MEMELAND v6 ══════════════════════════════════════ -->
+<!-- ══════════════════════════════════════ MEMELAND v7 ══════════════════════════════════════ -->
 <section id="memelab" style="padding:100px 24px;background:var(--bg2)">
   <div style="max-width:1200px;margin:0 auto">
 
@@ -4613,7 +4613,7 @@ async function fetchSwapQuote() {
 
 
 // ══════════════════════════════════════
-// MEMELAND v6 — Cetus CLMM Launchpad
+// MEMELAND v7 — Cetus CLMM Launchpad
 // ══════════════════════════════════════
 (function() {
 const BACKEND = API_URL; // alias to existing backend constant
@@ -4858,20 +4858,42 @@ window.mlCloseCreateModal = function() {
   const banner = document.getElementById('mlCreateWalletBanner'); if (banner) banner.style.display = 'none';
 };
 
-window.mlHandleImageUpload = function(input) {
+window.mlHandleImageUpload = async function(input) {
   const file = input.files?.[0];
   if (!file) return;
-  const nameEl = document.getElementById('mlImageFileName');
-  if (nameEl) nameEl.textContent = file.name;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    mlImageDataUrl = e.target.result;
-    const previewDiv = document.getElementById('mlImagePreview');
-    const previewImg = document.getElementById('mlImagePreviewImg');
+  const nameEl     = document.getElementById('mlImageFileName');
+  const urlInput   = document.getElementById('mlCreateImage');
+  const previewDiv = document.getElementById('mlImagePreview');
+  const previewImg = document.getElementById('mlImagePreviewImg');
+  // Reject anything > 4MB (catbox limit is ~200MB but on-chain metadata only stores the URL,
+  // so big files just waste the user's time uploading).
+  if (file.size > 4 * 1024 * 1024) {
+    if (nameEl) { nameEl.textContent = '❌ file too big (max 4MB)'; nameEl.style.color = '#f87171'; }
+    return;
+  }
+  if (nameEl) { nameEl.textContent = '⏳ uploading ' + file.name + '…'; nameEl.style.color = ''; }
+  // Show local preview immediately while upload is in flight
+  try {
+    const localUrl = URL.createObjectURL(file);
     if (previewDiv) previewDiv.style.display = 'block';
-    if (previewImg) previewImg.src = mlImageDataUrl;
-  };
-  reader.readAsDataURL(file);
+    if (previewImg) previewImg.src = localUrl;
+  } catch (_) {}
+  try {
+    const fd = new FormData();
+    fd.append('reqtype', 'fileupload');
+    fd.append('fileToUpload', file, file.name);
+    const res = await fetch('https://catbox.moe/user/api.php', { method: 'POST', body: fd });
+    if (!res.ok) throw new Error('upload failed (' + res.status + ')');
+    const url = (await res.text()).trim();
+    if (!/^https?:\/\//i.test(url)) throw new Error('bad response from host');
+    if (urlInput)   urlInput.value = url;
+    if (previewImg) previewImg.src = url;
+    if (nameEl) { nameEl.textContent = '✓ ' + file.name; nameEl.style.color = '#4ade80'; }
+    mlImageDataUrl = null; // we use the real URL from the input field, not a data URL
+  } catch (err) {
+    if (nameEl) { nameEl.textContent = '❌ upload failed — paste a URL instead'; nameEl.style.color = '#f87171'; }
+    console.error('[memeland] image upload', err);
+  }
 };
 
 // ── Unified wallet signing helper ───────────────────────────────────────────
