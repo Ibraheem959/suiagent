@@ -5052,12 +5052,23 @@ window.mlSubmitCreate = async function() {
   if (!Transaction || !suiClient2) return mlErr(errDiv, '❌ Sui SDK not ready — refresh the page.');
 
   // Helper: sign+execute pre-built txBytes from backend
-  async function signExec(b64) {
-    const txBytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-    const tx = Transaction.from(txBytes);
-    const result = await window.suiSignAndExecute(tx, suiClient2);
+  // Tagged with stepNum so error messages tell us EXACTLY where it died.
+  async function signExec(b64, stepNum) {
+    let tx;
+    try {
+      const txBytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      tx = Transaction.from(txBytes);
+    } catch (e) {
+      throw new Error('[step ' + stepNum + ' deserialize] ' + (e.message || e));
+    }
+    let result;
+    try {
+      result = await window.suiSignAndExecute(tx, suiClient2);
+    } catch (e) {
+      throw new Error('[step ' + stepNum + ' wallet] ' + (e.message || e));
+    }
     if (result.effects?.status?.status !== 'success') {
-      throw new Error(result.effects?.status?.error || 'TX failed on-chain');
+      throw new Error('[step ' + stepNum + ' onchain] ' + (result.effects?.status?.error || 'TX failed on-chain'));
     }
     // wait for indexer to see the digest
     await suiClient2.waitForTransaction({ digest: result.digest, timeout: 30000 }).catch(()=>{});
@@ -5074,7 +5085,7 @@ window.mlSubmitCreate = async function() {
       body: JSON.stringify({ sender, name, symbol, image, description: desc, lpSeedAgentRaw, twitter, telegram, website }),
     }).then(r => r.json());
     if (!r1.success) throw new Error((r1.errors && r1.errors.join('; ')) || r1.error || 'PTB-1 build failed');
-    const dig1 = await signExec(r1.txBytes);
+    const dig1 = await signExec(r1.txBytes, 1);
 
     // ── PTB-2: MINT supply + create Cetus pool ──
     mlSetStep(btn, 2, 'Minting supply &amp; creating Cetus pool — sign in wallet…');
@@ -5083,7 +5094,7 @@ window.mlSubmitCreate = async function() {
       body: JSON.stringify({ txDigest: dig1, sender, symbol, lpSeedAgentRaw, image }),
     }).then(r => r.json());
     if (!r2.success) throw new Error(r2.error || 'PTB-2 build failed');
-    const dig2 = await signExec(r2.txBytes);
+    const dig2 = await signExec(r2.txBytes, 2);
 
     // ── PTB-3: LOCK Cetus LP position forever ──
     mlSetStep(btn, 3, 'Locking LP forever — sign in wallet…');
@@ -5092,7 +5103,7 @@ window.mlSubmitCreate = async function() {
       body: JSON.stringify({ txDigest: dig2, sender, newCoinType: r2.newCoinType, feeRecipient: sender }),
     }).then(r => r.json());
     if (!r3.success) throw new Error(r3.error || 'PTB-3 build failed');
-    const dig3 = await signExec(r3.txBytes);
+    const dig3 = await signExec(r3.txBytes, 3);
 
     // ── PTB-4: REGISTER on MemeLand registry (pays creation fee) ──
     mlSetStep(btn, 4, 'Paying creation fee &amp; registering — sign in wallet…');
@@ -5104,7 +5115,7 @@ window.mlSubmitCreate = async function() {
       }),
     }).then(r => r.json());
     if (!r4.success) throw new Error(r4.error || 'PTB-4 build failed');
-    const dig4 = await signExec(r4.txBytes);
+    const dig4 = await signExec(r4.txBytes, 4);
 
     // ── Confirm with backend (records socials etc.) ──
     mlSetStep(btn, 4, '✅ Launched! Recording metadata…');
