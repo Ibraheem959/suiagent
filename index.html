@@ -5084,7 +5084,7 @@ window.mlSubmitCreate = async function() {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ sender, name, symbol, image, description: desc, lpSeedAgentRaw, twitter, telegram, website }),
     }).then(r => r.json());
-    if (!r1.success) throw new Error((r1.errors && r1.errors.join('; ')) || r1.error || 'PTB-1 build failed');
+    if (!r1.success) throw new Error(((r1.errors && r1.errors.join('; ')) || r1.error || 'PTB-1 build failed') + (r1.detail ? ' || ' + r1.detail : ''));
     const dig1 = await signExec(r1.txBytes, 1);
 
     // ── PTB-2: MINT supply + create Cetus pool ──
@@ -5093,7 +5093,7 @@ window.mlSubmitCreate = async function() {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ txDigest: dig1, sender, symbol, lpSeedAgentRaw, image }),
     }).then(r => r.json());
-    if (!r2.success) throw new Error(r2.error || 'PTB-2 build failed');
+    if (!r2.success) throw new Error((r2.error || 'PTB-2 build failed') + (r2.detail ? ' || ' + r2.detail : ''));
     const dig2 = await signExec(r2.txBytes, 2);
 
     // ── PTB-3: LOCK Cetus LP position forever ──
@@ -5102,7 +5102,7 @@ window.mlSubmitCreate = async function() {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ txDigest: dig2, sender, newCoinType: r2.newCoinType, feeRecipient: sender }),
     }).then(r => r.json());
-    if (!r3.success) throw new Error(r3.error || 'PTB-3 build failed');
+    if (!r3.success) throw new Error((r3.error || 'PTB-3 build failed') + (r3.detail ? ' || ' + r3.detail : ''));
     const dig3 = await signExec(r3.txBytes, 3);
 
     // ── PTB-4: REGISTER on MemeLand registry (pays creation fee) ──
@@ -5114,7 +5114,7 @@ window.mlSubmitCreate = async function() {
         name, symbol, image, lpSeedAgentRaw, poolId: r3.poolId,
       }),
     }).then(r => r.json());
-    if (!r4.success) throw new Error(r4.error || 'PTB-4 build failed');
+    if (!r4.success) throw new Error((r4.error || 'PTB-4 build failed') + (r4.detail ? ' || ' + r4.detail : ''));
     const dig4 = await signExec(r4.txBytes, 4);
 
     // ── Confirm with backend (records socials etc.) ──
