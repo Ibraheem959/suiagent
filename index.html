@@ -383,7 +383,7 @@
     .nav-links { display: none; }
   }
 
-  /* ═══════ MEMELAND v11 ═══════ */
+  /* ═══════ MEMELAND v12 ═══════ */
   .btn-green {
     background: rgba(0,255,136,0.1);
     border: 1.5px solid var(--green);
@@ -1818,7 +1818,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════ MEMELAND v11 ══════════════════════════════════════ -->
+<!-- ══════════════════════════════════════ MEMELAND v12 ══════════════════════════════════════ -->
 <section id="memelab" style="padding:100px 24px;background:var(--bg2)">
   <div style="max-width:1200px;margin:0 auto">
 
@@ -4624,7 +4624,7 @@ async function fetchSwapQuote() {
 
 
 // ══════════════════════════════════════
-// MEMELAND v11 — Cetus CLMM Launchpad
+// MEMELAND v12 — Cetus CLMM Launchpad
 // ══════════════════════════════════════
 (function() {
 const BACKEND = API_URL; // alias to existing backend constant
@@ -5033,7 +5033,9 @@ window.mlSubmitCreate = async function() {
 
   // Validate
   if (!name) return mlErr(errDiv, '❌ Token name required.');
-  if (!symbol || symbol.length < 2 || !/^[A-Z]/.test(symbol)) return mlErr(errDiv, '❌ Symbol must be 2-10 chars, A-Z/0-9, starting with a letter.');
+  // Symbol can start with a digit (e.g. "007") — backend derives a Move-legal
+  // module/struct id automatically. Only constraint: 2-10 chars from A-Z/0-9/_.
+  if (!/^[A-Z0-9_]{2,10}$/.test(symbol) || /^_+$/.test(symbol)) return mlErr(errDiv, '❌ Symbol must be 2-10 chars from A-Z, 0-9 or _ (cannot be only underscores).');
   if (lpSeedHuman <= 0) return mlErr(errDiv, '❌ LP seed must be > 0 AGENT.');
   // Image must be http(s) URL (data: URLs from upload won't fit on-chain — ask user to host it)
   if (image && !/^https?:\/\//i.test(image)) return mlErr(errDiv, '❌ Image must be an http(s) URL. Upload to imgur/pinata/etc and paste the link.');
