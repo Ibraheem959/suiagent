@@ -383,7 +383,7 @@
     .nav-links { display: none; }
   }
 
-  /* ═══════ MEME LAB ═══════ */
+  /* ═══════ MEMELAND v6 ═══════ */
   .btn-green {
     background: rgba(0,255,136,0.1);
     border: 1.5px solid var(--green);
@@ -508,7 +508,7 @@
     <a href="#trust" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Trust</a>
     <a href="#setup" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Setup</a>
     <a href="#live" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Live</a>
-    <a href="#memelab" class="text-xs font-mono transition-colors tracking-widest uppercase" style="color:var(--green);text-shadow:0 0 8px rgba(0,255,136,0.4)">Meme Lab</a>
+    <a href="#memelab" class="text-xs font-mono transition-colors tracking-widest uppercase" style="color:var(--green);text-shadow:0 0 8px rgba(0,255,136,0.4)">MemeLand</a>
     <a href="#locker" class="text-xs font-mono transition-colors tracking-widest uppercase" style="color:var(--purple);text-shadow:0 0 8px rgba(180,79,255,0.3)">Locker</a>
     <a href="https://x.com/SUI__AGENT" target="_blank" class="text-xs font-mono text-slate-400 hover:text-purple-400 transition-colors" title="Twitter / X">𝕏</a>
     <a href="https://t.me/+AHZzczUoOeYzMThk" target="_blank" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors" title="Telegram">TG</a>
@@ -601,7 +601,7 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════ MEME LAB: CREATE TOKEN MODAL ══════════════════════════════════════ -->
+<!-- ══════════════════════════════════════ MEMELAND: CREATE TOKEN MODAL ══════════════════════════════════════ -->
 <div id="mlCreateModal" class="ml-modal-bg" style="display:none;">
   <div class="ml-modal-box ml-animate-fade">
     <button onclick="mlCloseCreateModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#4a5568;font-size:1.1rem;cursor:pointer;">✕</button>
@@ -688,7 +688,7 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════ MEME LAB: TOKEN DETAIL MODAL ══════════════════════════════════════ -->
+<!-- ══════════════════════════════════════ MEMELAND: TOKEN DETAIL MODAL ══════════════════════════════════════ -->
 <div id="mlTokenModal" class="ml-modal-bg" style="display:none;">
   <div class="ml-modal-box ml-animate-fade" style="max-width:640px;">
     <button onclick="mlCloseTokenModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#4a5568;font-size:1.1rem;cursor:pointer;">✕</button>
@@ -744,106 +744,25 @@
 
     <div style="margin-bottom:16px;">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-        <span class="font-mono text-xs text-slate-400">Graduation Progress</span>
-        <span class="font-mono text-xs font-bold" style="color:var(--cyan)" id="mlModalProgress">0%</span>
-      </div>
-      <div class="ml-progress-bar"><div class="ml-progress-fill" id="mlModalProgressBar" style="width:0%"></div></div>
-
-      <!-- v5: Cetus trade link (replaces in-site bonding curve) -->
-      <a id="mlCetusLink" href="#" target="_blank" rel="noopener" style="display:block;background:linear-gradient(135deg,rgba(0,255,136,0.12),rgba(0,245,255,0.08));border:1.5px solid var(--green);padding:14px;margin:12px 0;text-decoration:none;text-align:center;clip-path:polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);">
-        <div class="font-orbitron text-sm font-bold" style="color:var(--green);letter-spacing:0.1em;">🌊 TRADE ON CETUS →</div>
-        <div class="font-mono text-xs mt-1" style="color:#88c0d0;">All buys/sells happen on the Cetus DEX · LP locked forever</div>
+    <div style="margin-bottom:16px;">
+      <a id="mlCetusLink" href="#" target="_blank" rel="noopener" style="display:block;background:linear-gradient(135deg,rgba(0,255,136,0.14),rgba(0,245,255,0.08));border:1.5px solid var(--green);padding:18px;text-decoration:none;text-align:center;clip-path:polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);">
+        <div class="font-orbitron text-base font-bold" style="color:var(--green);letter-spacing:0.12em;">🌊 TRADE ON CETUS →</div>
+        <div class="font-mono text-xs mt-2" style="color:#88c0d0;">All buys &amp; sells happen on Cetus DEX · 🔒 LP locked forever · Creator earns 100% of swap fees</div>
       </a>
-      <div style="display:flex;justify-content:space-between;margin-top:4px;">
-        <span class="font-mono text-xs text-slate-500" id="mlModalAgentRaised">0 AGENT raised</span>
-        <span class="font-mono text-xs text-slate-500">10,000,000 AGENT goal</span>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:#5a7090;">
+        <span>POOL: <span id="mlModalPoolId" style="color:var(--cyan)">—</span></span>
+        <span>TVL: <span id="mlModalTvl" style="color:var(--green)">—</span></span>
+      </div>
+    </div>
       </div>
     </div>
 
     <div id="mlModalDesc" class="font-mono text-xs text-slate-400 mb-4" style="line-height:1.6;"></div>
 
     <div style="display:flex;border-bottom:1px solid rgba(0,245,255,0.1);margin-bottom:16px;">
-      <button class="ml-tab-btn active" id="mlBuyTab" onclick="mlSetTradeTab('buy')">BUY</button>
-      <button class="ml-tab-btn" id="mlSellTab" onclick="mlSetTradeTab('sell')">SELL</button>
+      <button class="ml-tab-btn active" id="mlInfoTab" onclick="mlSetTradeTab('info')">INFO</button>
       <button class="ml-tab-btn" id="mlHoldersTab" onclick="mlSetTradeTab('holders')">HOLDERS</button>
       <button class="ml-tab-btn" id="mlTradesTab" onclick="mlSetTradeTab('trades')">TRADES</button>
-      <button class="ml-tab-btn" id="mlInfoTab" onclick="mlSetTradeTab('info')">INFO</button>
-    </div>
-
-    <!-- BUY PANEL -->
-    <div id="mlBuyPanel">
-      <div style="background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.15);padding:14px;margin-bottom:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <div class="font-mono text-xs text-slate-400">Pay with $AGENT · <span style="color:var(--green)" id="mlBuyWalletBal">—</span> available</div>
-          <div class="font-mono text-xs" style="color:var(--cyan)">1% fee</div>
-        </div>
-
-        <!-- % Quick buttons (reads wallet balance) -->
-        <div style="display:flex;gap:6px;margin-bottom:10px;">
-          <button onclick="mlSetBuyPct(25)"  class="ml-sort-btn" style="font-size:0.7rem;flex:1;">25%</button>
-          <button onclick="mlSetBuyPct(50)"  class="ml-sort-btn" style="font-size:0.7rem;flex:1;">50%</button>
-          <button onclick="mlSetBuyPct(75)"  class="ml-sort-btn" style="font-size:0.7rem;flex:1;">75%</button>
-          <button onclick="mlSetBuyPct(100)" class="ml-sort-btn" style="font-size:0.7rem;flex:1;">MAX</button>
-        </div>
-
-        <!-- Manual amount -->
-        <input id="mlBuyAmount" class="input-cyber" type="number" min="0" placeholder="AGENT amount to spend" oninput="mlUpdateBuyQuote()" style="margin-bottom:10px;"/>
-
-        <!-- Quote -->
-        <div id="mlBuyQuote" class="font-mono text-xs text-slate-500" style="margin-bottom:10px;line-height:1.8;background:rgba(0,0,0,0.2);padding:8px;border:1px solid rgba(0,245,255,0.08);display:none;"></div>
-
-        <!-- Token CA -->
-        <div style="margin-bottom:10px;background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.12);padding:8px;">
-          <div class="font-mono text-xs text-slate-500 mb-1">TOKEN CA (on-chain ID)</div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div class="font-mono text-xs" style="color:var(--cyan);word-break:break-all;flex:1;" id="mlTokenCA">—</div>
-            <button onclick="mlCopyCA()" class="copy-btn" style="font-size:0.6rem;padding:3px 8px;flex-shrink:0;">COPY</button>
-          </div>
-          <div style="margin-top:6px;">
-            <a id="mlExplorerLink" href="#" target="_blank" rel="noopener" class="font-mono text-xs" style="color:var(--purple);text-decoration:underline;display:none;">🔎 View Launchpad on Sui Explorer</a>
-          </div>
-        </div>
-
-        <!-- Buy button -->
-        <div id="mlBuyStatus" class="font-mono text-xs text-center mb-2" style="color:#4a5568;min-height:14px;"></div>
-        <button onclick="mlExecuteBuy()" id="mlBuyBtn" class="btn-green" style="width:100%;font-size:0.8rem;padding:12px;">
-          ⚡ BUY — SIGN WITH WALLET
-        </button>
-      </div>
-
-      <!-- Creator Earnings (replaces referral) -->
-      <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);padding:12px;margin-top:10px;">
-        <div class="font-mono text-xs font-bold mb-2" style="color:var(--green);">💰 CREATOR EARNINGS</div>
-        <div class="font-mono text-xs text-slate-400" style="line-height:1.6;">If you launched this token, you earn <strong style="color:var(--green)">70% of every 1% trade fee</strong> — paid instantly on-chain to your wallet on each buy and sell, forever (pre &amp; post-graduation).</div>
-      </div>
-    </div>
-
-    <!-- SELL PANEL -->
-    <div id="mlSellPanel" style="display:none;">
-      <div style="background:rgba(255,70,90,0.04);border:1px solid rgba(255,70,90,0.15);padding:14px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <div class="font-mono text-xs text-slate-400">Sell $<span id="mlSellSymbolLabel">MEME</span> → $AGENT</div>
-          <div class="font-mono text-xs" style="color:var(--green)">Balance: <span id="mlSellWalletBal">—</span></div>
-        </div>
-
-        <!-- % Quick sell buttons (reads on-chain MemeBalance) -->
-        <div style="display:flex;gap:6px;margin-bottom:10px;">
-          <button onclick="mlSetSellPct(25)"  class="ml-sort-btn" style="font-size:0.7rem;flex:1;">25%</button>
-          <button onclick="mlSetSellPct(50)"  class="ml-sort-btn" style="font-size:0.7rem;flex:1;">50%</button>
-          <button onclick="mlSetSellPct(75)"  class="ml-sort-btn" style="font-size:0.7rem;flex:1;">75%</button>
-          <button onclick="mlSetSellPct(100)" class="ml-sort-btn" style="font-size:0.7rem;flex:1;">MAX</button>
-        </div>
-
-        <input id="mlSellAmount" class="input-cyber" type="number" min="0" placeholder="Token amount to sell" oninput="mlUpdateSellQuote()" style="margin-bottom:10px;"/>
-        <div id="mlSellQuote" class="font-mono text-xs text-slate-500" style="margin-bottom:10px;line-height:1.8;background:rgba(0,0,0,0.2);padding:8px;border:1px solid rgba(255,70,90,0.08);display:none;"></div>
-
-        <div id="mlSellObjectsInfo" class="font-mono text-xs text-slate-500 mb-8" style="line-height:1.6;"></div>
-
-        <div id="mlSellStatus" class="font-mono text-xs text-center mb-2" style="color:#4a5568;min-height:14px;"></div>
-        <button onclick="mlExecuteSell()" id="mlSellBtn" class="btn-cyan" style="width:100%;font-size:0.8rem;padding:12px;border-color:rgba(255,70,90,0.6);color:#ff6a6a;">
-          💸 SELL — SIGN WITH WALLET
-        </button>
-      </div>
     </div>
 
     <!-- HOLDERS PANEL -->
@@ -893,11 +812,11 @@
     <span class="font-mono text-xs px-8 text-slate-500">◈</span>
     <span class="font-mono text-xs px-8" style="color:var(--green)">AGENT-ONLY POOL — BADGE VERIFIED ON-CHAIN</span>
     <span class="font-mono text-xs px-8 text-slate-500">◈</span>
-    <span class="font-mono text-xs px-8" style="color:var(--green)">🚀 MEME LAB — LAUNCH MEMES IN $AGENT</span>
+    <span class="font-mono text-xs px-8" style="color:var(--green)">🚀 MEMELAND — LAUNCH MEMES ON SUI</span>
     <span class="font-mono text-xs px-8 text-slate-500">◈</span>
-    <span class="font-mono text-xs px-8" style="color:var(--purple)">10M AGENT GRADUATION THRESHOLD</span>
+    <span class="font-mono text-xs px-8" style="color:var(--purple)">CETUS CLMM · LP LOCKED FOREVER</span>
     <span class="font-mono text-xs px-8 text-slate-500">◈</span>
-    <span class="font-mono text-xs px-8" style="color:var(--cyan)">1% FEE · 70% TO CREATOR · 30% TO ECOSYSTEM</span>
+    <span class="font-mono text-xs px-8" style="color:var(--cyan)">CREATOR EARNS 100% OF SWAP FEES</span>
   </div>
 </div>
 
@@ -1888,51 +1807,54 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════ MEME LAB ══════════════════════════════════════ -->
+<!-- ══════════════════════════════════════ MEMELAND v6 ══════════════════════════════════════ -->
 <section id="memelab" style="padding:100px 24px;background:var(--bg2)">
   <div style="max-width:1200px;margin:0 auto">
 
     <!-- Header -->
     <div class="reveal text-center mb-10">
-      <div class="section-label mb-3">◈ AGENT ECOSYSTEM · ON-CHAIN MEME LAUNCHPAD</div>
+      <div class="section-label mb-3">◈ AGENT ECOSYSTEM · PUMP-STYLE LAUNCHPAD ON CETUS</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:8px;">
         <div class="dot-ripple"></div>
-        <h2 class="font-orbitron font-black" style="font-size:2.5rem;color:#fff;letter-spacing:0.05em">MEME <span style="color:var(--green);text-shadow:0 0 30px var(--green)">LAB</span></h2>
+        <h2 class="font-orbitron font-black" style="font-size:2.8rem;color:#fff;letter-spacing:0.05em">MEME<span style="color:var(--green);text-shadow:0 0 30px var(--green)">LAND</span></h2>
       </div>
-      <p style="color:#6a8bad;font-weight:300;max-width:520px;margin:0 auto 24px;line-height:1.6;">
-        Launch meme tokens that trade exclusively in <span style="color:var(--cyan)">$AGENT</span>. Constant-product curve, 10M AGENT graduation, then listed on the AGENT DEX.
+      <p style="color:#6a8bad;font-weight:300;max-width:620px;margin:0 auto 28px;line-height:1.6;">
+        Launch a meme on <span style="color:var(--cyan)">Sui mainnet</span> in 4 wallet signatures.
+        Auto-paired with <span style="color:var(--cyan)">$AGENT</span> in a brand-new <span style="color:var(--green)">Cetus CLMM pool</span>.
+        <strong style="color:var(--green)">LP locked forever.</strong> You earn <strong style="color:var(--green)">100% of swap fees</strong>.
       </p>
-      <!-- Stats -->
+
       <div style="display:flex;justify-content:center;gap:32px;flex-wrap:wrap;margin-bottom:28px;">
         <div style="text-align:center"><div class="font-orbitron text-xl font-bold" style="color:var(--green)" id="mlHeroTotal">—</div><div class="font-mono text-xs text-slate-500 mt-1">TOKENS LAUNCHED</div></div>
         <div style="width:1px;background:var(--border);height:40px;margin:auto 0;"></div>
-        <div style="text-align:center"><div class="font-orbitron text-xl font-bold" style="color:var(--cyan)" id="mlHeroGrad">—</div><div class="font-mono text-xs text-slate-500 mt-1">GRADUATED</div></div>
+        <div style="text-align:center"><div class="font-orbitron text-xl font-bold" style="color:var(--cyan)" id="mlHeroLpLocked">—</div><div class="font-mono text-xs text-slate-500 mt-1">AGENT LP LOCKED</div></div>
         <div style="width:1px;background:var(--border);height:40px;margin:auto 0;"></div>
-        <div style="text-align:center"><div class="font-orbitron text-xl font-bold" style="color:var(--purple)" id="mlHeroVol">—</div><div class="font-mono text-xs text-slate-500 mt-1">TOTAL VOLUME</div></div>
+        <div style="text-align:center"><div class="font-orbitron text-xl font-bold" style="color:var(--purple)">CETUS</div><div class="font-mono text-xs text-slate-500 mt-1">DEX (1% TIER)</div></div>
         <div style="width:1px;background:var(--border);height:40px;margin:auto 0;"></div>
-        <div style="text-align:center"><div class="font-orbitron text-lg font-bold" style="color:var(--green)">10M</div><div class="font-mono text-xs text-slate-500 mt-1">GRAD THRESHOLD</div></div>
+        <div style="text-align:center"><div class="font-orbitron text-xl font-bold" style="color:var(--green)">10B</div><div class="font-mono text-xs text-slate-500 mt-1">FIXED SUPPLY / TOKEN</div></div>
       </div>
-      <!-- How it works strip -->
-      <div style="display:flex;justify-content:center;gap:0;flex-wrap:wrap;max-width:800px;margin:0 auto 28px;">
-        <div style="flex:1;min-width:140px;padding:12px;border:1px solid rgba(0,245,255,0.1);background:rgba(0,245,255,0.03);">
-          <div class="font-orbitron text-xs" style="color:var(--cyan)">1. LAUNCH</div>
-          <div class="font-mono text-xs text-slate-500 mt-1">Badge holders can create</div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;max-width:900px;margin:0 auto 28px;">
+        <div style="padding:14px;border:1px solid rgba(0,245,255,0.15);background:rgba(0,245,255,0.03);">
+          <div class="font-orbitron text-xs font-bold" style="color:var(--cyan)">1. PAY FEE</div>
+          <div class="font-mono text-xs text-slate-500 mt-1">1,000,000 $AGENT</div>
         </div>
-        <div style="flex:1;min-width:140px;padding:12px;border:1px solid rgba(0,245,255,0.1);background:rgba(0,245,255,0.03);">
-          <div class="font-orbitron text-xs" style="color:var(--purple)">2. TRADE</div>
-          <div class="font-mono text-xs text-slate-500 mt-1">Buy/sell with AGENT</div>
+        <div style="padding:14px;border:1px solid rgba(0,245,255,0.15);background:rgba(0,245,255,0.03);">
+          <div class="font-orbitron text-xs font-bold" style="color:var(--purple)">2. MINT 10B</div>
+          <div class="font-mono text-xs text-slate-500 mt-1">Of your meme token</div>
         </div>
-        <div style="flex:1;min-width:140px;padding:12px;border:1px solid rgba(0,245,255,0.1);background:rgba(0,245,255,0.03);">
-          <div class="font-orbitron text-xs" style="color:var(--green)">3. GRADUATE</div>
-          <div class="font-mono text-xs text-slate-500 mt-1">10M AGENT raised</div>
+        <div style="padding:14px;border:1px solid rgba(0,245,255,0.15);background:rgba(0,245,255,0.03);">
+          <div class="font-orbitron text-xs font-bold" style="color:var(--green)">3. SEED CETUS POOL</div>
+          <div class="font-mono text-xs text-slate-500 mt-1">Paired with your AGENT</div>
         </div>
-        <div style="flex:1;min-width:140px;padding:12px;border:1px solid rgba(0,245,255,0.1);background:rgba(0,245,255,0.03);">
-          <div class="font-orbitron text-xs" style="color:var(--green)">4. DEX LISTING</div>
-          <div class="font-mono text-xs text-slate-500 mt-1">MEME/AGENT pair</div>
+        <div style="padding:14px;border:1px solid rgba(0,245,255,0.15);background:rgba(0,245,255,0.03);">
+          <div class="font-orbitron text-xs font-bold" style="color:var(--green)">4. LOCK LP</div>
+          <div class="font-mono text-xs text-slate-500 mt-1">Forever · 100% fees yours</div>
         </div>
       </div>
+
       <div style="display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;">
-        <button onclick="mlOpenCreateModal()" class="btn-green" style="font-size:0.85rem;padding:14px 32px;">🚀 LAUNCH A MEME</button>
+        <button onclick="mlOpenCreateModal()" class="btn-green" style="font-size:0.9rem;padding:16px 36px;">🚀 LAUNCH ON MEMELAND</button>
         <button id="mlConnectBtn" onclick="connectedWallet?.address ? disconnectWallet() : connectWallet()"
           style="font-size:0.8rem;padding:12px 24px;border:1px solid rgba(0,245,255,0.4);color:var(--cyan);background:rgba(0,245,255,0.05);cursor:pointer;font-family:'Share Tech Mono',monospace;letter-spacing:0.08em;">
           CONNECT WALLET
@@ -1944,15 +1866,12 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
     <div class="reveal" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
       <div style="display:flex;gap:0;">
         <button class="ml-tab-btn active" id="mlTabAll" onclick="mlSetTab('all')">ALL TOKENS</button>
-        <button class="ml-tab-btn" id="mlTabTrending" onclick="mlSetTab('trending')">🔥 TRENDING</button>
-        <button class="ml-tab-btn" id="mlTabNew" onclick="mlSetTab('new')">✨ NEW</button>
-        <button class="ml-tab-btn" id="mlTabGrad" onclick="mlSetTab('graduated')">🎓 GRADUATED</button>
+        <button class="ml-tab-btn" id="mlTabNew" onclick="mlSetTab('new')">✨ RECENT</button>
       </div>
       <div style="display:flex;gap:6px;align-items:center;">
-        <input id="mlSearchInput" class="input-cyber" placeholder="Search tokens..." style="width:180px;padding:7px 12px;" oninput="mlFilterTokens()" />
+        <input id="mlSearchInput" class="input-cyber" placeholder="Search tokens..." style="width:200px;padding:8px 12px;" oninput="mlFilterTokens()" />
         <button class="ml-sort-btn active" id="mlSortNewest" onclick="mlSetSort('newest')">NEWEST</button>
-        <button class="ml-sort-btn" id="mlSortVolume" onclick="mlSetSort('trending')">VOLUME</button>
-        <button class="ml-sort-btn" id="mlSortProgress" onclick="mlSetSort('progress')">PROGRESS</button>
+        <button class="ml-sort-btn" id="mlSortMc" onclick="mlSetSort('marketcap')">MARKET CAP</button>
       </div>
     </div>
 
@@ -1973,23 +1892,23 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
 
     <!-- Fee info -->
     <div class="reveal card p-6 rounded-none mt-10" style="border-color:rgba(180,79,255,0.2)">
-      <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ FEE STRUCTURE & CREATOR REWARDS</div>
+      <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ HOW MEMELAND WORKS</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
         <div>
-          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--cyan)">1% TRADE FEE</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">Every buy and sell pays 1% fee — deducted from payment. The other 99% drives the bonding curve as normal.</p>
+          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--cyan)">1,000,000 AGENT FEE</div>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">One-time creation fee per token, paid to the ecosystem treasury when you register your launch on-chain.</p>
         </div>
         <div>
-          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--green)">70% TO CREATOR · FOREVER</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">Token creators earn 70% of every 1% fee on every trade — paid instantly to your wallet. Aligns long-term incentives so devs build, not dump. The other 30% goes to the ecosystem treasury.</p>
+          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--purple)">CETUS CLMM POOL</div>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">10B of your meme token is paired with your AGENT seed in a brand-new Cetus 1% pool. Pool starting price = your AGENT seed ÷ 10B.</p>
         </div>
         <div>
-          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--green)">GRADUATION → DEX</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">At 10M AGENT raised, the token auto-graduates in the triggering buy: <b style="color:var(--cyan)">4M</b> seeds the MEME/AGENT pool on the AGENT DEX (paired with 2B reserved tokens), <b style="color:#ff465a">2.5M $AGENT is permanently burned</b>, <b style="color:var(--green)">1.5M</b> goes to the creator and <b style="color:var(--purple)">2M</b> to the ecosystem — all instant on-chain. Launching a new token costs <b>500,000 AGENT</b>. <b style="color:#ffc864">Anti-snipe</b>: first 5 seconds of buys are locked for 10 min · creator's initial buy locked 1 hour.</p>
+          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--green)">🔒 LP LOCKED FOREVER</div>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">The Cetus LP NFT is locked in the <code>memeland::lp_locker</code> contract. Nobody — not even you — can ever withdraw it. No rug possible.</p>
         </div>
         <div>
-          <div class="font-orbitron text-sm font-bold mb-2" style="color:#ffa07a">ON-CHAIN TOKENS</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">Every token is a real <strong style="color:var(--cyan)">MemeBalance</strong> object on Sui — visible in your wallet. Buy on site or via <a href="https://t.me/sui_agent_trader_bot" target="_blank" style="color:var(--cyan)">@sui_agent_trader_bot</a>. Use <code>/meme [CA]</code> to look up tokens.</p>
+          <div class="font-orbitron text-sm font-bold mb-2" style="color:#ffa07a">💰 100% SWAP FEES TO CREATOR</div>
+          <p class="font-mono text-xs text-slate-400 leading-relaxed">You earn every swap fee Cetus collects on your pool, claimable any time from the locked LP. Buys &amp; sells happen on Cetus — fully decentralized.</p>
         </div>
       </div>
     </div>
@@ -4146,7 +4065,7 @@ function updateWalletUI(address) {
     el.style.color = connected ? '#ff465a' : 'var(--cyan)';
     el.style.borderColor = connected ? 'rgba(255,70,90,0.3)' : 'rgba(0,245,255,0.3)';
   });
-  // Update Meme Lab connect button
+  // Update MemeLand connect button
   const mlBtn = document.getElementById('mlConnectBtn');
   if (mlBtn) {
     mlBtn.textContent = connected ? (short + ' · DISCONNECT') : 'CONNECT WALLET';
@@ -4694,7 +4613,7 @@ async function fetchSwapQuote() {
 
 
 // ══════════════════════════════════════
-// MEME LAB — On-Chain Launchpad
+// MEMELAND v6 — Cetus CLMM Launchpad
 // ══════════════════════════════════════
 (function() {
 const BACKEND = API_URL; // alias to existing backend constant
@@ -4801,14 +4720,12 @@ function mlRenderGrid() {
   const search = (document.getElementById('mlSearchInput')?.value || '').toLowerCase();
 
   let filtered = mlAllTokens.filter(t => {
-    if (mlCurrentTab === 'graduated' && !t.graduated) return false;
-    if (mlCurrentTab === 'new' && t.graduated) return false;
-    if (search) return t.name.toLowerCase().includes(search) || t.symbol.toLowerCase().includes(search);
+    if (search) return (t.name||'').toLowerCase().includes(search) || (t.symbol||'').toLowerCase().includes(search);
     return true;
   });
-
-  if (mlCurrentTab === 'trending') {
-    filtered.sort((a,b) => (b.volumeAgent||0) - (a.volumeAgent||0));
+  if (mlCurrentTab === 'new') {
+    filtered.sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+    filtered = filtered.slice(0, 24);
   }
 
   if (filtered.length === 0) {
@@ -4821,45 +4738,34 @@ function mlRenderGrid() {
 
   grid.innerHTML = filtered.map(t => `
     <div class="token-tile ml-animate-fade" onclick="mlOpenToken('${t.id}')">
-      ${t.graduated ? '<div style="position:absolute;top:0;right:0;background:var(--green);color:var(--bg);font-family:Orbitron,sans-serif;font-size:0.55rem;padding:3px 10px;letter-spacing:0.1em;z-index:1;">GRADUATED</div>' : ''}
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <div style="width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.06);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
-          ${t.image ? `<img src="${t.image}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><span class="font-orbitron text-xs" style="color:var(--cyan);display:none">${t.symbol.slice(0,2)}</span>` : `<span class="font-orbitron text-xs" style="color:var(--cyan)">${t.symbol.slice(0,2)}</span>`}
+      <div style="position:absolute;top:0;right:0;background:var(--green);color:var(--bg);font-family:Orbitron,sans-serif;font-size:0.55rem;padding:3px 10px;letter-spacing:0.1em;z-index:1;">🔒 LP LOCKED</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div style="width:44px;height:44px;border-radius:50%;border:1.5px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.06);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+          ${t.image ? `<img src="${t.image}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><span class="font-orbitron text-xs" style="color:var(--cyan);display:none">${(t.symbol||'').slice(0,2)}</span>` : `<span class="font-orbitron text-xs" style="color:var(--cyan)">${(t.symbol||'').slice(0,2)}</span>`}
         </div>
         <div style="flex:1;min-width:0;">
-          <div class="font-orbitron text-sm font-bold text-white" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.name}</div>
-          <div class="font-mono text-xs" style="color:var(--cyan)">$${t.symbol}</div>
+          <div class="font-orbitron text-sm font-bold text-white" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.name||'—'}</div>
+          <div class="font-mono text-xs" style="color:var(--cyan)">$${t.symbol||'—'}</div>
         </div>
         <div style="text-align:right;">
-          <div class="font-mono text-xs font-bold" style="color:var(--green)" title="Market Cap = current price × tokens already sold from the curve">${t.marketCapUsd ? fmtUsdShort(t.marketCapUsd) : "$\u2014"}</div>
-          <div class="font-mono text-[10px]" style="color:var(--cyan);opacity:0.85">${mlFmtAgent(t.marketCap)} AGENT</div>
-          <div class="font-mono text-[10px] text-slate-500">MC</div>
-          <div class="font-mono text-[10px]" style="color:#5a7090;margin-top:2px;" title="Fully Diluted Valuation = current price \u00D7 10B total supply (8B circulating + 2B LP reserve)">FDV ${t.fdvUsd ? fmtUsdShort(t.fdvUsd) : "$\u2014"}</div>
+          <div class="font-mono text-xs font-bold" style="color:var(--green)" title="Market Cap = price × 10B supply (in AGENT)">${t.marketCap ? mlFmtAgent(t.marketCap) : '—'}</div>
+          <div class="font-mono text-[10px] text-slate-500">MC (AGENT)</div>
         </div>
       </div>
-      <div class="ml-progress-bar" style="margin-bottom:6px;">
-        <div class="ml-progress-fill" style="width:${(t.progress||0).toFixed(1)}%"></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <div class="font-mono text-xs" style="color:var(--cyan)" title="Spot price on Cetus">${t.priceAgent != null ? Number(t.priceAgent).toExponential(3) : (t.price?.toExponential ? t.price.toExponential(3) : '—')} AGENT</div>
+        <div class="font-mono text-xs text-slate-500">${t.holders || 0} holders</div>
       </div>
-      <div style="display:flex;justify-content:space-between;">
-        <div class="font-mono text-xs text-slate-500">${(t.progress||0).toFixed(1)}% to grad</div>
-        <div class="font-mono text-xs text-slate-500" title="Wallets currently holding the MemeBalance NFT (some buyers may have transferred theirs off-curve)">${t.holders||0} holders${(t.buys && t.buys > (t.holders||0)) ? ` <span style="color:#5a7090">(of ${t.buys} buyers)</span>` : ''}</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-top:6px;">
-        <div class="font-mono text-xs" style="color:var(--cyan)" title="Spot price on the bonding curve">${t.price?.toFixed(8)||'—'} AGENT
-          ${t.priceChange24hPct != null ? `<span style="margin-left:6px;color:${t.priceChange24hPct >= 0 ? 'var(--green)' : '#ff465a'}">${t.priceChange24hPct >= 0 ? '+' : ''}${t.priceChange24hPct.toFixed(2)}%</span>` : ''}
-        </div>
-        <div class="font-mono text-xs text-slate-500" title="On-curve buys + sells. Off-curve transfers not counted.">${t.trades||0} trades</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-top:4px;">
-        <div class="font-mono text-[10px]" style="color:#8ba8c8;opacity:0.9" title="Total AGENT actually paid into the curve (what users spent)">RAISED: ${mlFmtAgent(t.agentRaised||0)} AGENT${t.agentRaisedUsd ? ` <span style="color:#5a7090">(${fmtUsdShort(t.agentRaisedUsd)})</span>` : ''}</div>
-        ${(t.volume24hAgent && t.volume24hAgent > 0) ? `<div class="font-mono text-[10px]" style="color:var(--cyan);opacity:0.85" title="24h trading volume">VOL 24h: ${t.volume24hUsd ? fmtUsdShort(t.volume24hUsd) : mlFmtAgent(t.volume24hAgent) + ' AGT'}</div>` : ''}
+      <div style="display:flex;justify-content:space-between;margin-top:2px;">
+        <div class="font-mono text-[10px]" style="color:#8ba8c8;">TVL: <span style="color:var(--green)">${t.tvlAgent ? mlFmtAgent(t.tvlAgent) + ' AGT' : '—'}</span></div>
+        <div class="font-mono text-[10px]" style="color:#5a7090;">${t.createdAt ? new Date(t.createdAt).toLocaleDateString() : ''}</div>
       </div>
       ${(t.socials && (t.socials.twitter || t.socials.telegram || t.socials.website)) ? `
       <div style="display:flex;gap:10px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,245,255,0.08);" onclick="event.stopPropagation()">
         ${t.socials.twitter  ? `<a href="https://x.com/${t.socials.twitter}" target="_blank" rel="noopener" class="font-mono text-[10px]" style="color:var(--cyan);text-decoration:none;" title="Twitter / X">𝕏 @${t.socials.twitter}</a>` : ""}
         ${t.socials.telegram ? `<a href="https://t.me/${t.socials.telegram}" target="_blank" rel="noopener" class="font-mono text-[10px]" style="color:var(--cyan);text-decoration:none;" title="Telegram">✈️ @${t.socials.telegram}</a>` : ""}
         ${t.socials.website  ? `<a href="${t.socials.website}" target="_blank" rel="noopener" class="font-mono text-[10px]" style="color:var(--cyan);text-decoration:none;" title="Website">🌐 Site</a>` : ""}
-      </div>` : ""}
+      </div>`: ""}
     </div>
   `).join('');
 }
@@ -4867,21 +4773,20 @@ function mlRenderGrid() {
 // ── Tabs & Sort ──
 window.mlSetTab = function(tab) {
   mlCurrentTab = tab;
-  ['mlTabAll','mlTabTrending','mlTabNew','mlTabGrad'].forEach(id => document.getElementById(id)?.classList.remove('active'));
-  const map = { all:'mlTabAll', trending:'mlTabTrending', new:'mlTabNew', graduated:'mlTabGrad' };
+  ['mlTabAll','mlTabNew'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+  const map = { all:'mlTabAll', new:'mlTabNew' };
   document.getElementById(map[tab])?.classList.add('active');
   mlRenderGrid();
 };
 
 window.mlSetSort = function(sort) {
   mlCurrentSort = sort;
-  ['mlSortNewest','mlSortVolume','mlSortProgress'].forEach(id => document.getElementById(id)?.classList.remove('active'));
-  const map = { newest:'mlSortNewest', trending:'mlSortVolume', progress:'mlSortProgress' };
+  ['mlSortNewest','mlSortMc'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+  const map = { newest:'mlSortNewest', marketcap:'mlSortMc' };
   document.getElementById(map[sort])?.classList.add('active');
   mlAllTokens.sort((a,b) => {
-    if (sort === 'newest')   return b.createdAt - a.createdAt;
-    if (sort === 'trending') return (b.volumeAgent||0) - (a.volumeAgent||0);
-    if (sort === 'progress') return (b.progress||0) - (a.progress||0);
+    if (sort === 'newest')    return (b.createdAt||0) - (a.createdAt||0);
+    if (sort === 'marketcap') return (b.marketCap||0) - (a.marketCap||0);
     return 0;
   });
   mlRenderGrid();
@@ -5323,7 +5228,7 @@ window.mlOpenToken = async function(id) {
     const sellLbl = document.getElementById('mlSellSymbolLabel');
     if (sellLbl) sellLbl.textContent = token.symbol;
 
-    mlSetTradeTab('buy');
+    mlSetTradeTab('info');
     mlUpdateRefLink();
 
     // ── Load wallet balance & sell objects in background ──
