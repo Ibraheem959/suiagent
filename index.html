@@ -383,7 +383,7 @@
     .nav-links { display: none; }
   }
 
-  /* ═══════ MEMELAND v7 ═══════ */
+  /* ═══════ MEMELAND v8 ═══════ */
   .btn-green {
     background: rgba(0,255,136,0.1);
     border: 1.5px solid var(--green);
@@ -1807,7 +1807,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════ MEMELAND v7 ══════════════════════════════════════ -->
+<!-- ══════════════════════════════════════ MEMELAND v8 ══════════════════════════════════════ -->
 <section id="memelab" style="padding:100px 24px;background:var(--bg2)">
   <div style="max-width:1200px;margin:0 auto">
 
@@ -4613,7 +4613,7 @@ async function fetchSwapQuote() {
 
 
 // ══════════════════════════════════════
-// MEMELAND v7 — Cetus CLMM Launchpad
+// MEMELAND v8 — Cetus CLMM Launchpad
 // ══════════════════════════════════════
 (function() {
 const BACKEND = API_URL; // alias to existing backend constant
@@ -4879,15 +4879,27 @@ window.mlHandleImageUpload = async function(input) {
     if (previewImg) previewImg.src = localUrl;
   } catch (_) {}
   try {
-    const fd = new FormData();
-    fd.append('reqtype', 'fileupload');
-    fd.append('fileToUpload', file, file.name);
-    const res = await fetch('https://catbox.moe/user/api.php', { method: 'POST', body: fd });
-    if (!res.ok) throw new Error('upload failed (' + res.status + ')');
-    const url = (await res.text()).trim();
-    if (!/^https?:\/\//i.test(url)) throw new Error('bad response from host');
-    if (urlInput)   urlInput.value = url;
-    if (previewImg) previewImg.src = url;
+    // Read file → base64 (browser can't talk to catbox directly: no CORS).
+    // Send via our backend proxy which forwards to catbox server-side.
+    const dataBase64 = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload  = () => {
+        const s = String(r.result || '');
+        const i = s.indexOf(',');
+        resolve(i >= 0 ? s.slice(i + 1) : s);
+      };
+      r.onerror = () => reject(new Error('file read failed'));
+      r.readAsDataURL(file);
+    });
+    const res = await fetch(BACKEND + '/memeland/upload-image', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ filename: file.name, contentType: file.type, dataBase64 }),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok || !j.url) throw new Error(j.error || ('upload failed (' + res.status + ')'));
+    if (urlInput)   urlInput.value = j.url;
+    if (previewImg) previewImg.src = j.url;
     if (nameEl) { nameEl.textContent = '✓ ' + file.name; nameEl.style.color = '#4ade80'; }
     mlImageDataUrl = null; // we use the real URL from the input field, not a data URL
   } catch (err) {
