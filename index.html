@@ -383,7 +383,7 @@
     .nav-links { display: none; }
   }
 
-  /* ═══════ MEMELAND v8 ═══════ */
+  /* ═══════ MEMELAND v9 ═══════ */
   .btn-green {
     background: rgba(0,255,136,0.1);
     border: 1.5px solid var(--green);
@@ -783,6 +783,17 @@
     <!-- INFO PANEL -->
     <div id="mlInfoPanel" style="display:none;">
       <div style="display:flex;flex-direction:column;gap:8px;" id="mlInfoContent"></div>
+      <!-- Creator-only: claim accumulated LP fees from the locked Cetus position -->
+      <div id="mlCreatorClaimPanel" style="display:none;margin-top:12px;background:linear-gradient(135deg,rgba(0,255,136,0.10),rgba(157,78,221,0.06));border:1.5px solid var(--green);padding:14px;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);">
+        <div class="font-orbitron text-xs font-bold mb-1" style="color:var(--green);letter-spacing:0.1em;">💰 CREATOR FEE CLAIM</div>
+        <div class="font-mono text-xs text-slate-400 mb-2" style="line-height:1.5;">
+          You're the creator of this token. 100% of swap fees from the locked Cetus pool accrue to your wallet — claim them anytime.
+        </div>
+        <button id="mlClaimFeesBtn" onclick="mlClaimFees()" class="btn-green" style="width:100%;padding:10px;font-size:0.7rem;letter-spacing:0.08em;">
+          💰 CLAIM ACCUMULATED FEES
+        </button>
+        <div id="mlClaimFeesStatus" class="font-mono text-xs text-center mt-2" style="color:#94a3b8;min-height:14px;"></div>
+      </div>
     </div>
 
     <div style="display:flex;gap:8px;margin-top:14px;">
@@ -1807,7 +1818,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════ MEMELAND v8 ══════════════════════════════════════ -->
+<!-- ══════════════════════════════════════ MEMELAND v9 ══════════════════════════════════════ -->
 <section id="memelab" style="padding:100px 24px;background:var(--bg2)">
   <div style="max-width:1200px;margin:0 auto">
 
@@ -4613,7 +4624,7 @@ async function fetchSwapQuote() {
 
 
 // ══════════════════════════════════════
-// MEMELAND v8 — Cetus CLMM Launchpad
+// MEMELAND v9 — Cetus CLMM Launchpad
 // ══════════════════════════════════════
 (function() {
 const BACKEND = API_URL; // alias to existing backend constant
@@ -5089,6 +5100,58 @@ window.mlSubmitCreate = async function() {
   }
 };
 
+// ── Creator: claim accumulated LP fees from the locked Cetus position ──
+window.mlClaimFees = async function() {
+  const btn  = document.getElementById('mlClaimFeesBtn');
+  const stat = document.getElementById('mlClaimFeesStatus');
+  const setStat = (msg, color) => { if (stat) { stat.textContent = msg; stat.style.color = color || '#94a3b8'; } };
+  try {
+    if (!connectedWallet?.address) { setStat('⚠ Connect your wallet first', '#ffc864'); return; }
+    const tokenId = (mlActiveTokenData && (mlActiveTokenData.onChainId ?? mlActiveTokenData.id)) ?? mlActiveToken;
+    if (tokenId == null) { setStat('⚠ No active token', '#ffc864'); return; }
+
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Building tx…'; }
+    setStat('Asking backend to build the claim transaction…', '#94a3b8');
+
+    const r = await fetch(BACKEND + '/memeland/build-claim-fees-tx', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ tokenId, sender: connectedWallet.address }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.success || !j.txBytes) throw new Error(j.error || ('build failed (' + r.status + ')'));
+
+    if (btn) btn.textContent = '✍ Sign in your wallet…';
+    setStat('Sign the transaction in your wallet to claim fees', '#94a3b8');
+    // Wait for the @mysten/sui SDK to be loaded (same pattern as mlSubmitCreate)
+    let Tx = window.__SuiTransaction;
+    if (!Tx) { let w=0; while(!window.__SuiTransaction && w<6000){await new Promise(r=>setTimeout(r,300));w+=300;} Tx = window.__SuiTransaction; }
+    if (!Tx) throw new Error('Sui SDK not ready — refresh the page');
+    const txBytes = Uint8Array.from(atob(j.txBytes), c => c.charCodeAt(0));
+    const tx = Tx.from(txBytes);
+    const result = await signAndExecuteTx(tx);
+    const digest = result?.digest || result?.effects?.transactionDigest || '';
+
+    setStat('✅ Fees claimed! Tx: ' + (digest ? (digest.slice(0,8) + '…' + digest.slice(-6)) : 'sent'), '#4ade80');
+    if (btn) btn.textContent = '💰 CLAIM ACCUMULATED FEES';
+    // Refresh wallet balance display
+    if (connectedWallet?.address) { try { mlFetchWalletBalance(connectedWallet.address); } catch(_){} }
+  } catch (e) {
+    console.error('[memeland] claim fees', e);
+    const msg = (e?.message || String(e) || '').toLowerCase();
+    if (msg.includes('user reject') || msg.includes('rejected')) {
+      setStat('Transaction cancelled', '#ffc864');
+    } else if (msg.includes('insufficient')) {
+      setStat('❌ Insufficient SUI for gas', '#f87171');
+    } else {
+      setStat('❌ ' + (e.message || 'Claim failed'), '#f87171');
+    }
+    if (btn) btn.textContent = '💰 CLAIM ACCUMULATED FEES';
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+};
+
 function mlErr(el, msg) { if (el) { el.textContent = msg; el.style.display='block'; } }
 function mlSetStep(btn, n, msg) {
   if (btn) btn.textContent = '[' + n + '/4] ' + msg.replace(/&amp;/g,'&');
@@ -5261,6 +5324,16 @@ window.mlOpenToken = async function(id) {
 
     const sellLbl = document.getElementById('mlSellSymbolLabel');
     if (sellLbl) sellLbl.textContent = token.symbol;
+
+    // ── Creator-only fee claim panel: show only if connected wallet == token.creator ──
+    try {
+      const claimPanel = document.getElementById('mlCreatorClaimPanel');
+      const claimStat  = document.getElementById('mlClaimFeesStatus');
+      if (claimStat) claimStat.textContent = '';
+      const connAddr = (typeof connectedWallet !== 'undefined' && connectedWallet?.address) ? String(connectedWallet.address).toLowerCase() : '';
+      const creator  = String(token.creator || '').toLowerCase();
+      if (claimPanel) claimPanel.style.display = (connAddr && creator && connAddr === creator) ? 'block' : 'none';
+    } catch (_) {}
 
     mlSetTradeTab('info');
     mlUpdateRefLink();
