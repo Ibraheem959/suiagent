@@ -383,7 +383,7 @@
     .nav-links { display: none; }
   }
 
-  /* ═══════ MEMELAND v9 ═══════ */
+  /* ═══════ MEMELAND v10 ═══════ */
   .btn-green {
     background: rgba(0,255,136,0.1);
     border: 1.5px solid var(--green);
@@ -1818,7 +1818,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════ MEMELAND v9 ══════════════════════════════════════ -->
+<!-- ══════════════════════════════════════ MEMELAND v10 ══════════════════════════════════════ -->
 <section id="memelab" style="padding:100px 24px;background:var(--bg2)">
   <div style="max-width:1200px;margin:0 auto">
 
@@ -4624,7 +4624,7 @@ async function fetchSwapQuote() {
 
 
 // ══════════════════════════════════════
-// MEMELAND v9 — Cetus CLMM Launchpad
+// MEMELAND v10 — Cetus CLMM Launchpad
 // ══════════════════════════════════════
 (function() {
 const BACKEND = API_URL; // alias to existing backend constant
@@ -4911,10 +4911,18 @@ window.mlHandleImageUpload = async function(input) {
     if (!res.ok || !j.url) throw new Error(j.error || ('upload failed (' + res.status + ')'));
     if (urlInput)   urlInput.value = j.url;
     if (previewImg) previewImg.src = j.url;
-    if (nameEl) { nameEl.textContent = '✓ ' + file.name; nameEl.style.color = '#4ade80'; }
+    const hostTag = j.host ? ' (' + j.host + ')' : '';
+    if (nameEl) { nameEl.textContent = '✓ ' + file.name + hostTag; nameEl.style.color = '#4ade80'; }
     mlImageDataUrl = null; // we use the real URL from the input field, not a data URL
   } catch (err) {
-    if (nameEl) { nameEl.textContent = '❌ upload failed — paste a URL instead'; nameEl.style.color = '#f87171'; }
+    // Surface the real error so the user knows what to do (vs a generic message)
+    const raw = (err?.message || String(err) || 'unknown error');
+    let short = raw;
+    if (raw.length > 90) short = raw.slice(0, 87) + '…';
+    if (nameEl) {
+      nameEl.innerHTML = '❌ upload failed: <span style="opacity:0.85">' + short.replace(/[<>&]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])) + '</span> — or paste a URL';
+      nameEl.style.color = '#f87171';
+    }
     console.error('[memeland] image upload', err);
   }
 };
