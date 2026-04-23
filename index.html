@@ -1,3 +1,9 @@
+<!-- ════════════════════════════════════════════════════════════════
+     SUIAGENT SITE — VERSION 5.0.0  (2026-04-20)
+     ─ Renders token.socials (twitter / telegram / website) in:
+        • launchpad token tile (grid card)
+        • token detail modal (under description)
+     ════════════════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -600,7 +606,7 @@
   <div class="ml-modal-box ml-animate-fade">
     <button onclick="mlCloseCreateModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#4a5568;font-size:1.1rem;cursor:pointer;">✕</button>
     <div class="font-orbitron text-lg font-bold text-white mb-1">🚀 LAUNCH A MEME</div>
-    <div class="font-mono text-xs mb-6" style="color:var(--cyan)">Tokens trade exclusively in $AGENT · 1% fee · Graduate at 10M $AGENT · <span style="color:#ffc864">Requires 500,000 $AGENT to launch</span></div>
+    <div class="font-mono text-xs mb-6" style="color:var(--cyan)">Cetus CLMM pool · paired with $AGENT · LP locked forever · 4 wallet signatures (~30s)</div>
 
     <!-- Connected wallet banner -->
     <div id="mlCreateWalletBanner" style="display:none;background:rgba(0,255,136,0.07);border:1px solid rgba(0,255,136,0.25);padding:8px 12px;margin-bottom:4px;align-items:center;gap:8px;">
@@ -653,10 +659,10 @@
         </div>
       </div>
       <div>
-        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">INITIAL BUY — HOW MUCH AGENT TO SPEND</label>
-        <input id="mlCreateInitialBuy" class="input-cyber" type="number" min="0" step="any" placeholder="e.g. 10  (enter AGENT amount, not token count)"
+        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">AGENT LP SEED — INITIAL LIQUIDITY *</label>
+        <input id="mlCreateInitialBuy" class="input-cyber" type="number" min="0" step="any" placeholder="e.g. 1000  (AGENT paired with your meme to seed Cetus pool)"
           oninput="mlPreviewInitialBuy(this.value)"/>
-        <div class="font-mono text-xs text-slate-500 mt-1">⚠ Enter the <b style="color:var(--cyan)">AGENT amount you want to spend</b>, not the number of tokens. e.g. type <b style="color:var(--cyan)">10</b> to spend 10 AGENT.</div>
+        <div class="font-mono text-xs text-slate-500 mt-1">⚠ This AGENT is paired with all 10B of your meme tokens to seed the Cetus liquidity pool. <b style="color:var(--cyan)">It is locked forever (LP is non-withdrawable).</b> Higher seed = lower starting price.</div>
         <div id="mlInitialBuyPreview" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.2);font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--green)"></div>
       </div>
     </div>
@@ -666,13 +672,13 @@
     <div style="background:rgba(0,245,255,0.05);border:1px solid rgba(0,245,255,0.15);padding:12px;margin-top:14px;">
       <div class="font-mono text-xs" style="color:var(--cyan);line-height:1.7">
         ⚠ <strong>HOW IT WORKS</strong><br>
-        → <b style="color:#ffc864">Costs 500,000 $AGENT to launch</b> (paid to ecosystem on create)<br>
-        → Your meme launches with a bonding curve priced in $AGENT<br>
-        → Starting price: ~0.000318 AGENT per token (8B tokens for sale on the curve · 2B reserved for the DEX pool at graduation)<br>
-        → 1% fee on every buy/sell · <b style="color:#00ff88">70% to token creator · 30% to ecosystem</b> (forever)<br>
-        → Anti-snipe: buys in the first 5s are locked for 10 minutes<br>
-        → Creator's initial buy is locked for 1 hour (anti-rug)<br>
-        → At 10M $AGENT raised → automatically listed on AGENT DEX
+        → <b style="color:#ffc864">1,000,000 $AGENT creation fee</b> (paid to ecosystem at registration)<br>
+        → 10,000,000,000 of your meme tokens minted and paired with your AGENT seed in a brand-new <b style="color:#00ff88">Cetus CLMM pool (1% tier)</b><br>
+        → <b style="color:#00ff88">LP position is locked forever</b> — nobody (not even you) can withdraw it<br>
+        → You earn <b style="color:#00ff88">100% of swap fees</b> from the locked LP, claimable any time<br>
+        → 4 wallet signatures required (~30s total): publish coin → mint &amp; create pool → lock LP → register<br>
+        → After launch, all buys/sells happen on Cetus — fully decentralized<br>
+        → Trade on Cetus immediately after launch completes
       </div>
     </div>
 
@@ -742,6 +748,12 @@
         <span class="font-mono text-xs font-bold" style="color:var(--cyan)" id="mlModalProgress">0%</span>
       </div>
       <div class="ml-progress-bar"><div class="ml-progress-fill" id="mlModalProgressBar" style="width:0%"></div></div>
+
+      <!-- v5: Cetus trade link (replaces in-site bonding curve) -->
+      <a id="mlCetusLink" href="#" target="_blank" rel="noopener" style="display:block;background:linear-gradient(135deg,rgba(0,255,136,0.12),rgba(0,245,255,0.08));border:1.5px solid var(--green);padding:14px;margin:12px 0;text-decoration:none;text-align:center;clip-path:polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);">
+        <div class="font-orbitron text-sm font-bold" style="color:var(--green);letter-spacing:0.1em;">🌊 TRADE ON CETUS →</div>
+        <div class="font-mono text-xs mt-1" style="color:#88c0d0;">All buys/sells happen on the Cetus DEX · LP locked forever</div>
+      </a>
       <div style="display:flex;justify-content:space-between;margin-top:4px;">
         <span class="font-mono text-xs text-slate-500" id="mlModalAgentRaised">0 AGENT raised</span>
         <span class="font-mono text-xs text-slate-500">10,000,000 AGENT goal</span>
@@ -4727,7 +4739,7 @@ window.updateWalletUI = function(addr) {
 // ── Load tokens ──
 async function mlLoadTokens() {
   try {
-    const res  = await fetch(BACKEND + '/launchpad/tokens?sort=' + mlCurrentSort + '&limit=100');
+    const res  = await fetch(BACKEND + '/memeland/tokens?limit=200');
     const data = await res.json();
     mlAllTokens = data.tokens || [];
     mlUpdateHeroStats(mlAllTokens);
@@ -4768,17 +4780,18 @@ function mlFmtAgent(n) {
 window.mlPreviewInitialBuy = function(val) {
   const el = document.getElementById('mlInitialBuyPreview');
   if (!el) return;
-  const agentAmount = parseFloat(val);
-  if (!agentAmount || agentAmount <= 0) { el.style.display='none'; return; }
-  const X0 = 3_413_000;          // virt AGENT seed (human)
-  const Y0 = 10_730_000_000;     // virt MEME seed (atoms)
-  const agentInNet = agentAmount * 0.99;
-  const tokensEst  = Math.floor(Y0 * agentInNet / (X0 + agentInNet));
-  const agentFee   = (agentAmount * 0.01).toFixed(4);
+  const lpSeed = parseFloat(val);
+  if (!lpSeed || lpSeed <= 0) { el.style.display='none'; return; }
+  const TOTAL_SUPPLY = 10_000_000_000;
+  const startPrice   = lpSeed / TOTAL_SUPPLY;
+  const creationFee  = 1_000_000;
+  const totalCost    = lpSeed + creationFee;
+  const sym = (document.getElementById('mlCreateSymbol')?.value || 'MEME').toUpperCase();
   el.style.display = 'block';
   el.innerHTML =
-    `✅ Spending <b>${agentAmount} AGENT</b> → you receive approximately <b>${mlFmtAgent(tokensEst)} tokens</b><br>` +
-    `Fee: ${agentFee} AGENT (1%) · Starting price: ~0.000318 AGENT/token · <span style="color:#ffc864">+ 500K AGENT launch fee</span>`;
+    `✅ LP seed: <b>${lpSeed.toLocaleString()} AGENT</b> + 10B of $${sym}<br>` +
+    `Starting price: ~<b>${startPrice.toExponential(3)} AGENT/token</b> · Starting MC: <b>${(startPrice*TOTAL_SUPPLY).toLocaleString()} AGENT</b><br>` +
+    `<span style="color:#ffc864">Total wallet cost: ${totalCost.toLocaleString()} AGENT</span> (${lpSeed.toLocaleString()} LP seed + ${creationFee.toLocaleString()} creation fee)`;
 };
 
 function mlRenderGrid() {
@@ -4841,6 +4854,12 @@ function mlRenderGrid() {
         <div class="font-mono text-[10px]" style="color:#8ba8c8;opacity:0.9" title="Total AGENT actually paid into the curve (what users spent)">RAISED: ${mlFmtAgent(t.agentRaised||0)} AGENT${t.agentRaisedUsd ? ` <span style="color:#5a7090">(${fmtUsdShort(t.agentRaisedUsd)})</span>` : ''}</div>
         ${(t.volume24hAgent && t.volume24hAgent > 0) ? `<div class="font-mono text-[10px]" style="color:var(--cyan);opacity:0.85" title="24h trading volume">VOL 24h: ${t.volume24hUsd ? fmtUsdShort(t.volume24hUsd) : mlFmtAgent(t.volume24hAgent) + ' AGT'}</div>` : ''}
       </div>
+      ${(t.socials && (t.socials.twitter || t.socials.telegram || t.socials.website)) ? `
+      <div style="display:flex;gap:10px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,245,255,0.08);" onclick="event.stopPropagation()">
+        ${t.socials.twitter  ? `<a href="https://x.com/${t.socials.twitter}" target="_blank" rel="noopener" class="font-mono text-[10px]" style="color:var(--cyan);text-decoration:none;" title="Twitter / X">𝕏 @${t.socials.twitter}</a>` : ""}
+        ${t.socials.telegram ? `<a href="https://t.me/${t.socials.telegram}" target="_blank" rel="noopener" class="font-mono text-[10px]" style="color:var(--cyan);text-decoration:none;" title="Telegram">✈️ @${t.socials.telegram}</a>` : ""}
+        ${t.socials.website  ? `<a href="${t.socials.website}" target="_blank" rel="noopener" class="font-mono text-[10px]" style="color:var(--cyan);text-decoration:none;" title="Website">🌐 Site</a>` : ""}
+      </div>` : ""}
     </div>
   `).join('');
 }
@@ -5014,155 +5033,127 @@ window.mlSubmitCreate = async function() {
   }
 
   const name    = document.getElementById('mlCreateName')?.value.trim();
-  const symbol  = document.getElementById('mlCreateSymbol')?.value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10);
-  const creator = connectedWallet.address;
+  const symbol  = document.getElementById('mlCreateSymbol')?.value.trim().toUpperCase().replace(/[^A-Z0-9_]/g,'').slice(0,10);
+  const sender  = connectedWallet.address;
   const desc    = document.getElementById('mlCreateDesc')?.value.trim();
   const imageUrl= document.getElementById('mlCreateImage')?.value.trim();
   const twitter = document.getElementById('mlCreateTwitter')?.value.trim();
   const telegram= document.getElementById('mlCreateTelegram')?.value.trim();
   const website = document.getElementById('mlCreateWebsite')?.value.trim();
-  const initialBuy = parseFloat(document.getElementById('mlCreateInitialBuy')?.value) || 0;
-  const image   = mlImageDataUrl || imageUrl || null; // prefer uploaded file
+  const lpSeedHuman = parseFloat(document.getElementById('mlCreateInitialBuy')?.value) || 0;
+  const image   = mlImageDataUrl || imageUrl || '';
 
-  if (!name) { if (errDiv) { errDiv.textContent = '❌ Token name required.'; errDiv.style.display='block'; } return; }
-  if (!symbol || symbol.length < 2) { if (errDiv) { errDiv.textContent = '❌ Symbol must be 2-10 alphanumeric chars.'; errDiv.style.display='block'; } return; }
-  if (initialBuy < 0) { if (errDiv) { errDiv.textContent = '❌ Initial buy cannot be negative.'; errDiv.style.display='block'; } return; }
+  // Validate
+  if (!name) return mlErr(errDiv, '❌ Token name required.');
+  if (!symbol || symbol.length < 2 || !/^[A-Z]/.test(symbol)) return mlErr(errDiv, '❌ Symbol must be 2-10 chars, A-Z/0-9, starting with a letter.');
+  if (lpSeedHuman <= 0) return mlErr(errDiv, '❌ LP seed must be > 0 AGENT.');
+  // Image must be http(s) URL (data: URLs from upload won't fit on-chain — ask user to host it)
+  if (image && !/^https?:\/\//i.test(image)) return mlErr(errDiv, '❌ Image must be an http(s) URL. Upload to imgur/pinata/etc and paste the link.');
 
-  if (btn) { btn.textContent = '⏳ Launching on-chain...'; btn.disabled = true; }
+  const lpSeedAgentRaw = String(BigInt(Math.floor(lpSeedHuman * 1_000_000)));
+
+  // Get @mysten/sui Transaction class + suiClient (already loaded by site)
+  let Transaction = window.__SuiTransaction;
+  let suiClient2  = window.suiClientInstance;
+  if (!Transaction || !suiClient2) {
+    let w=0; while(((!window.__SuiTransaction)||(!window.suiClientInstance)) && w<6000){await new Promise(r=>setTimeout(r,300));w+=300;}
+    Transaction = window.__SuiTransaction; suiClient2 = window.suiClientInstance;
+  }
+  if (!Transaction || !suiClient2) return mlErr(errDiv, '❌ Sui SDK not ready — refresh the page.');
+
+  // Helper: sign+execute pre-built txBytes from backend
+  async function signExec(b64) {
+    const txBytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const tx = Transaction.from(txBytes);
+    const result = await window.suiSignAndExecute(tx, suiClient2);
+    if (result.effects?.status?.status !== 'success') {
+      throw new Error(result.effects?.status?.error || 'TX failed on-chain');
+    }
+    // wait for indexer to see the digest
+    await suiClient2.waitForTransaction({ digest: result.digest, timeout: 30000 }).catch(()=>{});
+    return result.digest;
+  }
+
+  if (btn) { btn.disabled = true; }
 
   try {
-    if (MEME_ONCHAIN) {
-      // ── ON-CHAIN PATH: Build create_token PTB and sign with wallet ──
-      // 1. Get badge ID (required by contract)
-      const statusRes = await fetch(BACKEND + '/status/' + creator);
-      const statusData = await statusRes.json().catch(() => ({}));
-      if (!statusData.registered) {
-        if (errDiv) { errDiv.textContent = '❌ AgentBadge required to launch memes. Register at the top of the page.'; errDiv.style.display='block'; }
-        return;
-      }
+    // ── PTB-1: PUBLISH meme coin package ──
+    mlSetStep(btn, 1, 'Publishing meme coin package — sign in wallet…');
+    const r1 = await fetch(BACKEND + '/memeland/build-launch-tx', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ sender, name, symbol, image, description: desc, lpSeedAgentRaw, twitter, telegram, website }),
+    }).then(r => r.json());
+    if (!r1.success) throw new Error((r1.errors && r1.errors.join('; ')) || r1.error || 'PTB-1 build failed');
+    const dig1 = await signExec(r1.txBytes);
 
-      // 2. Build create_token PTB via @mysten/sui Transaction (loaded from CDN)
-      let Transaction = window.__SuiTransaction;
-      if (!Transaction) {
-        let waited = 0;
-        while (!window.__SuiTransaction && waited < 6000) { await new Promise(r => setTimeout(r, 300)); waited += 300; }
-        Transaction = window.__SuiTransaction;
-      }
-      if (!Transaction) {
-        if (errDiv) { errDiv.textContent = '❌ Sui SDK not loaded. Please refresh the page.'; errDiv.style.display='block'; }
-        return;
-      }
-      // Get suiClient (needed for coin fetch + tx.build)
-      let suiClient2 = window.suiClientInstance;
-      if (!suiClient2) { let w=0; while(!window.suiClientInstance && w<6000){await new Promise(r=>setTimeout(r,300));w+=300;} suiClient2=window.suiClientInstance; }
-      if (!suiClient2) { if (errDiv) { errDiv.textContent='❌ Sui client not ready — refresh the page'; errDiv.style.display='block'; } return; }
+    // ── PTB-2: MINT supply + create Cetus pool ──
+    mlSetStep(btn, 2, 'Minting supply &amp; creating Cetus pool — sign in wallet…');
+    const r2 = await fetch(BACKEND + '/memeland/build-launch-tx-step2', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ txDigest: dig1, sender, symbol, lpSeedAgentRaw, image }),
+    }).then(r => r.json());
+    if (!r2.success) throw new Error(r2.error || 'PTB-2 build failed');
+    const dig2 = await signExec(r2.txBytes);
 
-      // Fetch AGENT coins for initial_payment arg (required by contract even if 0)
-      const agentCoinsRes = await suiClient2.getCoins({ owner: creator, coinType: AGENT_COIN_TYPE });
-      if (!agentCoinsRes.data?.length) {
-        if (errDiv) { errDiv.textContent='❌ No AGENT coins in wallet. You need AGENT to create a token.'; errDiv.style.display='block'; }
-        return;
-      }
+    // ── PTB-3: LOCK Cetus LP position forever ──
+    mlSetStep(btn, 3, 'Locking LP forever — sign in wallet…');
+    const r3 = await fetch(BACKEND + '/memeland/build-launch-tx-step3', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ txDigest: dig2, sender, newCoinType: r2.newCoinType, feeRecipient: sender }),
+    }).then(r => r.json());
+    if (!r3.success) throw new Error(r3.error || 'PTB-3 build failed');
+    const dig3 = await signExec(r3.txBytes);
 
-      const tx = new Transaction();
-      tx.setSender(creator);
+    // ── PTB-4: REGISTER on MemeLand registry (pays creation fee) ──
+    mlSetStep(btn, 4, 'Paying creation fee &amp; registering — sign in wallet…');
+    const r4 = await fetch(BACKEND + '/memeland/build-launch-tx-step4', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        txDigest: dig3, sender, newCoinType: r2.newCoinType,
+        name, symbol, image, lpSeedAgentRaw, poolId: r3.poolId,
+      }),
+    }).then(r => r.json());
+    if (!r4.success) throw new Error(r4.error || 'PTB-4 build failed');
+    const dig4 = await signExec(r4.txBytes);
 
-      // Encode strings to bytes (contract takes vector<u8>)
-      const nameBytes = Array.from(new TextEncoder().encode(name.slice(0, 50)));
-      const symBytes  = Array.from(new TextEncoder().encode(symbol.slice(0, 10)));
-      const imgBytes  = Array.from(new TextEncoder().encode((image||'').slice(0, 512)));
-      const descBytes = Array.from(new TextEncoder().encode((desc||'').slice(0, 300)));
+    // ── Confirm with backend (records socials etc.) ──
+    mlSetStep(btn, 4, '✅ Launched! Recording metadata…');
+    await fetch(BACKEND + '/memeland/confirm-launch', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        txDigest: dig4, name, symbol, image,
+        description: desc, twitter, telegram, website,
+        creator: sender, poolId: r3.poolId,
+      }),
+    }).catch(()=>{});
 
-      // v4 CONTRACT: requires 500K AGENT creation_fee (paid to ecosystem)
-      // Build creation_fee + initial_payment coins by splitting from merged AGENT.
-      // Initial buy is now OPTIONAL in v4 (no minimum), so initialBuyRaw can be 0.
-      const CREATION_FEE_RAW = 500_000_000_000; // 500,000 AGENT * 1e6 decimals
-      const initialBuyRaw    = initialBuy > 0 ? Math.floor(initialBuy * 1_000_000) : 0;
-      const totalNeeded      = BigInt(CREATION_FEE_RAW) + BigInt(initialBuyRaw);
-      const totalOwned       = agentCoinsRes.data.reduce((s, c) => s + BigInt(c.balance), 0n);
-      if (totalOwned < totalNeeded) {
-        const owned = (Number(totalOwned) / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 6 });
-        const need  = (Number(totalNeeded) / 1_000_000).toLocaleString();
-        if (errDiv) { errDiv.textContent = `❌ Need ${need} AGENT (500,000 creation fee${initialBuyRaw>0?` + ${initialBuy} initial buy`:''}). You have ${owned}.`; errDiv.style.display='block'; }
-        return;
-      }
-      const primaryCoin = tx.object(agentCoinsRes.data[0].coinObjectId);
-      if (agentCoinsRes.data.length > 1) {
-        tx.mergeCoins(primaryCoin, agentCoinsRes.data.slice(1).map(c => tx.object(c.coinObjectId)));
-      }
-      const [creationFeeCoin, paymentCoin] = tx.splitCoins(primaryCoin, [
-        tx.pure.u64(CREATION_FEE_RAW),
-        tx.pure.u64(initialBuyRaw),
-      ]);
+    // Success! Show pool link
+    mlCloseCreateModal();
+    await mlLoadTokens();
+    setTimeout(() => {
+      const cetusUrl = 'https://app.cetus.zone/swap?from=' + encodeURIComponent(r2.newCoinType) + '&to=' + encodeURIComponent(AGENT_COIN_TYPE);
+      alert('🎉 $' + symbol + ' is LIVE on Cetus!\n\nPool: ' + r3.poolId.slice(0,12) + '…\n\nClick OK to open Cetus and trade.');
+      window.open(cetusUrl, '_blank');
+    }, 400);
 
-      // create_token args (v4 ABI — same shape as v3.2):
-      // manager, name, symbol, image, description, creation_fee, initial_payment, clock
-      tx.moveCall({
-        target: `${MEME_PACKAGE_ID}::launchpad::create_token`,
-        typeArguments: [AGENT_COIN_TYPE],
-        arguments: [
-          tx.object(MEME_MANAGER_ID),            // 1. manager (shared)
-          tx.pure.vector('u8', nameBytes),        // 2. name
-          tx.pure.vector('u8', symBytes),         // 3. symbol
-          tx.pure.vector('u8', imgBytes),         // 4. image
-          tx.pure.vector('u8', descBytes),        // 5. description
-          creationFeeCoin,                        // 6. creation_fee Coin<AGENT> (500K AGENT in v4)
-          paymentCoin,                            // 7. initial_payment Coin<AGENT> (optional in v4, can be 0)
-          tx.object('0x0000000000000000000000000000000000000000000000000000000000000006'), // 8. clock
-        ],
-      });
-      tx.setGasBudget(50_000_000);
-
-      // 3. Sign & execute via connected wallet
-      if (btn) btn.textContent = '✍️ Sign in wallet...';
-      const result  = await window.suiSignAndExecute(tx, suiClient2);
-
-      if (result.effects?.status?.status !== 'success') {
-        throw new Error(result.effects?.status?.error || 'TX failed on-chain');
-      }
-
-      // 4. Register with backend (to add metadata like image, socials)
-      if (btn) btn.textContent = '⏳ Recording...';
-      const regRes = await fetch(BACKEND + '/launchpad/create', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, symbol, creator, description: desc||null, image: image||null, twitter:twitter||null, telegram:telegram||null, website:website||null, txDigest: result.digest }),
-      });
-      const regData = await regRes.json();
-      if (!regData.success && !regData.id) throw new Error(regData.error || 'Backend registration failed');
-      const tokenId = regData.id;
-
-      // NOTE: initial buy is already executed inside create_token via initial_payment coin.
-      // Do NOT call mlExecuteBuyForToken here — that would double-spend.
-
-      mlCloseCreateModal();
-      await mlLoadTokens();
-      if (tokenId) setTimeout(() => mlOpenToken(tokenId), 300);
-
-    } else {
-      // ── VIRTUAL PATH (fallback until on-chain deployed) ──
-      const res  = await fetch(BACKEND + '/launchpad/create', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, symbol, creator, description: desc||null, image: image||null, twitter:twitter||null, telegram:telegram||null, website:website||null, initialBuy: initialBuy > 0 ? initialBuy : 0 }),
-      });
-      const data = await res.json();
-      if (!data.success) { if (errDiv) { errDiv.innerHTML = '❌ ' + (data.error||'Launch failed'); errDiv.style.display='block'; } return; }
-      mlCloseCreateModal();
-      await mlLoadTokens();
-      setTimeout(() => mlOpenToken(data.id), 300);
-    }
   } catch(e) {
-    console.error('mlSubmitCreate error:', e);
+    console.error('mlSubmitCreate v5:', e);
     if (e.message === '__NEED_RECONNECT__') {
       connectWallet();
-      if (errDiv) { errDiv.textContent = '🔌 Wallet disconnected — pick your wallet in the popup, then try again.'; errDiv.style.display = 'block'; }
+      mlErr(errDiv, '🔌 Wallet disconnected — pick your wallet, then try again.');
     } else {
-      if (errDiv) { errDiv.textContent = '❌ ' + (e.message || 'Launch failed'); errDiv.style.display = 'block'; }
+      mlErr(errDiv, '❌ ' + (e.message || 'Launch failed'));
     }
   } finally {
-    if (btn) { btn.textContent = '🚀 LAUNCH TOKEN'; btn.disabled = false; }
+    if (btn) { btn.textContent = '🚀 LAUNCH TOKEN — SIGN WITH WALLET'; btn.disabled = false; }
     mlImageDataUrl = null;
   }
 };
+
+function mlErr(el, msg) { if (el) { el.textContent = msg; el.style.display='block'; } }
+function mlSetStep(btn, n, msg) {
+  if (btn) btn.textContent = '[' + n + '/4] ' + msg.replace(/&amp;/g,'&');
+}
 
 // ── Token Detail Modal ──
 window.mlOpenToken = async function(id) {
@@ -5184,9 +5175,18 @@ window.mlOpenToken = async function(id) {
   const ss = document.getElementById('mlSellStatus'); if (ss) ss.textContent='';
 
   try {
-    const tokenRes = await fetch(BACKEND + '/launchpad/token/' + id);
+    const tokenRes = await fetch(BACKEND + '/memeland/token/' + id);
     const token    = await tokenRes.json();
     mlActiveTokenData = token;
+    // v5: wire Cetus trade link
+    try {
+      const link = document.getElementById('mlCetusLink');
+      if (link && token && token.coinType) {
+        link.href = 'https://app.cetus.zone/swap?from=' +
+          encodeURIComponent(token.coinType) + '&to=' +
+          encodeURIComponent(AGENT_COIN_TYPE);
+      }
+    } catch(_) {}
 
     // deprecated treasury call — no longer needed in on-chain mode
     const treasury = {};
@@ -5230,6 +5230,22 @@ window.mlOpenToken = async function(id) {
     const pb = document.getElementById('mlModalProgressBar'); if (pb) pb.style.width = prog + '%';
     set('mlModalAgentRaised', mlFmtAgent(token.agentRaised||0) + ' AGENT raised');
     set('mlModalDesc',        token.description || '');
+
+    // ── Socials row (off-chain creator-signed, served by /memeland/token/:id) ──
+    {
+      const _descEl = document.getElementById('mlModalDesc');
+      const _existing = document.getElementById('mlModalSocials');
+      if (_existing) _existing.remove();
+      const _s = token.socials || {};
+      const _has = _s.twitter || _s.telegram || _s.website;
+      if (_descEl && _has) {
+        const _parts = [];
+        if (_s.twitter)  _parts.push('<a href="https://x.com/' + _s.twitter + '" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;margin-right:14px;">𝕏 @' + _s.twitter + '</a>');
+        if (_s.telegram) _parts.push('<a href="https://t.me/' + _s.telegram + '" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;margin-right:14px;">✈️ @' + _s.telegram + '</a>');
+        if (_s.website)  _parts.push('<a href="' + _s.website + '" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;">🌐 Website</a>');
+        _descEl.insertAdjacentHTML('afterend', '<div id="mlModalSocials" class="font-mono text-xs" style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,245,255,0.08);">' + _parts.join('') + '</div>');
+      }
+    }
 
     set('mlTreasuryAddr', '');
 
@@ -5288,7 +5304,7 @@ window.mlOpenToken = async function(id) {
       try {
         const tid = token.onChainId ?? token.id;
         if (tid == null) return;
-        const r = await fetch(BACKEND + '/launchpad/token/' + tid + '/holders');
+        const r = await fetch(BACKEND + '/memeland/token/' + tid + '/holders');
         if (!r.ok) return;
         const j = await r.json();
         if (!j || !Array.isArray(j.holders)) return;
@@ -5363,7 +5379,7 @@ async function mlLoadTrades() {
 
   list.innerHTML = '<div class="text-slate-500">Loading…</div>';
   try {
-    const r = await fetch(BACKEND + '/launchpad/token/' + tid + '/trades?limit=50');
+    const r = await fetch(BACKEND + '/memeland/token/' + tid + '/trades?limit=50');
     const j = await r.json();
     const trades = (j && j.trades) || [];
     if (!trades.length) { list.innerHTML = '<div class="text-slate-500">No on-curve trades yet. (Off-curve transfers don\'t appear here.)</div>'; return; }
@@ -5605,7 +5621,7 @@ window.mlCopyCA = function() {
 
 // ── Helper: build & execute buy PTB for a token ──
 async function mlExecuteBuyForToken(tokenId, agentAmount, sender, _unused, suiClient) {
-  const token = mlActiveTokenData || (await fetch(BACKEND+'/launchpad/token/'+tokenId).then(r=>r.json()).catch(()=>null));
+  const token = mlActiveTokenData || (await fetch(BACKEND+'/memeland/token/'+tokenId).then(r=>r.json()).catch(()=>null));
   if (token?.onChainId == null) throw new Error('Cannot find on-chain token ID');
 
   let Transaction = window.__SuiTransaction;
@@ -5872,4 +5888,4 @@ setInterval(mlLoadTokens, 30000);
 
 </script>
 </body>
-</html>
+</html> 
