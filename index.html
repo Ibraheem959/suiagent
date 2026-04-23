@@ -665,6 +665,13 @@
         <div class="font-mono text-xs text-slate-500 mt-1">⚠ This AGENT is paired with all 10B of your meme tokens to seed the Cetus liquidity pool. <b style="color:var(--cyan)">It is locked forever (LP is non-withdrawable).</b> Higher seed = lower starting price.</div>
         <div id="mlInitialBuyPreview" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.2);font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--green)"></div>
       </div>
+      <div>
+        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">DEV KEEP — % OF SUPPLY (OPTIONAL, MAX 50%)</label>
+        <input id="mlCreateDevKeepPct" class="input-cyber" type="number" min="0" max="50" step="any" placeholder="0  (leave blank or 0 to put 100% in pool)"
+          oninput="mlPreviewDevKeep(this.value)"/>
+        <div class="font-mono text-xs text-slate-500 mt-1">Optional: how much of the 10B supply you receive directly to your wallet at launch. The rest is paired with your AGENT seed in the Cetus pool. <b style="color:var(--cyan)">No extra cost, no slippage — instant.</b> Capped at 50% so the pool always has real liquidity.</div>
+        <div id="mlDevKeepPreview" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.2);font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--green)"></div>
+      </div>
     </div>
 
     <div id="mlCreateError" style="display:none;background:rgba(255,70,90,0.1);border:1px solid rgba(255,70,90,0.3);padding:10px;margin-top:14px;" class="font-mono text-xs" style="color:#ff465a;"></div>
@@ -4722,6 +4729,32 @@ window.mlPreviewInitialBuy = function(val) {
     `✅ LP seed: <b>${lpSeed.toLocaleString()} AGENT</b> + 10B of $${sym}<br>` +
     `Starting price: ~<b>${startPrice.toExponential(3)} AGENT/token</b> · Starting MC: <b>${(startPrice*TOTAL_SUPPLY).toLocaleString()} AGENT</b><br>` +
     `<span style="color:#ffc864">Total wallet cost: ${totalCost.toLocaleString()} AGENT</span> (${lpSeed.toLocaleString()} LP seed + ${creationFee.toLocaleString()} creation fee)`;
+  // Re-render the dev-keep preview too so users see the combined picture.
+  if (typeof window.mlPreviewDevKeep === 'function') {
+    window.mlPreviewDevKeep(document.getElementById('mlCreateDevKeepPct')?.value || '');
+  }
+};
+
+window.mlPreviewDevKeep = function(val) {
+  const el = document.getElementById('mlDevKeepPreview');
+  if (!el) return;
+  let pct = parseFloat(val);
+  if (!pct || pct <= 0) { el.style.display='none'; return; }
+  if (pct > 50) pct = 50;
+  const TOTAL_SUPPLY = 10_000_000_000;
+  const keepTokens   = Math.floor(TOTAL_SUPPLY * pct / 100);
+  const pooledTokens = TOTAL_SUPPLY - keepTokens;
+  const lpSeed       = parseFloat(document.getElementById('mlCreateInitialBuy')?.value) || 0;
+  const sym          = (document.getElementById('mlCreateSymbol')?.value || 'MEME').toUpperCase();
+  // Starting price uses the actual pooled ratio (matches what the backend computes).
+  const priceLine = (lpSeed > 0)
+    ? `Starting price: ~<b>${(lpSeed / pooledTokens).toExponential(3)} AGENT/token</b> · Your bag value at launch: <b>${(keepTokens * lpSeed / pooledTokens).toLocaleString(undefined,{maximumFractionDigits:2})} AGENT</b>`
+    : `<span style="color:#ffc864">Enter an LP seed above to see starting price.</span>`;
+  el.style.display = 'block';
+  el.innerHTML =
+    `💰 You receive: <b>${keepTokens.toLocaleString()} $${sym}</b> directly to your wallet (${pct}% of supply)<br>` +
+    `Pool gets: <b>${pooledTokens.toLocaleString()} $${sym}</b> + your AGENT seed<br>` +
+    priceLine;
 };
 
 function mlRenderGrid() {
@@ -4861,7 +4894,7 @@ window.mlCloseCreateModal = function() {
   const m = document.getElementById('mlCreateModal');
   if (m) m.style.display = 'none';
   // Reset form
-  ['mlCreateName','mlCreateSymbol','mlCreateImage','mlCreateDesc','mlCreateTwitter','mlCreateTelegram','mlCreateWebsite','mlCreateInitialBuy'].forEach(id => {
+  ['mlCreateName','mlCreateSymbol','mlCreateImage','mlCreateDesc','mlCreateTwitter','mlCreateTelegram','mlCreateWebsite','mlCreateInitialBuy','mlCreateDevKeepPct'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const err = document.getElementById('mlCreateError'); if (err) err.style.display = 'none';
@@ -5029,6 +5062,15 @@ window.mlSubmitCreate = async function() {
   const telegram= document.getElementById('mlCreateTelegram')?.value.trim();
   const website = document.getElementById('mlCreateWebsite')?.value.trim();
   const lpSeedHuman = parseFloat(document.getElementById('mlCreateInitialBuy')?.value) || 0;
+  let   devKeepPct  = parseFloat(document.getElementById('mlCreateDevKeepPct')?.value) || 0;
+  if (devKeepPct < 0)  devKeepPct = 0;
+  if (devKeepPct > 50) devKeepPct = 50;
+  // 10B * 10^6 (token has 6 decimals) → BigInt math to avoid float drift.
+  // raw = floor(TOTAL_SUPPLY_RAW * pct * 100 / 10000)  using BigInt only.
+  const TOTAL_SUPPLY_RAW_STR = '10000000000000000'; // 10B * 1e6
+  const _devKeepBpsBig = BigInt(Math.round(devKeepPct * 100)); // pct → basis points (0..5000)
+  const devKeepMemeRawBig = (BigInt(TOTAL_SUPPLY_RAW_STR) * _devKeepBpsBig) / 10000n;
+  const devKeepMemeRaw    = devKeepMemeRawBig.toString();
   const image   = mlImageDataUrl || imageUrl || '';
 
   // Validate
@@ -5091,7 +5133,7 @@ window.mlSubmitCreate = async function() {
     mlSetStep(btn, 2, 'Minting supply &amp; creating Cetus pool — sign in wallet…');
     const r2 = await fetch(BACKEND + '/memeland/build-launch-tx-step2', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ txDigest: dig1, sender, symbol, lpSeedAgentRaw, image }),
+      body: JSON.stringify({ txDigest: dig1, sender, symbol, lpSeedAgentRaw, image, devKeepMemeRaw }),
     }).then(r => r.json());
     if (!r2.success) throw new Error((r2.error || 'PTB-2 build failed') + (r2.detail ? ' || ' + r2.detail : ''));
     const dig2 = await signExec(r2.txBytes, 2);
@@ -5133,7 +5175,17 @@ window.mlSubmitCreate = async function() {
     await mlLoadTokens();
     setTimeout(() => {
       const cetusUrl = 'https://app.cetus.zone/swap?from=' + encodeURIComponent(r2.newCoinType) + '&to=' + encodeURIComponent(AGENT_COIN_TYPE);
-      alert('🎉 $' + symbol + ' is LIVE on Cetus!\n\nPool: ' + r3.poolId.slice(0,12) + '…\n\nClick OK to open Cetus and trade.');
+      // Dev-keep readout uses the backend-echoed raw amount (truth) divided by 10^6 (token decimals).
+      const _keptRawStr = String(r2.devKeepMemeRaw || '0');
+      let keptHuman = 0;
+      try {
+        const _keptBig = BigInt(_keptRawStr);
+        keptHuman = Number(_keptBig / 1000000n); // safe: max 5e9 < 2^53
+      } catch(_e) {}
+      const keepLine = keptHuman > 0
+        ? '\n\n💰 You received ' + keptHuman.toLocaleString() + ' $' + symbol + ' directly to your wallet.'
+        : '';
+      alert('🎉 $' + symbol + ' is LIVE on Cetus!' + keepLine + '\n\nPool: ' + r3.poolId.slice(0,12) + '…\n\nClick OK to open Cetus and trade.');
       window.open(cetusUrl, '_blank');
     }, 400);
 
@@ -5321,35 +5373,46 @@ window.mlOpenToken = async function(id) {
         '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:10px;"><div class="font-mono text-xs text-slate-500">VOLUME</div><div class="font-mono text-xs" style="color:var(--cyan)">' + mlFmtAgent(token.volumeAgent||0) + ' AGENT</div></div>' +
         '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:10px;"><div class="font-mono text-xs text-slate-500">CREATOR</div><div class="font-mono text-xs text-white">' + (token.creator||'').slice(0,8) + '...' + (token.creator||'').slice(-6) + '</div></div>' +
         '</div>' +
-        ((token.twitter||token.telegram||token.website) ?
+        (((token.socials||{}).twitter||(token.socials||{}).telegram||(token.socials||{}).website) ?
           '<div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;">' +
-          (token.twitter  ? '<a href="' + token.twitter  + '" target="_blank" class="btn-cyan" style="font-size:0.65rem;padding:6px 12px;text-decoration:none;">𝕏 Twitter</a>' : '') +
-          (token.telegram ? '<a href="' + token.telegram + '" target="_blank" class="btn-cyan" style="font-size:0.65rem;padding:6px 12px;text-decoration:none;">TG Telegram</a>' : '') +
-          (token.website  ? '<a href="' + token.website  + '" target="_blank" class="btn-cyan" style="font-size:0.65rem;padding:6px 12px;text-decoration:none;">🌐 Website</a>' : '') +
+          (token.socials.twitter  ? '<a href="https://x.com/' + token.socials.twitter  + '" target="_blank" rel="noopener" class="btn-cyan" style="font-size:0.65rem;padding:6px 12px;text-decoration:none;">𝕏 @' + token.socials.twitter + '</a>' : '') +
+          (token.socials.telegram ? '<a href="https://t.me/'  + token.socials.telegram + '" target="_blank" rel="noopener" class="btn-cyan" style="font-size:0.65rem;padding:6px 12px;text-decoration:none;">TG @' + token.socials.telegram + '</a>' : '') +
+          (token.socials.website  ? '<a href="' + token.socials.website  + '" target="_blank" rel="noopener" class="btn-cyan" style="font-size:0.65rem;padding:6px 12px;text-decoration:none;">🌐 Website</a>' : '') +
           '</div>' : '') +
         '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:10px;margin-top:4px;"><div class="font-mono text-xs text-slate-500 mb-1">LAUNCHED</div><div class="font-mono text-xs text-white">' + new Date(token.createdAt||0).toLocaleString() + '</div></div>';
     }
 
-    // ── Token CA (on-chain ID) ──
+    // ── Token CA (real on-chain coin type — what people copy & paste) ──
     const caEl = document.getElementById('mlTokenCA');
     if (caEl) {
-      if (token.onChainId != null) {
-        caEl.textContent = `meme_${token.onChainId} (on-chain ID: ${token.onChainId})`;
-      } else if (token.id) {
-        caEl.textContent = token.id + (token.onChain ? '' : ' [virtual — no on-chain ID yet]');
+      if (token.coinType) {
+        caEl.textContent = token.coinType;
+        caEl.dataset.copyValue = token.coinType;
+        caEl.title = 'Click the copy button to copy the full contract address (on-chain coin type)';
+      } else if (token.onChainId != null) {
+        caEl.textContent = `meme_${token.onChainId}`;
+        caEl.dataset.copyValue = '';
       } else {
         caEl.textContent = '—';
+        caEl.dataset.copyValue = '';
       }
     }
 
-    // ── Sui Explorer link to the LaunchpadManager (token lives in its tokens table) ──
+    // ── Sui Explorer link to the on-chain meme coin package ──
     const expEl = document.getElementById('mlExplorerLink');
-    if (expEl && token.managerId) {
-      expEl.href = 'https://suiscan.xyz/mainnet/object/' + token.managerId;
-      expEl.style.display = 'inline-block';
-      expEl.title = 'Verify this token\'s on-chain state inside the Launchpad object (token id: ' + (token.onChainId ?? token.id) + ')';
-    } else if (expEl) {
-      expEl.style.display = 'none';
+    if (expEl) {
+      if (token.coinType) {
+        const _pkg = String(token.coinType).split('::')[0];
+        expEl.href = 'https://suiscan.xyz/mainnet/coin/' + encodeURIComponent(token.coinType);
+        expEl.style.display = 'inline-block';
+        expEl.title = 'View this token on Sui Explorer';
+      } else if (token.poolId) {
+        expEl.href = 'https://suiscan.xyz/mainnet/object/' + token.poolId;
+        expEl.style.display = 'inline-block';
+        expEl.title = 'View Cetus pool on Sui Explorer';
+      } else {
+        expEl.style.display = 'none';
+      }
     }
 
     // ── Refresh holders from the dedicated, accurate endpoint (cache busts every 60s server-side) ──
@@ -5677,7 +5740,7 @@ window.mlUpdateSellQuote = async function() {
 // ── Copy token CA ──
 window.mlCopyCA = function() {
   const el = document.getElementById('mlTokenCA');
-  const val = el?.textContent?.trim();
+  const val = (el?.dataset?.copyValue || el?.textContent || '').trim();
   if (!val || val === '—') return;
   navigator.clipboard.writeText(val).then(() => { el.style.color='var(--green)'; setTimeout(()=>{ el.style.color='var(--cyan)'; }, 1200); });
 };
