@@ -666,10 +666,10 @@
         <div id="mlInitialBuyPreview" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.2);font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--green)"></div>
       </div>
       <div>
-        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">DEV KEEP — % OF SUPPLY (OPTIONAL, MAX 50%)</label>
-        <input id="mlCreateDevKeepPct" class="input-cyber" type="number" min="0" max="50" step="any" placeholder="0  (leave blank or 0 to put 100% in pool)"
+        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">DEV KEEP — % OF SUPPLY (OPTIONAL, MAX 10%)</label>
+        <input id="mlCreateDevKeepPct" class="input-cyber" type="number" min="0" max="10" step="any" placeholder="0  (leave blank or 0 to put 100% in pool)"
           oninput="mlPreviewDevKeep(this.value)"/>
-        <div class="font-mono text-xs text-slate-500 mt-1">Optional: how much of the 10B supply you receive directly to your wallet at launch. The rest is paired with your AGENT seed in the Cetus pool. <b style="color:var(--cyan)">No extra cost, no slippage — instant.</b> Capped at 50% so the pool always has real liquidity.</div>
+        <div class="font-mono text-xs text-slate-500 mt-1">Optional: how much of the 10B supply you receive directly to your wallet at launch. The rest is paired with your AGENT seed in the Cetus pool. <b style="color:var(--cyan)">No extra cost, no slippage — instant.</b> Capped at 10% so ≥90% of supply stays in the locked pool — deep liquidity, lower rug risk, more trust from buyers.</div>
         <div id="mlDevKeepPreview" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.2);font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--green)"></div>
       </div>
     </div>
@@ -790,16 +790,59 @@
     <!-- INFO PANEL -->
     <div id="mlInfoPanel" style="display:none;">
       <div style="display:flex;flex-direction:column;gap:8px;" id="mlInfoContent"></div>
+
+      <!-- Live DexScreener chart for THIS meme's Cetus pool -->
+      <div id="mlMemeChartWrap" style="display:none;margin-top:12px;border:1px solid rgba(0,245,255,0.2);background:#040810;">
+        <div style="background:#050c18;border-bottom:1px solid rgba(0,245,255,0.1);padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="dot-ripple"></div>
+            <span class="font-orbitron text-xs" style="color:var(--cyan)">LIVE CHART · CETUS POOL</span>
+          </div>
+          <a id="mlMemeDexLink" href="#" target="_blank" rel="noopener" class="font-mono text-xs" style="color:var(--cyan);text-decoration:none;">DexScreener ↗</a>
+        </div>
+        <iframe id="mlMemeChartIframe" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" src="about:blank" style="width:100%;height:380px;border:0;background:#040810;display:block;" loading="lazy" title="Meme pool live chart"></iframe>
+      </div>
+
       <!-- Creator-only: claim accumulated LP fees from the locked Cetus position -->
       <div id="mlCreatorClaimPanel" style="display:none;margin-top:12px;background:linear-gradient(135deg,rgba(0,255,136,0.10),rgba(157,78,221,0.06));border:1.5px solid var(--green);padding:14px;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);">
         <div class="font-orbitron text-xs font-bold mb-1" style="color:var(--green);letter-spacing:0.1em;">💰 CREATOR FEE CLAIM</div>
         <div class="font-mono text-xs text-slate-400 mb-2" style="line-height:1.5;">
           You're the creator of this token. 100% of swap fees from the locked Cetus pool accrue to your wallet — claim them anytime.
         </div>
+        <!-- Live accrued fee preview (refreshed every 30s while panel open) -->
+        <div id="mlFeesAccruedBox" style="background:#020609;border:1px solid rgba(0,255,136,0.25);padding:10px 12px;margin-bottom:10px;">
+          <div class="font-mono text-xs text-slate-500 mb-1">UNCLAIMED FEES</div>
+          <div id="mlFeesAccruedAmounts" class="font-orbitron text-sm font-bold" style="color:var(--green);line-height:1.6;">— AGENT &nbsp;·&nbsp; — meme</div>
+          <div id="mlFeesAccruedNote" class="font-mono text-xs text-slate-500 mt-1">Loading live preview…</div>
+        </div>
         <button id="mlClaimFeesBtn" onclick="mlClaimFees()" class="btn-green" style="width:100%;padding:10px;font-size:0.7rem;letter-spacing:0.08em;">
           💰 CLAIM ACCUMULATED FEES
         </button>
         <div id="mlClaimFeesStatus" class="font-mono text-xs text-center mt-2" style="color:#94a3b8;min-height:14px;"></div>
+      </div>
+
+      <!-- Creator-only: update token socials + description (signature-protected) -->
+      <!-- NOTE: This form is OFF-CHAIN ONLY. It cannot move funds, change supply,
+           or modify any on-chain field. The signature is used purely as proof
+           of wallet ownership; the data is stored in the backend cache. -->
+      <div id="mlCreatorEditPanel" style="display:none;margin-top:12px;background:linear-gradient(135deg,rgba(0,245,255,0.08),rgba(157,78,221,0.06));border:1.5px solid rgba(0,245,255,0.4);padding:14px;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+          <div class="font-orbitron text-xs font-bold" style="color:var(--cyan);letter-spacing:0.1em;">✎ EDIT TOKEN INFO</div>
+          <div class="font-mono" style="font-size:0.6rem;letter-spacing:0.08em;background:rgba(0,255,136,0.12);border:1px solid rgba(0,255,136,0.5);color:var(--green);padding:2px 8px;white-space:nowrap;">OFF-CHAIN ONLY · NO GAS</div>
+        </div>
+        <div class="font-mono text-xs text-slate-400 mb-3" style="line-height:1.5;">
+          Update your token's description and socials. One wallet signature for ownership proof — <b style="color:var(--green);">no transaction is sent, no gas is spent, and nothing on-chain changes</b>. On-chain fields (supply, pool, locked LP) are immutable.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <input id="mlEditTwitter"  class="input-cyber" type="text" placeholder="Twitter / X handle (e.g. @myhandle)"     style="font-size:0.75rem;padding:8px 10px;">
+          <input id="mlEditTelegram" class="input-cyber" type="text" placeholder="Telegram link or @group"                 style="font-size:0.75rem;padding:8px 10px;">
+          <input id="mlEditWebsite"  class="input-cyber" type="text" placeholder="Website (https://…)"                     style="font-size:0.75rem;padding:8px 10px;">
+          <textarea id="mlEditDesc"  class="input-cyber" rows="3" maxlength="500" placeholder="Description (max 500 chars)" style="font-size:0.75rem;padding:8px 10px;resize:vertical;"></textarea>
+        </div>
+        <button id="mlEditInfoBtn" onclick="mlSubmitEditInfo()" class="btn-cyan" style="width:100%;padding:10px;font-size:0.7rem;letter-spacing:0.08em;margin-top:10px;">
+          ✎ SAVE — SIGN WITH WALLET
+        </button>
+        <div id="mlEditInfoStatus" class="font-mono text-xs text-center mt-2" style="color:#94a3b8;min-height:14px;"></div>
       </div>
     </div>
 
@@ -968,15 +1011,14 @@
       <div class="font-mono text-xs text-slate-500 mb-2 tracking-widest">POOL ADDRESS</div>
       <div class="flex flex-wrap items-center gap-4">
         <div class="font-mono text-sm" style="color:var(--purple);word-break:break-all;flex:1">
-          <span id="poolAddr">0xba79012088507127692c8c8ba97d4fdc4a83d2f9fff4e9a1ea61ebdc00ff460c</span>
+          <span id="poolAddr">0xe8bf297251264d4474a6f6115ebeeeea4a3e50d534d3b663691e22b5fd36a6eb</span>
         </div>
         <button class="copy-btn" onclick="copyPool()" style="border-color:rgba(180,79,255,0.3);color:var(--purple)">COPY</button>
       </div>
-      <div style="background:rgba(255,160,0,0.08);border:1px solid rgba(255,160,0,0.3);padding:12px 16px;margin-top:12px">
-        <div class="font-mono text-xs" style="color:#ffa07a;line-height:1.7">
-          ⚠ <strong>FOR RESEARCH PURPOSES ONLY</strong><br>
-          These addresses are for on-chain verification only. <strong>$AGENT cannot be purchased on Cetus, DEX aggregators or any other pool.</strong><br>
-          The only way to buy $AGENT is through our official Telegram trading bot.
+      <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.25);padding:12px 16px;margin-top:12px">
+        <div class="font-mono text-xs" style="color:#88c0d0;line-height:1.7">
+          ◈ <strong style="color:var(--green)">$AGENT IS LIVE ON CETUS</strong> — paired with SUI in the official CLMM pool above.<br>
+          Always verify the pool / token address on-chain before swapping. Beware of impostor tokens.
         </div>
       </div>
     </div>
@@ -1313,54 +1355,24 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   <div style="max-width:1100px;margin:0 auto">
     <div class="reveal text-center mb-12">
       <div class="section-label mb-3">◈ REAL-TIME CHART</div>
-      <h2 class="font-orbitron text-3xl font-bold text-white">$AGENT Price Chart</h2>
-      <p style="color:#6a8bad;font-weight:300;margin-top:8px">Live OHLC candles — aggregated from on-chain trade events</p>
+      <h2 class="font-orbitron text-3xl font-bold text-white">$AGENT / SUI — Live Cetus Pool</h2>
+      <p style="color:#6a8bad;font-weight:300;margin-top:8px">Powered by DexScreener · streaming directly from the Cetus CLMM pool</p>
     </div>
-    <div class="reveal card rounded-none overflow-hidden" style="border-color:rgba(0,245,255,0.2)">
-      <!-- Header -->
-      <div style="background:#050c18;border-bottom:1px solid rgba(0,245,255,0.1);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div class="dot-ripple"></div>
-          <span class="font-orbitron text-xs" style="color:var(--cyan)">$AGENT / USD — LIVE CANDLES</span>
-        </div>
-        <div style="display:flex;gap:6px" id="tfButtons">
-          <button onclick="setTf('1m')"  class="tf-btn font-mono text-xs" data-tf="1m"  style="padding:4px 10px;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);cursor:pointer;background:rgba(0,245,255,0.05)">1m</button>
-          <button onclick="setTf('5m')"  class="tf-btn font-mono text-xs" data-tf="5m"  style="padding:4px 10px;border:1px solid var(--cyan);color:var(--cyan);cursor:pointer;background:rgba(0,245,255,0.15)">5m</button>
-          <button onclick="setTf('15m')" class="tf-btn font-mono text-xs" data-tf="15m" style="padding:4px 10px;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);cursor:pointer;background:rgba(0,245,255,0.05)">15m</button>
-          <button onclick="setTf('1h')"  class="tf-btn font-mono text-xs" data-tf="1h"  style="padding:4px 10px;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);cursor:pointer;background:rgba(0,245,255,0.05)">1h</button>
-          <button onclick="setTf('4h')"  class="tf-btn font-mono text-xs" data-tf="4h"  style="padding:4px 10px;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);cursor:pointer;background:rgba(0,245,255,0.05)">4h</button>
-          <button onclick="setTf('1d')"  class="tf-btn font-mono text-xs" data-tf="1d"  style="padding:4px 10px;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);cursor:pointer;background:rgba(0,245,255,0.05)">1d</button>
-        </div>
+    <div class="reveal card rounded-none overflow-hidden" style="border-color:rgba(0,245,255,0.2);padding:0;">
+      <div style="background:#050c18;border-bottom:1px solid rgba(0,245,255,0.1);padding:10px 18px;display:flex;align-items:center;gap:12px">
+        <div class="dot-ripple"></div>
+        <span class="font-orbitron text-xs" style="color:var(--cyan)">$AGENT / SUI — CETUS POOL · LIVE</span>
       </div>
-      <!-- Stats row -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:rgba(0,245,255,0.08)">
-        <div style="background:#050c18;padding:14px 20px">
-          <div class="font-mono text-xs text-slate-500 mb-1">PRICE USD</div>
-          <div class="font-orbitron text-lg font-bold" id="chartPrice" style="color:var(--cyan)">$—</div>
-        </div>
-        <div style="background:#050c18;padding:14px 20px">
-          <div class="font-mono text-xs text-slate-500 mb-1">24H CHANGE</div>
-          <div class="font-orbitron text-lg font-bold" id="chartChange" style="color:var(--green)">—</div>
-        </div>
-        <div style="background:#050c18;padding:14px 20px">
-          <div class="font-mono text-xs text-slate-500 mb-1">MARKET CAP</div>
-          <div class="font-orbitron text-lg font-bold" id="chartMc" style="color:var(--green)">—</div>
-        </div>
-        <div style="background:#050c18;padding:14px 20px">
-          <div class="font-mono text-xs text-slate-500 mb-1">LIQUIDITY</div>
-          <div class="font-orbitron text-lg font-bold" id="chartLiq" style="color:var(--purple)">—</div>
-        </div>
-      </div>
-      <!-- Candlestick chart -->
-      <div id="candleChart" style="background:#040810;height:360px;position:relative"></div>
-      <div style="background:#050c18;padding:8px 20px;display:flex;align-items:center;justify-content:space-between">
-        <span class="font-mono text-xs text-slate-600" id="chartStatus">Loading candles...</span>
-        <span class="font-mono text-xs text-slate-600">On-chain data · Updates every 15s</span>
-      </div>
+      <iframe sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer"
+        src="https://dexscreener.com/sui/0xe8bf297251264d4474a6f6115ebeeeea4a3e50d534d3b663691e22b5fd36a6eb?embed=1&theme=dark&info=0&trades=0"
+        style="width:100%;height:560px;border:0;background:#040810;display:block;"
+        loading="lazy"
+        title="AGENT/SUI Cetus pool · DexScreener"></iframe>
     </div>
     <div class="reveal flex flex-wrap gap-4 justify-center mt-8">
-      <a href="https://dexscreener.com/sui/0xba79012088507127692c8c8ba97d4fdc4a83d2f9fff4e9a1ea61ebdc00ff460c" target="_blank" class="btn-cyan"><span>◈ VIEW ON DEXSCREENER</span></a>
-      <a href="https://suiscan.xyz/mainnet/object/0xba79012088507127692c8c8ba97d4fdc4a83d2f9fff4e9a1ea61ebdc00ff460c" target="_blank" class="btn-purple">VIEW POOL ON-CHAIN →</a>
+      <a href="https://dexscreener.com/sui/0xe8bf297251264d4474a6f6115ebeeeea4a3e50d534d3b663691e22b5fd36a6eb" target="_blank" class="btn-cyan"><span>◈ VIEW ON DEXSCREENER</span></a>
+      <a href="https://app.cetus.zone/swap?to=0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT" target="_blank" class="btn-green"><span>🌊 BUY $AGENT ON CETUS</span></a>
+      <a href="https://suiscan.xyz/mainnet/object/0xe8bf297251264d4474a6f6115ebeeeea4a3e50d534d3b663691e22b5fd36a6eb" target="_blank" class="btn-purple">VIEW POOL ON-CHAIN →</a>
     </div>
   </div>
 </section>
@@ -1402,8 +1414,8 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         <div style="background:#020609;border:1px solid rgba(255,180,0,0.2);padding:12px;margin-bottom:12px">
           <p class="font-mono text-xs" style="color:#ffc864">💡 Safety tip: Use a dedicated wallet with only the SUI you want to trade. Never use your main wallet.</p>
         </div>
-        <div style="background:rgba(255,70,90,0.08);border:1px solid rgba(255,70,90,0.3);padding:12px;margin-bottom:20px">
-          <p class="font-mono text-xs" style="color:#ff465a">🚫 $AGENT is NOT available on Cetus, DEX aggregators or any other swap platform. Only buy through this bot.</p>
+        <div style="background:rgba(0,245,255,0.06);border:1px solid rgba(0,245,255,0.25);padding:12px;margin-bottom:20px">
+          <p class="font-mono text-xs" style="color:#88c0d0">◈ $AGENT also trades on the official Cetus pool — but the Telegram bot offers a faster one-click experience inside Telegram.</p>
         </div>
         <a href="https://t.me/sui_agent_trader_bot" target="_blank" class="btn-cyan" style="width:100%;text-align:center;display:block"><span>◈ OPEN TRADING BOT</span></a>
       </div>
@@ -1445,8 +1457,8 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         </div>
         <button onclick="navigator.clipboard.writeText('0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT').then(()=>{this.textContent='COPIED!';this.style.color='var(--green)';setTimeout(()=>{this.textContent='COPY';this.style.color='';},2000)})" class="copy-btn">COPY</button>
       </div>
-      <div style="background:rgba(255,70,90,0.06);border:1px solid rgba(255,70,90,0.2);padding:10px 14px;margin-top:10px">
-        <div class="font-mono text-xs" style="color:#ff465a">🚫 $AGENT is NOT on Cetus or any other DEX. This address is for on-chain research only. Buy only via @sui_agent_trader_bot</div>
+      <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.25);padding:10px 14px;margin-top:10px">
+        <div class="font-mono text-xs" style="color:#88c0d0">◈ $AGENT trades on the official Cetus pool above. Always copy the coin type carefully and verify it on-chain before swapping.</div>
       </div>
     </div>
   </div>
@@ -3552,13 +3564,8 @@ function initCandleChart() {
   window.addEventListener('resize', () => {
     if (lwChart) lwChart.applyOptions({ width: container.clientWidth });
   });
-  fetchChartSuiPrice().then(() => {
-    seedCandlesFromChain();
-    setInterval(pollNewCandles, 15000);
-    setInterval(fetchChartStats, 30000);
-    setInterval(fetchChartSuiPrice, 300000);
-    fetchChartStats();
-  });
+  // v26: AGENT chart is now a DexScreener iframe — skip on-chain candle polling
+  // (kept for any other page that still mounts a #candleChart container).
 }
 
 // ─── WALLET DETECTION — no CDN needed ───
@@ -3643,13 +3650,7 @@ window.__walletStandardGetWallets = function() {
 })();
 
 
-// Load lightweight-charts for candlestick chart
-(function() {
-  const s = document.createElement('script');
-  s.src = 'https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js';
-  s.onload = initCandleChart;
-  document.head.appendChild(s);
-})();
+// v26: removed lightweight-charts loader — AGENT chart is now a DexScreener iframe
 
 // ─── LP POOL — direct from chain ───
 async function fetchLpPool() {
@@ -4707,6 +4708,28 @@ function mlFmtAgent(n) {
   return n.toFixed(0);
 }
 
+// HTML escape — neuter <, >, &, ", ' for any user-controlled value rendered
+// via innerHTML / template literals. Backend ALSO normalises socials with a
+// strict allowlist; this is defence-in-depth.
+function mlEsc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+// URL escape for href values — only allow http(s):// and reject any char that
+// could break the attribute. Returns '#' if invalid.
+function mlSafeUrl(s) {
+  const t = String(s == null ? '' : s).trim();
+  if (!/^https?:\/\//i.test(t))   return '#';
+  if (/[\s<>"'`\\]/.test(t))      return '#';
+  // eslint-disable-next-line no-control-regex
+  if (/[\x00-\x1f\x7f]/.test(t))  return '#';
+  return t;
+}
+
 // Live preview for the initial buy field — shows tokens received for AGENT spent
 // v4 constant-product curve: x*y=k with virtual reserves
 //   x0 = VIRT_AGENT_SEED = 3,413,000 AGENT (human)
@@ -4740,7 +4763,7 @@ window.mlPreviewDevKeep = function(val) {
   if (!el) return;
   let pct = parseFloat(val);
   if (!pct || pct <= 0) { el.style.display='none'; return; }
-  if (pct > 50) pct = 50;
+  if (pct > 10) pct = 10;   // matches backend cap; keep preview honest
   const TOTAL_SUPPLY = 10_000_000_000;
   const keepTokens   = Math.floor(TOTAL_SUPPLY * pct / 100);
   const pooledTokens = TOTAL_SUPPLY - keepTokens;
@@ -4806,9 +4829,9 @@ function mlRenderGrid() {
       </div>
       ${(t.socials && (t.socials.twitter || t.socials.telegram || t.socials.website)) ? `
       <div style="display:flex;gap:10px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,245,255,0.08);" onclick="event.stopPropagation()">
-        ${t.socials.twitter  ? `<a href="https://x.com/${t.socials.twitter}" target="_blank" rel="noopener" class="font-mono text-[10px]" style="color:var(--cyan);text-decoration:none;" title="Twitter / X">𝕏 @${t.socials.twitter}</a>` : ""}
-        ${t.socials.telegram ? `<a href="https://t.me/${t.socials.telegram}" target="_blank" rel="noopener" class="font-mono text-[10px]" style="color:var(--cyan);text-decoration:none;" title="Telegram">✈️ @${t.socials.telegram}</a>` : ""}
-        ${t.socials.website  ? `<a href="${t.socials.website}" target="_blank" rel="noopener" class="font-mono text-[10px]" style="color:var(--cyan);text-decoration:none;" title="Website">🌐 Site</a>` : ""}
+        ${t.socials.twitter  ? `<a href="https://x.com/${mlEsc(t.socials.twitter)}" target="_blank" rel="noopener" class="font-mono text-[10px]" style="color:var(--cyan);text-decoration:none;" title="Twitter / X">𝕏 @${mlEsc(t.socials.twitter)}</a>` : ""}
+        ${t.socials.telegram ? `<a href="https://t.me/${mlEsc(t.socials.telegram)}" target="_blank" rel="noopener" class="font-mono text-[10px]" style="color:var(--cyan);text-decoration:none;" title="Telegram">✈️ @${mlEsc(t.socials.telegram)}</a>` : ""}
+        ${t.socials.website  ? `<a href="${mlEsc(mlSafeUrl(t.socials.website))}" target="_blank" rel="noopener" class="font-mono text-[10px]" style="color:var(--cyan);text-decoration:none;" title="Website">🌐 Site</a>` : ""}
       </div>`: ""}
     </div>
   `).join('');
@@ -5064,11 +5087,11 @@ window.mlSubmitCreate = async function() {
   const lpSeedHuman = parseFloat(document.getElementById('mlCreateInitialBuy')?.value) || 0;
   let   devKeepPct  = parseFloat(document.getElementById('mlCreateDevKeepPct')?.value) || 0;
   if (devKeepPct < 0)  devKeepPct = 0;
-  if (devKeepPct > 50) devKeepPct = 50;
+  if (devKeepPct > 10) devKeepPct = 10;   // backend enforces 10% cap; clamp client-side too
   // 10B * 10^6 (token has 6 decimals) → BigInt math to avoid float drift.
   // raw = floor(TOTAL_SUPPLY_RAW * pct * 100 / 10000)  using BigInt only.
   const TOTAL_SUPPLY_RAW_STR = '10000000000000000'; // 10B * 1e6
-  const _devKeepBpsBig = BigInt(Math.round(devKeepPct * 100)); // pct → basis points (0..5000)
+  const _devKeepBpsBig = BigInt(Math.round(devKeepPct * 100)); // pct → basis points (0..1000)
   const devKeepMemeRawBig = (BigInt(TOTAL_SUPPLY_RAW_STR) * _devKeepBpsBig) / 10000n;
   const devKeepMemeRaw    = devKeepMemeRawBig.toString();
   const image   = mlImageDataUrl || imageUrl || '';
@@ -5255,6 +5278,139 @@ window.mlClaimFees = async function() {
   }
 };
 
+// ── Live unclaimed-fee preview (creator only) ──
+let mlFeesTimer    = null;
+let mlFeesTokenId  = null;
+function mlStopFeesPolling() {
+  if (mlFeesTimer) { try { clearInterval(mlFeesTimer); } catch(_){} mlFeesTimer = null; }
+  mlFeesTokenId = null;
+}
+function mlFmtFee(n) {
+  if (n == null || !isFinite(n) || n === 0) return '0';
+  if (n >= 1000) return n.toLocaleString(undefined,{maximumFractionDigits:2});
+  if (n >= 1)    return n.toFixed(4);
+  if (n >= 0.0001) return n.toFixed(6);
+  return n.toExponential(3);
+}
+async function mlFetchAndRenderFees(tokenId, memeSym) {
+  const amtEl  = document.getElementById('mlFeesAccruedAmounts');
+  const noteEl = document.getElementById('mlFeesAccruedNote');
+  if (!amtEl) return;
+  try {
+    const r = await fetch(BACKEND + '/memeland/fees-accrued/' + encodeURIComponent(tokenId));
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.error) {
+      if (noteEl) noteEl.textContent = 'Live preview unavailable: ' + (j.error || ('HTTP ' + r.status));
+      return;
+    }
+    const a = Number(j.agentFeeHuman || 0);
+    const m = Number(j.memeFeeHuman  || 0);
+    amtEl.innerHTML =
+      '<span style="color:var(--green)">' + mlFmtFee(a) + '</span> <span class="font-mono text-xs" style="color:#88c0d0">AGENT</span>'
+      + ' &nbsp;·&nbsp; '
+      + '<span style="color:var(--green)">' + mlFmtFee(m) + '</span> <span class="font-mono text-xs" style="color:#88c0d0">$' + (j.memeSymbol || memeSym || 'meme').trim() + '</span>';
+    if (noteEl) {
+      if (a === 0 && m === 0) {
+        noteEl.textContent = 'No fees yet — fees accrue from every Cetus swap on this pool.';
+      } else {
+        noteEl.textContent = 'Live preview · refreshes every 30s · click claim above to receive these in your wallet.';
+      }
+    }
+  } catch (e) {
+    if (noteEl) noteEl.textContent = 'Live preview error: ' + (e.message || e);
+  }
+}
+function mlStartFeesPolling(tokenId, memeSym) {
+  mlStopFeesPolling();
+  mlFeesTokenId = tokenId;
+  mlFetchAndRenderFees(tokenId, memeSym);
+  mlFeesTimer = setInterval(() => {
+    if (mlFeesTokenId !== tokenId) return; // raced past — ignore
+    mlFetchAndRenderFees(tokenId, memeSym);
+  }, 30_000);
+}
+
+// ── Creator: edit token info (socials + description) — signature-only, no gas ──
+window.mlSubmitEditInfo = async function() {
+  const btn  = document.getElementById('mlEditInfoBtn');
+  const stat = document.getElementById('mlEditInfoStatus');
+  const setStat = (msg, color) => { if (stat) { stat.textContent = msg; stat.style.color = color || '#94a3b8'; } };
+  const origLabel = btn ? btn.textContent : '';
+  try {
+    if (!connectedWallet?.address) { setStat('⚠ Connect your wallet first', '#ffc864'); return; }
+    const tokenId = (mlActiveTokenData && (mlActiveTokenData.onChainId ?? mlActiveTokenData.id)) ?? mlActiveToken;
+    if (tokenId == null) { setStat('⚠ No active token', '#ffc864'); return; }
+    const creator = String(mlActiveTokenData?.creator || '').toLowerCase();
+    if (creator && creator !== String(connectedWallet.address).toLowerCase()) {
+      setStat('❌ Connected wallet is not the creator of this token', '#f87171');
+      return;
+    }
+
+    // Read & light-normalise inputs (server re-normalises and is source of truth)
+    const norm = s => String(s || '').trim();
+    const twitter     = norm(document.getElementById('mlEditTwitter')?.value);
+    const telegram    = norm(document.getElementById('mlEditTelegram')?.value);
+    const website     = norm(document.getElementById('mlEditWebsite')?.value);
+    const description = norm(document.getElementById('mlEditDesc')?.value).slice(0, 500);
+
+    if (btn) { btn.disabled = true; btn.textContent = '✍ Sign in your wallet…'; }
+    setStat('Sign the message in your wallet (no gas, no on-chain tx)…', '#94a3b8');
+
+    const ts = Date.now();
+    // Canonical MUST mirror backend exactly (incl. order + delimiters)
+    const canonical = 'memeland:setSocials:' + tokenId + ':' + twitter + ':' + telegram + ':' + website + ':' + description + ':' + ts;
+    const messageBytes = new TextEncoder().encode(canonical);
+
+    // Sign via Wallet Standard `sui:signPersonalMessage` (works with Sui, Suiet,
+    // Phantom-Sui, Slush, etc). Falls back to legacy `sui:signMessage`.
+    let signedB64 = null;
+    try {
+      if (!connectedProvider) throw new Error('Wallet provider missing — reconnect');
+      const p = connectedProvider;
+      const account = p.accounts?.[0] || { address: connectedWallet.address };
+      const feat = p.features?.['sui:signPersonalMessage'];
+      let sig;
+      if (feat?.signPersonalMessage) {
+        sig = await feat.signPersonalMessage({ message: messageBytes, account, chain: 'sui:mainnet' });
+      } else {
+        const legacy = p.features?.['sui:signMessage'];
+        if (legacy?.signMessage) {
+          sig = await legacy.signMessage({ message: messageBytes, account });
+        } else {
+          // Very old window.suiWallet shim
+          const old = p?.sui || p;
+          if (typeof old?.signPersonalMessage === 'function') sig = await old.signPersonalMessage({ message: messageBytes });
+          else if (typeof old?.signMessage === 'function')    sig = await old.signMessage({ message: messageBytes });
+          else throw new Error('Wallet does not support personal-message signing');
+        }
+      }
+      signedB64 = sig?.signature || sig?.signatureBase64 || sig?.bytes || sig;
+      if (typeof signedB64 !== 'string') signedB64 = String(signedB64);
+    } catch (e) {
+      const m = (e?.message || '').toLowerCase();
+      if (m.includes('reject') || m.includes('cancel') || m.includes('denied')) { setStat('Cancelled', '#ffc864'); return; }
+      throw e;
+    }
+    if (!signedB64) throw new Error('wallet returned no signature');
+
+    setStat('Saving…', '#94a3b8');
+    const r = await fetch(BACKEND + '/memeland/socials', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ tokenId, twitter, telegram, website, description, ts, signature: signedB64 }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.success) throw new Error(j.error || ('save failed (' + r.status + ')'));
+
+    setStat('✅ Saved on backend. Reopen the token to see updates.', '#4ade80');
+  } catch (e) {
+    console.error('[memeland] edit info', e);
+    setStat('❌ ' + (e.message || 'Save failed'), '#f87171');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = origLabel || '✎ SAVE — SIGN WITH WALLET'; }
+  }
+};
+
 function mlErr(el, msg) { if (el) { el.textContent = msg; el.style.display='block'; } }
 function mlSetStep(btn, n, msg) {
   if (btn) btn.textContent = '[' + n + '/4] ' + msg.replace(/&amp;/g,'&');
@@ -5345,9 +5501,9 @@ window.mlOpenToken = async function(id) {
       const _has = _s.twitter || _s.telegram || _s.website;
       if (_descEl && _has) {
         const _parts = [];
-        if (_s.twitter)  _parts.push('<a href="https://x.com/' + _s.twitter + '" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;margin-right:14px;">𝕏 @' + _s.twitter + '</a>');
-        if (_s.telegram) _parts.push('<a href="https://t.me/' + _s.telegram + '" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;margin-right:14px;">✈️ @' + _s.telegram + '</a>');
-        if (_s.website)  _parts.push('<a href="' + _s.website + '" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;">🌐 Website</a>');
+        if (_s.twitter)  _parts.push('<a href="https://x.com/' + mlEsc(_s.twitter) + '" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;margin-right:14px;">𝕏 @' + mlEsc(_s.twitter) + '</a>');
+        if (_s.telegram) _parts.push('<a href="https://t.me/' + mlEsc(_s.telegram) + '" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;margin-right:14px;">✈️ @' + mlEsc(_s.telegram) + '</a>');
+        if (_s.website)  _parts.push('<a href="' + mlEsc(mlSafeUrl(_s.website)) + '" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;">🌐 Website</a>');
         _descEl.insertAdjacentHTML('afterend', '<div id="mlModalSocials" class="font-mono text-xs" style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,245,255,0.08);">' + _parts.join('') + '</div>');
       }
     }
@@ -5375,9 +5531,9 @@ window.mlOpenToken = async function(id) {
         '</div>' +
         (((token.socials||{}).twitter||(token.socials||{}).telegram||(token.socials||{}).website) ?
           '<div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;">' +
-          (token.socials.twitter  ? '<a href="https://x.com/' + token.socials.twitter  + '" target="_blank" rel="noopener" class="btn-cyan" style="font-size:0.65rem;padding:6px 12px;text-decoration:none;">𝕏 @' + token.socials.twitter + '</a>' : '') +
-          (token.socials.telegram ? '<a href="https://t.me/'  + token.socials.telegram + '" target="_blank" rel="noopener" class="btn-cyan" style="font-size:0.65rem;padding:6px 12px;text-decoration:none;">TG @' + token.socials.telegram + '</a>' : '') +
-          (token.socials.website  ? '<a href="' + token.socials.website  + '" target="_blank" rel="noopener" class="btn-cyan" style="font-size:0.65rem;padding:6px 12px;text-decoration:none;">🌐 Website</a>' : '') +
+          (token.socials.twitter  ? '<a href="https://x.com/' + mlEsc(token.socials.twitter)  + '" target="_blank" rel="noopener" class="btn-cyan" style="font-size:0.65rem;padding:6px 12px;text-decoration:none;">𝕏 @' + mlEsc(token.socials.twitter) + '</a>' : '') +
+          (token.socials.telegram ? '<a href="https://t.me/'  + mlEsc(token.socials.telegram) + '" target="_blank" rel="noopener" class="btn-cyan" style="font-size:0.65rem;padding:6px 12px;text-decoration:none;">TG @' + mlEsc(token.socials.telegram) + '</a>' : '') +
+          (token.socials.website  ? '<a href="' + mlEsc(mlSafeUrl(token.socials.website))  + '" target="_blank" rel="noopener" class="btn-cyan" style="font-size:0.65rem;padding:6px 12px;text-decoration:none;">🌐 Website</a>' : '') +
           '</div>' : '') +
         '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:10px;margin-top:4px;"><div class="font-mono text-xs text-slate-500 mb-1">LAUNCHED</div><div class="font-mono text-xs text-white">' + new Date(token.createdAt||0).toLocaleString() + '</div></div>';
     }
@@ -5439,14 +5595,53 @@ window.mlOpenToken = async function(id) {
     const sellLbl = document.getElementById('mlSellSymbolLabel');
     if (sellLbl) sellLbl.textContent = token.symbol;
 
-    // ── Creator-only fee claim panel: show only if connected wallet == token.creator ──
+    // ── Per-meme DexScreener chart (any wallet) ──
+    try {
+      const wrap = document.getElementById('mlMemeChartWrap');
+      const ifr  = document.getElementById('mlMemeChartIframe');
+      const link = document.getElementById('mlMemeDexLink');
+      const pid  = token.poolId || token.pool_id;
+      if (wrap && ifr && link && pid) {
+        const dsBase = 'https://dexscreener.com/sui/' + pid;
+        ifr.src     = dsBase + '?embed=1&theme=dark&info=0&trades=0';
+        link.href   = dsBase;
+        wrap.style.display = 'block';
+      } else if (wrap) {
+        wrap.style.display = 'none';
+        if (ifr) ifr.src = 'about:blank';
+      }
+    } catch (_) {}
+
+    // ── Creator-only fee claim panel + edit-info panel ──
     try {
       const claimPanel = document.getElementById('mlCreatorClaimPanel');
+      const editPanel  = document.getElementById('mlCreatorEditPanel');
       const claimStat  = document.getElementById('mlClaimFeesStatus');
+      const editStat   = document.getElementById('mlEditInfoStatus');
       if (claimStat) claimStat.textContent = '';
+      if (editStat)  editStat.textContent  = '';
       const connAddr = (typeof connectedWallet !== 'undefined' && connectedWallet?.address) ? String(connectedWallet.address).toLowerCase() : '';
       const creator  = String(token.creator || '').toLowerCase();
-      if (claimPanel) claimPanel.style.display = (connAddr && creator && connAddr === creator) ? 'block' : 'none';
+      const isCreator = !!(connAddr && creator && connAddr === creator);
+      if (claimPanel) claimPanel.style.display = isCreator ? 'block' : 'none';
+      if (editPanel)  editPanel.style.display  = isCreator ? 'block' : 'none';
+
+      if (isCreator) {
+        // Pre-fill edit form with existing socials + description
+        const tw = document.getElementById('mlEditTwitter');
+        const tg = document.getElementById('mlEditTelegram');
+        const wb = document.getElementById('mlEditWebsite');
+        const ds = document.getElementById('mlEditDesc');
+        if (tw) tw.value = (token.socials?.twitter)  || '';
+        if (tg) tg.value = (token.socials?.telegram) || '';
+        if (wb) wb.value = (token.socials?.website)  || '';
+        if (ds) ds.value = token.description || '';
+
+        // Live fee accrual preview (refresh every 30s while modal open)
+        mlStartFeesPolling(id, token.symbol || 'meme');
+      } else {
+        mlStopFeesPolling();
+      }
     } catch (_) {}
 
     mlSetTradeTab('info');
@@ -5470,6 +5665,14 @@ window.mlCloseTokenModal = function() {
   mlActiveTokenData = null;
   mlSellMemeObjects = [];
   mlBuyWalletAgentBalance = 0;
+  // stop creator-fee polling and unload meme chart iframe
+  try { mlStopFeesPolling(); } catch(_){}
+  try {
+    const ifr = document.getElementById('mlMemeChartIframe');
+    if (ifr) ifr.src = 'about:blank';
+    const wrap = document.getElementById('mlMemeChartWrap');
+    if (wrap) wrap.style.display = 'none';
+  } catch(_){}
   const bq = document.getElementById('mlBuyQuote');  if (bq) { bq.style.display='none'; bq.innerHTML=''; }
   const sq = document.getElementById('mlSellQuote'); if (sq) { sq.style.display='none'; sq.innerHTML=''; }
   const ba = document.getElementById('mlBuyAmount'); if (ba) ba.value = '';
