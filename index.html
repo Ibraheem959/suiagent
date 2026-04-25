@@ -1365,17 +1365,17 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
           <span class="font-orbitron text-xs" style="color:var(--cyan)">$AGENT / SUI — CETUS POOL · LIVE</span>
         </div>
         <div style="display:flex;gap:0;">
-          <button id="agentChartTabDex"   onclick="agentChartSwitch('dex')"   class="font-mono text-[10px]" style="background:rgba(0,245,255,0.15);color:var(--cyan);border:1px solid rgba(0,245,255,0.4);padding:4px 10px;cursor:pointer;letter-spacing:0.05em;">DEXSCREENER</button>
-          <button id="agentChartTabGecko" onclick="agentChartSwitch('gecko')" class="font-mono text-[10px]" style="background:transparent;color:#6a8bad;border:1px solid rgba(0,245,255,0.15);border-left:0;padding:4px 10px;cursor:pointer;letter-spacing:0.05em;">GECKOTERMINAL</button>
+          <button id="agentChartTabDex"   onclick="agentChartSwitch('dex')"   class="font-mono text-[10px]" style="background:transparent;color:#6a8bad;border:1px solid rgba(0,245,255,0.15);padding:4px 10px;cursor:pointer;letter-spacing:0.05em;">DEXSCREENER</button>
+          <button id="agentChartTabGecko" onclick="agentChartSwitch('gecko')" class="font-mono text-[10px]" style="background:rgba(0,245,255,0.15);color:var(--cyan);border:1px solid rgba(0,245,255,0.4);border-left:0;padding:4px 10px;cursor:pointer;letter-spacing:0.05em;">GECKOTERMINAL</button>
         </div>
       </div>
       <iframe id="agentChartIframe" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer"
-        src="https://dexscreener.com/sui/0xe8bf297251264d4474a6f6115ebeeeea4a3e50d534d3b663691e22b5fd36a6eb?embed=1&theme=dark&info=0&trades=0"
+        src="https://www.geckoterminal.com/sui-network/pools/0xe8bf297251264d4474a6f6115ebeeeea4a3e50d534d3b663691e22b5fd36a6eb?embed=1&info=0&swaps=0&grayscale=0&light_chart=0"
         style="width:100%;height:560px;border:0;background:#040810;display:block;"
         loading="lazy"
         title="AGENT/SUI Cetus pool · live chart"></iframe>
       <div id="agentChartFallbackNote" class="font-mono text-[11px]" style="display:none;background:rgba(255,200,100,0.06);border-top:1px solid rgba(255,200,100,0.2);color:#ffc864;padding:8px 14px;line-height:1.5;">
-        ⚠ DexScreener may take a few hours to index a brand-new Cetus pool. If the chart above is empty, click <b>GECKOTERMINAL</b> for an alternate live feed, or visit the pool directly on Suiscan.
+        ⚠ Showing GeckoTerminal by default — DexScreener can take hours to index brand-new Cetus pools. Click <b>DEXSCREENER</b> above to switch sources.
       </div>
     </div>
     <div class="reveal flex flex-wrap gap-4 justify-center mt-8">
@@ -2854,7 +2854,7 @@ setInterval(() => {
 <!-- ══════════════════════════════════════ JS ══════════════════════════════════════ -->
 <script>
 // ─── CONFIG ───
-const SUI_RPC       = 'https://fullnode.mainnet.sui.io:443';
+const SUI_RPC       = 'https://sui-rpc.publicnode.com';
 const POOL_PACKAGE  = '0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48ce3cd6952';
 const REGISTRY_ID   = '0x63af8f92c3988601b889a543615b0984ebabbfa420d8b38b2461751f8c05194f';
 const POOL_ID       = '0xba79012088507127692c8c8ba97d4fdc4a83d2f9fff4e9a1ea61ebdc00ff460c';
@@ -3017,9 +3017,12 @@ function addRealTrade(isBuy, wallet, agentRaw, suiRaw, timestamp) {
 async function fetchRealTrades() {
   try {
     const LP_PKG_FEED = '0xf554dad1683cb25386ddf57f2d40f2774fb8287b17f467ebc657c5bc20f226e3';
-    const [oldRes, lpRes] = await Promise.all([
+    // v6.5: also fetch public Cetus AGENT/SUI pool swaps from backend
+    // (custodial AgentPool events alone miss every trade made directly on Cetus DEX).
+    const [oldRes, lpRes, cetusRes] = await Promise.all([
       rpc('suix_queryEvents', [{ MoveModule: { package: POOL_PACKAGE, module: 'pool' } }, null, 15, true]),
       rpc('suix_queryEvents', [{ MoveModule: { package: LP_PKG_FEED, module: 'pool_lp' } }, null, 10, true]),
+      fetch(API_URL + '/agent/cetus-trades?limit=20').then(r => r.json()).catch(() => ({ trades: [] })),
     ]);
     const events = [...(oldRes?.data || []), ...(lpRes?.data || [])];
     events.sort((a, b) => parseInt(b.timestampMs||0) - parseInt(a.timestampMs||0));
@@ -3047,6 +3050,28 @@ async function fetchRealTrades() {
         newCount++;
       }
     });
+
+    // v6.5: merge in Cetus pool trades. Backend returns BOTH human values AND
+    // BigInt-safe raw strings (`agentRaw`/`suiRaw`) so we don't lose precision
+    // re-multiplying floats. eventSeq is included so multi-swap txs (router
+    // hops touching the AGENT pool more than once) all get rendered.
+    const cetusTrades = (cetusRes && cetusRes.trades) || [];
+    cetusTrades.forEach(function(t) {
+      const txDigest  = t.tx;
+      const uniqueKey = txDigest + ':cetus:' + (t.eventSeq || '0');
+      if (!txDigest || seenDigests.has(uniqueKey)) return;
+      seenDigests.add(uniqueKey);
+      if (seenDigests.size > 300) {
+        seenDigests.delete(seenDigests.values().next().value);
+      }
+      const isBuy   = t.type === 'BUY';
+      // Prefer raw strings; fall back to human×decimal only if backend pre-v6.5
+      const agentRaw = (t.agentRaw != null) ? t.agentRaw : Math.round((t.agent || 0) * 1_000_000);
+      const suiRaw   = (t.suiRaw   != null) ? t.suiRaw   : Math.round((t.sui   || 0) * 1_000_000_000);
+      addRealTrade(isBuy, t.wallet || '0x0000', agentRaw, suiRaw, t.ts || Date.now());
+      newCount++;
+    });
+
     if (newCount === 0 && realTrades === 0) showEmptyState();
     return newCount;
   } catch(e) {
@@ -3391,7 +3416,7 @@ setInterval(fetchArenaParticipants, 10000);
 
 // ─── CHART + LP — direct from chain, no backend dependency ───
 const BACKEND   = 'https://backend-production-d4c4b.up.railway.app';
-const SUI_NODE  = 'https://fullnode.mainnet.sui.io:443';
+const SUI_NODE  = 'https://sui-rpc.publicnode.com';
 const LP_POOL_ID_SITE = '0xe2cb18758423840159a11243387efc27c21db171ba97c1bad2d6009a474d2e79';
 const LP_PKG_SITE     = '0xf554dad1683cb25386ddf57f2d40f2774fb8287b17f467ebc657c5bc20f226e3';
 const LP_COIN_TYPE    = LP_PKG_SITE + '::pool_lp::POOL_LP';
@@ -3678,7 +3703,7 @@ window.__walletStandardGetWallets = function() {
       try {
         // Load SuiClient — needed for tx.build({ client }) and on-chain reads
         const suiClient = await import('https://esm.sh/@mysten/sui@1.21.0/client');
-        window.suiClientInstance = new suiClient.SuiClient({ url: 'https://fullnode.mainnet.sui.io:443' });
+        window.suiClientInstance = new suiClient.SuiClient({ url: 'https://sui-rpc.publicnode.com' });
         console.log('✅ SuiClient initialized');
       } catch(e) { console.warn('SuiClient load failed:', e.message); }
     })();
@@ -5368,6 +5393,42 @@ function mlStartFeesPolling(tokenId, memeSym) {
   }, 30_000);
 }
 
+// ── v6.5: site-side normalizers — MUST match backend memeland-routes.mjs exactly.
+// Without this, the user's raw input (e.g. "https://x.com/SUI__AGENT") gets signed
+// but the backend re-normalizes to "SUI__AGENT" before verifying → bytes differ
+// → "Signature is not valid for the provided message" error.
+function _siteNormTwitter(v) {
+  if (!v) return '';
+  let s = String(v).trim()
+    .replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '')
+    .replace(/^@/, '').split(/[/?#]/)[0];
+  s = s.replace(/[^A-Za-z0-9_]/g, '');
+  return s.slice(0, 15);
+}
+function _siteNormTelegram(v) {
+  if (!v) return '';
+  let s = String(v).trim()
+    .replace(/^https?:\/\/(www\.)?t\.me\//i, '').replace(/^t\.me\//i, '')
+    .replace(/^@/, '').split(/[?#]/)[0];
+  s = s.replace(/[^A-Za-z0-9_]/g, '');
+  return s.slice(0, 32);
+}
+function _siteNormWebsite(v) {
+  if (!v) return '';
+  const s = String(v).trim();
+  if (!/^https?:\/\//i.test(s)) return '';
+  if (/[\s<>"'`\\]/.test(s))    return '';
+  if (/[\x00-\x1f\x7f]/.test(s)) return '';
+  return s.slice(0, 200);
+}
+function _siteNormDescription(v) {
+  if (v == null) return '';
+  let s = String(v).trim();
+  s = s.replace(/[<>]/g, '');
+  s = s.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '');
+  return s.slice(0, 500);
+}
+
 // ── Creator: edit token info (socials + description) — signature-only, no gas ──
 window.mlSubmitEditInfo = async function() {
   const btn  = document.getElementById('mlEditInfoBtn');
@@ -5384,12 +5445,13 @@ window.mlSubmitEditInfo = async function() {
       return;
     }
 
-    // Read & light-normalise inputs (server re-normalises and is source of truth)
-    const norm = s => String(s || '').trim();
-    const twitter     = norm(document.getElementById('mlEditTwitter')?.value);
-    const telegram    = norm(document.getElementById('mlEditTelegram')?.value);
-    const website     = norm(document.getElementById('mlEditWebsite')?.value);
-    const description = norm(document.getElementById('mlEditDesc')?.value).slice(0, 500);
+    // v6.5 FIX: apply the SAME normalizers the backend uses, so signed bytes match.
+    // Previously we signed the raw input and the backend re-normalised before
+    // verifying — any mismatch (e.g. URL → handle) broke the signature.
+    const twitter     = _siteNormTwitter(document.getElementById('mlEditTwitter')?.value);
+    const telegram    = _siteNormTelegram(document.getElementById('mlEditTelegram')?.value);
+    const website     = _siteNormWebsite(document.getElementById('mlEditWebsite')?.value);
+    const description = _siteNormDescription(document.getElementById('mlEditDesc')?.value);
 
     if (btn) { btn.disabled = true; btn.textContent = '✍ Sign in your wallet…'; }
     setStat('Sign the message in your wallet (no gas, no on-chain tx)…', '#94a3b8');
