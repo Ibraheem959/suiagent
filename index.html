@@ -4755,11 +4755,21 @@ function mlUpdateHeroStats(tokens) {
   const total = document.getElementById('mlHeroTotal');
   const grad  = document.getElementById('mlHeroGrad');
   const vol   = document.getElementById('mlHeroVol');
+  const lp    = document.getElementById('mlHeroLpLocked');  // v6.5 FIX: was never populated
   if (total) total.textContent = tokens.length;
   if (grad)  grad.textContent  = tokens.filter(t=>t.graduated).length;
   if (vol) {
     const v = tokens.reduce((s,t) => s + (t.volumeAgent||0), 0);
     vol.textContent = v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1000 ? (v/1000).toFixed(1)+'K' : v.toFixed(0);
+  }
+  if (lp) {
+    // Sum of initial AGENT seeded into each token's locked CLMM position.
+    // LP is locked forever, so this is the verifiable "AGENT permanently locked" total.
+    const locked = tokens.reduce((s,t) => s + (Number(t.agentSeed) || 0), 0);
+    lp.textContent = locked >= 1e9 ? (locked/1e9).toFixed(2)+'B'
+                   : locked >= 1e6 ? (locked/1e6).toFixed(2)+'M'
+                   : locked >= 1000 ? (locked/1000).toFixed(1)+'K'
+                   : locked.toFixed(0);
   }
 }
 
