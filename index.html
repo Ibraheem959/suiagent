@@ -775,7 +775,7 @@
     <!-- HOLDERS PANEL -->
     <div id="mlHoldersPanel" style="display:none;">
       <div id="mlHoldersNote" class="font-mono text-[10px]" style="color:#5a7090;margin-bottom:6px;line-height:1.4;">
-        Holders = wallets currently holding the MemeBalance NFT. Buyers who later transferred their NFT off-curve (regular Sui transfer, not a SELL) won't appear here.
+        Holders = wallets currently holding the Coin&lt;T&gt; on-chain (creator + everyone who ever swapped on this Cetus pool). Off-curve P2P transfers to fresh wallets that never touched the pool aren't tracked. Refreshes every 60s server-side.
       </div>
       <div id="mlHoldersList" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;"></div>
     </div>
@@ -1359,21 +1359,58 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
       <p style="color:#6a8bad;font-weight:300;margin-top:8px">Powered by DexScreener · streaming directly from the Cetus CLMM pool</p>
     </div>
     <div class="reveal card rounded-none overflow-hidden" style="border-color:rgba(0,245,255,0.2);padding:0;">
-      <div style="background:#050c18;border-bottom:1px solid rgba(0,245,255,0.1);padding:10px 18px;display:flex;align-items:center;gap:12px">
-        <div class="dot-ripple"></div>
-        <span class="font-orbitron text-xs" style="color:var(--cyan)">$AGENT / SUI — CETUS POOL · LIVE</span>
+      <div style="background:#050c18;border-bottom:1px solid rgba(0,245,255,0.1);padding:10px 18px;display:flex;align-items:center;gap:12px;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="dot-ripple"></div>
+          <span class="font-orbitron text-xs" style="color:var(--cyan)">$AGENT / SUI — CETUS POOL · LIVE</span>
+        </div>
+        <div style="display:flex;gap:0;">
+          <button id="agentChartTabDex"   onclick="agentChartSwitch('dex')"   class="font-mono text-[10px]" style="background:rgba(0,245,255,0.15);color:var(--cyan);border:1px solid rgba(0,245,255,0.4);padding:4px 10px;cursor:pointer;letter-spacing:0.05em;">DEXSCREENER</button>
+          <button id="agentChartTabGecko" onclick="agentChartSwitch('gecko')" class="font-mono text-[10px]" style="background:transparent;color:#6a8bad;border:1px solid rgba(0,245,255,0.15);border-left:0;padding:4px 10px;cursor:pointer;letter-spacing:0.05em;">GECKOTERMINAL</button>
+        </div>
       </div>
-      <iframe sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer"
+      <iframe id="agentChartIframe" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer"
         src="https://dexscreener.com/sui/0xe8bf297251264d4474a6f6115ebeeeea4a3e50d534d3b663691e22b5fd36a6eb?embed=1&theme=dark&info=0&trades=0"
         style="width:100%;height:560px;border:0;background:#040810;display:block;"
         loading="lazy"
-        title="AGENT/SUI Cetus pool · DexScreener"></iframe>
+        title="AGENT/SUI Cetus pool · live chart"></iframe>
+      <div id="agentChartFallbackNote" class="font-mono text-[11px]" style="display:none;background:rgba(255,200,100,0.06);border-top:1px solid rgba(255,200,100,0.2);color:#ffc864;padding:8px 14px;line-height:1.5;">
+        ⚠ DexScreener may take a few hours to index a brand-new Cetus pool. If the chart above is empty, click <b>GECKOTERMINAL</b> for an alternate live feed, or visit the pool directly on Suiscan.
+      </div>
     </div>
     <div class="reveal flex flex-wrap gap-4 justify-center mt-8">
-      <a href="https://dexscreener.com/sui/0xe8bf297251264d4474a6f6115ebeeeea4a3e50d534d3b663691e22b5fd36a6eb" target="_blank" class="btn-cyan"><span>◈ VIEW ON DEXSCREENER</span></a>
+      <a href="https://dexscreener.com/sui/0xe8bf297251264d4474a6f6115ebeeeea4a3e50d534d3b663691e22b5fd36a6eb" target="_blank" class="btn-cyan"><span>◈ DEXSCREENER ↗</span></a>
+      <a href="https://www.geckoterminal.com/sui-network/pools/0xe8bf297251264d4474a6f6115ebeeeea4a3e50d534d3b663691e22b5fd36a6eb" target="_blank" class="btn-cyan"><span>◈ GECKOTERMINAL ↗</span></a>
       <a href="https://app.cetus.zone/swap?to=0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT" target="_blank" class="btn-green"><span>🌊 BUY $AGENT ON CETUS</span></a>
       <a href="https://suiscan.xyz/mainnet/object/0xe8bf297251264d4474a6f6115ebeeeea4a3e50d534d3b663691e22b5fd36a6eb" target="_blank" class="btn-purple">VIEW POOL ON-CHAIN →</a>
     </div>
+    <script>
+      // AGENT chart source switcher (DexScreener / GeckoTerminal fallback).
+      // Auto-detects empty DexScreener (new pool not yet indexed) and shows a hint.
+      (function(){
+        const POOL = '0xe8bf297251264d4474a6f6115ebeeeea4a3e50d534d3b663691e22b5fd36a6eb';
+        const SRCS = {
+          dex:   'https://dexscreener.com/sui/' + POOL + '?embed=1&theme=dark&info=0&trades=0',
+          gecko: 'https://www.geckoterminal.com/sui-network/pools/' + POOL + '?embed=1&info=0&swaps=0&grayscale=0&light_chart=0',
+        };
+        window.agentChartSwitch = function(which){
+          const ifr = document.getElementById('agentChartIframe');
+          if (!ifr) return;
+          ifr.src = SRCS[which] || SRCS.dex;
+          const dexBtn = document.getElementById('agentChartTabDex');
+          const gkBtn  = document.getElementById('agentChartTabGecko');
+          [dexBtn, gkBtn].forEach(b => { if (!b) return; b.style.background='transparent'; b.style.color='#6a8bad'; b.style.borderColor='rgba(0,245,255,0.15)'; });
+          const active = which === 'gecko' ? gkBtn : dexBtn;
+          if (active) { active.style.background='rgba(0,245,255,0.15)'; active.style.color='var(--cyan)'; active.style.borderColor='rgba(0,245,255,0.4)'; }
+        };
+        // Show the "may need fallback" hint after 6s if user is still on DexScreener
+        // (we can't introspect the iframe due to cross-origin, but the hint is harmless and helpful).
+        setTimeout(function(){
+          const note = document.getElementById('agentChartFallbackNote');
+          if (note) note.style.display = 'block';
+        }, 6000);
+      })();
+    </script>
   </div>
 </section>
 
@@ -1843,7 +1880,7 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
 
     <!-- Header -->
     <div class="reveal text-center mb-10">
-      <div class="section-label mb-3">◈ AGENT ECOSYSTEM · PUMP-STYLE LAUNCHPAD ON CETUS</div>
+      <div class="section-label mb-3">◈ AGENT ECOSYSTEM · PERMISSIONLESS MEME COIN FACTORY · CETUS-NATIVE</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:8px;">
         <div class="dot-ripple"></div>
         <h2 class="font-orbitron font-black" style="font-size:2.8rem;color:#fff;letter-spacing:0.05em">MEME<span style="color:var(--green);text-shadow:0 0 30px var(--green)">LAND</span></h2>
@@ -4632,7 +4669,7 @@ async function fetchSwapQuote() {
 
 
 // ══════════════════════════════════════
-// MEMELAND v12 — Cetus CLMM Launchpad
+// MEMELAND v12 — Cetus CLMM Meme Factory
 // ══════════════════════════════════════
 (function() {
 const BACKEND = API_URL; // alias to existing backend constant
@@ -4703,6 +4740,7 @@ function mlUpdateHeroStats(tokens) {
 
 function mlFmtAgent(n) {
   if (!n) return '0';
+  if (n >= 1e9) return (n/1e9).toFixed(2)+'B';
   if (n >= 1e6) return (n/1e6).toFixed(2)+'M';
   if (n >= 1000) return (n/1000).toFixed(1)+'K';
   return n.toFixed(0);
@@ -4804,15 +4842,15 @@ function mlRenderGrid() {
   if (empty) empty.style.display = 'none';
 
   grid.innerHTML = filtered.map(t => `
-    <div class="token-tile ml-animate-fade" onclick="mlOpenToken('${t.id}')">
+    <div class="token-tile ml-animate-fade" onclick="mlOpenToken('${parseInt(t.id)||0}')">
       <div style="position:absolute;top:0;right:0;background:var(--green);color:var(--bg);font-family:Orbitron,sans-serif;font-size:0.55rem;padding:3px 10px;letter-spacing:0.1em;z-index:1;">🔒 LP LOCKED</div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
         <div style="width:44px;height:44px;border-radius:50%;border:1.5px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.06);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
-          ${t.image ? `<img src="${t.image}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><span class="font-orbitron text-xs" style="color:var(--cyan);display:none">${(t.symbol||'').slice(0,2)}</span>` : `<span class="font-orbitron text-xs" style="color:var(--cyan)">${(t.symbol||'').slice(0,2)}</span>`}
+          ${t.image ? `<img src="${mlSafeUrl(t.image)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><span class="font-orbitron text-xs" style="color:var(--cyan);display:none">${mlEsc((t.symbol||'').slice(0,2))}</span>` : `<span class="font-orbitron text-xs" style="color:var(--cyan)">${mlEsc((t.symbol||'').slice(0,2))}</span>`}
         </div>
         <div style="flex:1;min-width:0;">
-          <div class="font-orbitron text-sm font-bold text-white" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.name||'—'}</div>
-          <div class="font-mono text-xs" style="color:var(--cyan)">$${t.symbol||'—'}</div>
+          <div class="font-orbitron text-sm font-bold text-white" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${mlEsc(t.name||'—')}</div>
+          <div class="font-mono text-xs" style="color:var(--cyan)">$${mlEsc(t.symbol||'—')}</div>
         </div>
         <div style="text-align:right;">
           <div class="font-mono text-xs font-bold" style="color:var(--green)" title="Market Cap = price × 10B supply (in AGENT)">${t.marketCap ? mlFmtAgent(t.marketCap) : '—'}</div>
@@ -5454,8 +5492,8 @@ window.mlOpenToken = async function(id) {
 
     const imgEl = document.getElementById('mlModalImg');
     if (imgEl) {
-      if (token.image) { imgEl.innerHTML = '<img src="' + token.image + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"/><span class="font-orbitron text-sm" style="color:var(--cyan);display:none">' + (token.symbol?.slice(0,2)||'?') + '</span>'; }
-      else { imgEl.innerHTML = '<span class="font-orbitron text-sm" style="color:var(--cyan)">' + (token.symbol?.slice(0,2)||'?') + '</span>'; }
+      if (token.image) { imgEl.innerHTML = '<img src="' + mlSafeUrl(token.image) + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"/><span class="font-orbitron text-sm" style="color:var(--cyan);display:none">' + mlEsc(token.symbol?.slice(0,2)||'?') + '</span>'; }
+      else { imgEl.innerHTML = '<span class="font-orbitron text-sm" style="color:var(--cyan)">' + mlEsc(token.symbol?.slice(0,2)||'?') + '</span>'; }
     }
 
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
@@ -5516,7 +5554,7 @@ window.mlOpenToken = async function(id) {
       const holders = token.holdersAll || [];
       if (holders.length === 0) { holdersDiv.innerHTML = '<div class="font-mono text-xs text-slate-500">No holders yet. Be the first!</div>'; }
       else {
-        holdersDiv.innerHTML = holders.map((h,i) => '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.06);"><div class="font-mono text-xs" style="color:' + (i===0?'var(--green)':'#8ba8c8') + '">' + (i===0?'👑 ':'') + h.wallet.slice(0,8) + '...' + h.wallet.slice(-6) + '</div><div class="font-mono text-xs" style="color:var(--cyan)">' + mlFmtAgent(h.balance) + ' $' + token.symbol + '</div></div>').join('');
+        holdersDiv.innerHTML = holders.map((h,i) => '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.06);"><div class="font-mono text-xs" style="color:' + (i===0?'var(--green)':'#8ba8c8') + '">' + (i===0?'👑 ':'') + h.wallet.slice(0,8) + '...' + h.wallet.slice(-6) + '</div><div class="font-mono text-xs" style="color:var(--cyan)">' + mlFmtAgent(h.balance) + ' $' + mlEsc(token.symbol||'') + '</div></div>').join('');
       }
     }
 
@@ -5524,7 +5562,7 @@ window.mlOpenToken = async function(id) {
     const infoDiv = document.getElementById('mlInfoContent');
     if (infoDiv) {
       infoDiv.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-        '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:10px;"><div class="font-mono text-xs text-slate-500">TOTAL SUPPLY</div><div class="font-mono text-xs text-white">1,000,000,000</div></div>' +
+        '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:10px;"><div class="font-mono text-xs text-slate-500">TOTAL SUPPLY</div><div class="font-mono text-xs text-white">' + Number(token.totalSupply || 10_000_000_000).toLocaleString() + ' $' + mlEsc(token.symbol||'') + '</div></div>' +
         '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:10px;"><div class="font-mono text-xs text-slate-500">TRADES</div><div class="font-mono text-xs text-white">' + (token.trades||0) + '</div></div>' +
         '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:10px;"><div class="font-mono text-xs text-slate-500">VOLUME</div><div class="font-mono text-xs" style="color:var(--cyan)">' + mlFmtAgent(token.volumeAgent||0) + ' AGENT</div></div>' +
         '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:10px;"><div class="font-mono text-xs text-slate-500">CREATOR</div><div class="font-mono text-xs text-white">' + (token.creator||'').slice(0,8) + '...' + (token.creator||'').slice(-6) + '</div></div>' +
@@ -5583,11 +5621,24 @@ window.mlOpenToken = async function(id) {
         // Update count badge
         const hcEl = document.getElementById('mlModalHolders');
         if (hcEl) hcEl.textContent = j.count || 0;
+        // Surface backend diagnostic: if CETUS_PACKAGE is missing on the
+        // server we can ONLY return the creator. Tell the user instead of
+        // silently showing a single "dev only" row.
+        const noteEl = document.getElementById('mlHoldersNote');
+        if (noteEl) {
+          if (j.warning) {
+            noteEl.style.color = '#ffc864';
+            noteEl.innerHTML = '⚠ ' + j.warning;
+          } else if (j.count <= 1) {
+            noteEl.style.color = '#8ba8c8';
+            noteEl.innerHTML = 'Only the creator currently holds this token. Once anyone swaps on the Cetus pool, their wallet will appear here within ~60s.';
+          }
+        }
         // Re-render holders list with fresh data
         const hd = document.getElementById('mlHoldersList');
         if (hd) {
           if (!j.holders.length) hd.innerHTML = '<div class="font-mono text-xs text-slate-500">No holders yet. Be the first!</div>';
-          else hd.innerHTML = j.holders.map((h,i) => '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.06);"><div class="font-mono text-xs" style="color:' + (i===0?'var(--green)':'#8ba8c8') + '">' + (i===0?'👑 ':'') + h.wallet.slice(0,8) + '...' + h.wallet.slice(-6) + '</div><div class="font-mono text-xs" style="color:var(--cyan)">' + mlFmtAgent(h.balance) + ' $' + token.symbol + '</div></div>').join('');
+          else hd.innerHTML = j.holders.map((h,i) => '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.06);"><div class="font-mono text-xs" style="color:' + (i===0?'var(--green)':'#8ba8c8') + '">' + (i===0?'👑 ':'') + h.wallet.slice(0,8) + '...' + h.wallet.slice(-6) + (h.pct != null ? ' <span style=\"color:#5a7090\">(' + h.pct.toFixed(2) + '%)</span>' : '') + '</div><div class="font-mono text-xs" style="color:var(--cyan)">' + mlFmtAgent(h.balance) + ' $' + mlEsc(token.symbol||'') + '</div></div>').join('');
         }
       } catch (_) {}
     })();
@@ -5701,7 +5752,7 @@ async function mlLoadTrades() {
   if (hdr) {
     hdr.innerHTML =
       '<div>Token ID: <span style="color:var(--cyan)">' + tid + '</span> &nbsp;·&nbsp; Symbol: <span style="color:var(--cyan)">$' + (mlActiveTokenData?.symbol||'') + '</span></div>' +
-      (mgr ? '<div style="margin-top:4px;">Launchpad CA: <span class="font-mono" style="color:#8ba8c8;font-size:9px;word-break:break-all;">' + mgr + '</span></div>' +
+      (mgr ? '<div style="margin-top:4px;">Token Manager: <span class="font-mono" style="color:#8ba8c8;font-size:9px;word-break:break-all;">' + mgr + '</span></div>' +
              '<div style="margin-top:4px;"><a href="https://suiscan.xyz/mainnet/object/' + mgr + '" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:underline;">🔎 Verify trades on Suiscan</a></div>'
            : '');
   }
@@ -5884,7 +5935,7 @@ window.mlUpdateBuyQuote = async function() {
     // Backend wants raw u64 AGENT (6 decimals) and uses ?token_id= & action=
     const tid = mlActiveTokenData?.onChainId ?? mlActiveToken;
     const agentRaw = Math.floor(amount * 1_000_000);
-    const res  = await fetch(BACKEND + '/launchpad/quote?token_id=' + tid + '&action=buy&amount=' + agentRaw);
+    const res  = await fetch(BACKEND + '/memeland/quote?token_id=' + tid + '&action=buy&amount=' + agentRaw);
     const data = await res.json();
     if (data.error) { el.textContent = '❌ ' + data.error; return; }
     const memeOut    = parseInt(data.out || 0);                 // meme has 0 decimals → raw == human
@@ -5923,7 +5974,7 @@ window.mlUpdateSellQuote = async function() {
     // Sell quote: amount is meme tokens (no decimals), backend returns raw AGENT (6 decimals)
     const tid = mlActiveTokenData?.onChainId ?? mlActiveToken;
     const memeRaw = Math.floor(amount); // meme has 0 decimals
-    const res  = await fetch(BACKEND + '/launchpad/quote?token_id=' + tid + '&action=sell&amount=' + memeRaw);
+    const res  = await fetch(BACKEND + '/memeland/quote?token_id=' + tid + '&action=sell&amount=' + memeRaw);
     const data = await res.json();
     if (data.error) { el.textContent = '❌ ' + data.error; return; }
     let grossAgent = parseInt(data.out || 0) / 1_000_000; // raw → human AGENT, BEFORE fee
