@@ -502,7 +502,6 @@
     <a href="#token" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Token</a>
     <a href="#buy" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Buy</a>
     <a href="#swap" onclick="document.getElementById('swap')?.scrollIntoView({behavior:'smooth'});return false;" onclick="document.getElementById('swap')?.scrollIntoView({behavior:'smooth'});return false;" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Swap</a>
-    <a href="#liquidity" onclick="document.getElementById('liquidity')?.scrollIntoView({behavior:'smooth'});return false;" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">LP</a>
     <a href="#chart" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Chart</a>
     <a href="#arena" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Arena</a>
     <a href="#trust" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Trust</a>
@@ -1577,166 +1576,6 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════ LIQUIDITY POOL ══════════════════════════════════════ -->
-<section id="liquidity" style="padding:100px 24px;background:var(--bg)">
-  <div style="max-width:1100px;margin:0 auto">
-    <div class="reveal text-center mb-12">
-      <div class="section-label mb-3">◈ LIQUIDITY PROVISION</div>
-      <h2 class="font-orbitron text-3xl font-bold text-white">Add Liquidity</h2>
-      <p style="color:#6a8bad;font-weight:300;margin-top:8px">Deposit SUI + $AGENT — earn 50% of all trading fees automatically</p>
-    </div>
-
-    <!-- Pool stats -->
-    <div class="reveal grid gap-4 mb-8" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
-      <div class="card p-6 rounded-none text-center">
-        <div class="font-mono text-xs text-slate-500 mb-2">POOL SUI</div>
-        <div class="font-orbitron text-2xl font-bold" id="lpPoolSui" style="color:var(--cyan)">—</div>
-      </div>
-      <div class="card p-6 rounded-none text-center">
-        <div class="font-mono text-xs text-slate-500 mb-2">POOL $AGENT</div>
-        <div class="font-orbitron text-2xl font-bold" id="lpPoolAgent" style="color:var(--purple)">—</div>
-      </div>
-      <div class="card p-6 rounded-none text-center">
-        <div class="font-mono text-xs text-slate-500 mb-2">FEE TO LPs</div>
-        <div class="font-orbitron text-2xl font-bold" style="color:var(--green)">0.15%</div>
-      </div>
-      <div class="card p-6 rounded-none text-center">
-        <div class="font-mono text-xs text-slate-500 mb-2">TOTAL LP TOKENS</div>
-        <div class="font-orbitron text-2xl font-bold" id="lpTotal" style="color:#ffa07a">—</div>
-      </div>
-    </div>
-
-    <div class="reveal grid gap-6" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
-
-      <!-- Deposit panel -->
-      <div class="card p-8 rounded-none" style="border-color:rgba(0,245,255,0.2)">
-        <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ ADD LIQUIDITY</div>
-
-        <div style="margin-bottom:16px">
-          <label class="font-mono text-xs text-slate-400 block mb-2">YOUR WALLET ADDRESS</label>
-          <input type="text" id="lpWallet" placeholder="0x..." style="width:100%;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:10px 14px;outline:none" oninput="fetchLpPosition()"/>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-          <div>
-            <label class="font-mono text-xs text-slate-400 block mb-2">SUI AMOUNT</label>
-            <input type="number" id="lpSuiAmount" placeholder="e.g. 10" min="0.1" step="0.1" oninput="calcLpPreview()" style="width:100%;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:10px 14px;outline:none"/>
-          </div>
-          <div>
-            <label class="font-mono text-xs text-slate-400 block mb-2">$AGENT AMOUNT</label>
-            <input type="number" id="lpAgentAmount" placeholder="auto" min="0" step="1000" oninput="calcLpPreview()" style="width:100%;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:10px 14px;outline:none"/>
-          </div>
-        </div>
-
-        <div id="lpPreview" style="display:none;background:#020609;border:1px solid rgba(0,245,255,0.1);padding:12px;margin-bottom:16px">
-          <div class="font-mono text-xs text-slate-500 mb-2">DEPOSIT PREVIEW</div>
-          <div class="font-mono text-xs" style="color:var(--cyan)" id="lpPreviewText">—</div>
-        </div>
-
-        <div style="background:rgba(255,160,0,0.08);border:1px solid rgba(255,160,0,0.2);padding:10px 14px;margin-bottom:16px">
-          <p class="font-mono text-xs" style="color:#ffa07a">⚠ LP pool requires Slush wallet. Connect below to sign the transaction directly from your wallet.</p>
-        </div>
-
-        <div id="lpWalletBar" style="margin-bottom:12px;display:flex;align-items:center;gap:10px;background:#020609;border:1px solid rgba(0,245,255,0.15);padding:10px 14px">
-          <div style="width:8px;height:8px;border-radius:50%;background:#4a5568" id="lpWalletDot"></div>
-          <span class="font-mono text-xs" id="lpWalletAddrDisplay" style="color:#4a5568;flex:1">No wallet connected</span>
-          <button onclick="connectWallet()" class="font-mono text-xs" style="padding:4px 12px;border:1px solid rgba(0,245,255,0.3);color:var(--cyan);background:rgba(0,245,255,0.05);cursor:pointer">CONNECT</button>
-        </div>
-        <button onclick="addLiquidityOnChain()" class="btn-cyan" style="width:100%;padding:14px;text-align:center">
-          <span>◈ ADD LIQUIDITY ON-CHAIN</span>
-        </button>
-        <div id="lpDepositStatus" class="font-mono text-xs text-center mt-3" style="color:#4a5568;min-height:16px"></div>
-      </div>
-
-      <!-- Position + withdraw panel -->
-      <div class="card p-8 rounded-none" style="border-color:rgba(180,79,255,0.2)">
-        <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ YOUR POSITION</div>
-
-        <div id="lpNoPosition" style="text-align:center;padding:20px 0">
-          <div class="font-mono text-xs text-slate-600">Enter your wallet address on the left to see your LP position</div>
-        </div>
-
-        <div id="lpPosition" style="display:none">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-            <div style="background:#020609;padding:12px;border:1px solid rgba(180,79,255,0.1)">
-              <div class="font-mono text-xs text-slate-500 mb-1">LP TOKENS</div>
-              <div class="font-orbitron text-lg font-bold" id="posLp" style="color:var(--purple)">0</div>
-            </div>
-            <div style="background:#020609;padding:12px;border:1px solid rgba(180,79,255,0.1)">
-              <div class="font-mono text-xs text-slate-500 mb-1">POOL SHARE</div>
-              <div class="font-orbitron text-lg font-bold" id="posShare" style="color:var(--purple)">0%</div>
-            </div>
-            <div style="background:#020609;padding:12px;border:1px solid rgba(0,245,255,0.1)">
-              <div class="font-mono text-xs text-slate-500 mb-1">SUI VALUE</div>
-              <div class="font-orbitron text-lg font-bold" id="posSui" style="color:var(--cyan)">0</div>
-            </div>
-            <div style="background:#020609;padding:12px;border:1px solid rgba(0,245,255,0.1)">
-              <div class="font-mono text-xs text-slate-500 mb-1">$AGENT VALUE</div>
-              <div class="font-orbitron text-lg font-bold" id="posAgent" style="color:var(--cyan)">0</div>
-            </div>
-          </div>
-
-          <div style="margin-bottom:16px">
-            <label class="font-mono text-xs text-slate-400 block mb-2">WITHDRAW AMOUNT</label>
-            <div style="display:flex;gap:8px;margin-bottom:8px">
-              <button onclick="setWithdrawPct(25)"  class="font-mono text-xs" style="flex:1;padding:6px;border:1px solid rgba(255,70,90,0.3);color:#ff465a;background:transparent;cursor:pointer">25%</button>
-              <button onclick="setWithdrawPct(50)"  class="font-mono text-xs" style="flex:1;padding:6px;border:1px solid rgba(255,70,90,0.3);color:#ff465a;background:transparent;cursor:pointer">50%</button>
-              <button onclick="setWithdrawPct(75)"  class="font-mono text-xs" style="flex:1;padding:6px;border:1px solid rgba(255,70,90,0.3);color:#ff465a;background:transparent;cursor:pointer">75%</button>
-              <button onclick="setWithdrawPct(100)" class="font-mono text-xs" style="flex:1;padding:6px;border:1px solid rgba(255,70,90,0.3);color:#ff465a;background:transparent;cursor:pointer">MAX</button>
-            </div>
-            <div id="withdrawPreview" class="font-mono text-xs text-slate-500">Select % to preview withdrawal</div>
-          </div>
-
-          <button onclick="withdrawLiquidityOnChain()" style="width:100%;padding:14px;background:transparent;border:1.5px solid #ff465a;color:#ff465a;font-family:'Orbitron',sans-serif;font-size:0.75rem;letter-spacing:0.1em;cursor:pointer">
-            WITHDRAW LIQUIDITY ON-CHAIN
-          </button>
-          <div id="lpWithdrawStatus" class="font-mono text-xs text-center mt-3" style="color:#4a5568;min-height:16px"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Admin: Protocol Eco Fee Claim (only visible to LP deployer wallet) -->
-    <div id="lpAdminPanel" style="display:none" class="reveal card p-6 rounded-none mt-6" style="border-color:rgba(157,78,221,0.3);background:rgba(157,78,221,0.04)">
-      <div class="font-mono text-xs tracking-widest mb-4" style="color:var(--purple)">◈ ADMIN — PROTOCOL ECO FEE</div>
-      <div class="grid gap-4" style="grid-template-columns:1fr 1fr">
-        <div>
-          <div class="font-mono text-xs text-slate-500 mb-1">ACCUMULATED PROTOCOL SUI</div>
-          <div id="ecoFeeBalance" class="font-orbitron text-xl font-bold" style="color:var(--purple)">—</div>
-          <div class="font-mono text-xs text-slate-500 mt-1">50% of all LP trading fees</div>
-        </div>
-        <div class="flex flex-col justify-end">
-          <button onclick="claimProtocolFees()" id="claimEcoBtn" style="width:100%;padding:12px;background:rgba(157,78,221,0.15);border:1.5px solid var(--purple);color:var(--purple);font-family:'Orbitron',sans-serif;font-size:0.7rem;letter-spacing:0.1em;cursor:pointer">
-            CLAIM ECO FEES →
-          </button>
-          <div id="ecoFeeStatus" class="font-mono text-xs text-center mt-2" style="color:#4a5568;min-height:16px"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- How LP works -->
-    <div class="reveal card p-8 rounded-none mt-8" style="border-color:rgba(0,245,255,0.1)">
-      <div class="font-mono text-xs text-slate-500 mb-4 tracking-widest">◈ HOW LP WORKS</div>
-      <div class="grid gap-6" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
-        <div>
-          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--cyan)">1. DEPOSIT</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">Add equal value of SUI + $AGENT. You receive LP tokens representing your share of the pool.</p>
-        </div>
-        <div>
-          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--green)">2. EARN FEES</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">Every trade pays 0.3% fee. 0.15% goes to LP providers automatically — no claiming needed. Fees compound in the pool reserves, so your LP tokens become worth more over time.</p>
-        </div>
-        <div>
-          <div class="font-orbitron text-sm font-bold mb-2" style="color:var(--purple)">3. WITHDRAW ANYTIME</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">Burn your LP tokens anytime to receive your proportional share of the pool — which includes your original deposit PLUS all fees earned since you added liquidity.</p>
-        </div>
-        <div>
-          <div class="font-orbitron text-sm font-bold mb-2" style="color:#ffa07a">⚠ RISK</div>
-          <p class="font-mono text-xs text-slate-400 leading-relaxed">Impermanent loss risk — if $AGENT price moves significantly vs SUI, you may receive more of one and less of the other than you deposited.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- ══════════════════════════════════════ ARENA ══════════════════════════════════════ -->
 <section id="arena" style="padding:100px 24px;background:var(--bg)">
@@ -3016,15 +2855,13 @@ function addRealTrade(isBuy, wallet, agentRaw, suiRaw, timestamp) {
 
 async function fetchRealTrades() {
   try {
-    const LP_PKG_FEED = '0xf554dad1683cb25386ddf57f2d40f2774fb8287b17f467ebc657c5bc20f226e3';
     // v6.5: also fetch public Cetus AGENT/SUI pool swaps from backend
     // (custodial AgentPool events alone miss every trade made directly on Cetus DEX).
-    const [oldRes, lpRes, cetusRes] = await Promise.all([
+    const [oldRes, cetusRes] = await Promise.all([
       rpc('suix_queryEvents', [{ MoveModule: { package: POOL_PACKAGE, module: 'pool' } }, null, 15, true]),
-      rpc('suix_queryEvents', [{ MoveModule: { package: LP_PKG_FEED, module: 'pool_lp' } }, null, 10, true]),
       fetch(API_URL + '/agent/cetus-trades?limit=20').then(r => r.json()).catch(() => ({ trades: [] })),
     ]);
-    const events = [...(oldRes?.data || []), ...(lpRes?.data || [])];
+    const events = [...(oldRes?.data || [])];
     events.sort((a, b) => parseInt(b.timestampMs||0) - parseInt(a.timestampMs||0));
     let newCount = 0;
     events.forEach(function(ev) {
@@ -3129,17 +2966,10 @@ async function fetchSuiPrice() {
 
 async function updatePriceBar() {
   try {
-    const LP_POOL_PRICE = '0xe2cb18758423840159a11243387efc27c21db171ba97c1bad2d6009a474d2e79';
     const timeout = ms => new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms));
-    const [poolObj, lpObj] = await Promise.all([
-      Promise.race([rpc('sui_getObject', [POOL_ID, { showContent: true }]), timeout(8000)]),
-      Promise.race([rpc('sui_getObject', [LP_POOL_PRICE, { showContent: true }]), timeout(8000)]).catch(() => null),
-    ]);
+    const poolObj = await Promise.race([rpc('sui_getObject', [POOL_ID, { showContent: true }]), timeout(8000)]);
     const pf = poolObj?.data?.content?.fields || {};
-    // Add LP pool reserves to liquidity display
-    const lpF = lpObj?.data?.content?.fields || {};
-    const lpSui = parseInt(lpF.sui_reserve?.fields?.balance || lpF.sui_reserve || 0);
-    const suiRaw   = parseInt(pf.sui_reserve?.fields?.balance   || pf.sui_reserve   || 0);
+    const suiRaw = parseInt(pf.sui_reserve?.fields?.balance || pf.sui_reserve || 0);
     const agentRaw = parseInt(pf.agent_reserve?.fields?.balance || pf.agent_reserve || 0);
 
     if (agentRaw === 0 || suiRaw === 0) {
@@ -3156,19 +2986,14 @@ async function updatePriceBar() {
     const suiUsd       = await fetchSuiPrice();
     const priceUsd     = priceInSui * suiUsd;
     const mcap         = priceUsd * TOTAL_SUPPLY;
-    // Combined liquidity: old pool + LP pool, both sides (SUI * 2 = total TVL)
-    const oldPoolSui = suiReserve;           // already in SUI
-    const lpPoolSui  = lpSui / 1_000_000_000; // convert MIST to SUI
-    const liqUsd     = (oldPoolSui + lpPoolSui) * 2 * suiUsd;
+    const liqUsd     = suiReserve * 2 * suiUsd;
 
     document.getElementById('priceSui').textContent     = priceInSui.toFixed(10) + ' SUI';
     document.getElementById('priceUsd').textContent     = fmtUsd(priceUsd);
     document.getElementById('marketCap').textContent    = fmtUsdShort(mcap);
     document.getElementById('fdv').textContent          = fmtUsdShort(mcap);
     document.getElementById('statLiquidity').textContent = fmtUsdShort(liqUsd);
-    const lpPoolSuiDisplay = (lpSui / 1_000_000_000).toFixed(1);
-    document.getElementById('poolReserves').textContent =
-      (suiReserve + lpSui/1e9).toFixed(1) + ' SUI total (' + suiReserve.toFixed(1) + '+' + lpPoolSuiDisplay + ' LP)';
+    document.getElementById('poolReserves').textContent = suiReserve.toFixed(1) + ' SUI';
 
     const ch = document.getElementById('priceChange');
     ch.style.color   = 'var(--green)';
@@ -3417,17 +3242,11 @@ setInterval(fetchArenaParticipants, 10000);
 // ─── CHART + LP — direct from chain, no backend dependency ───
 const BACKEND   = 'https://backend-production-d4c4b.up.railway.app';
 const SUI_NODE  = 'https://sui-rpc.publicnode.com';
-const LP_POOL_ID_SITE = '0xe2cb18758423840159a11243387efc27c21db171ba97c1bad2d6009a474d2e79';
-const LP_PKG_SITE     = '0xf554dad1683cb25386ddf57f2d40f2774fb8287b17f467ebc657c5bc20f226e3';
-const LP_COIN_TYPE    = LP_PKG_SITE + '::pool_lp::POOL_LP';
 
 let lwChart      = null;
 let candleSeries = null;
 let currentTf    = '5m';
 let chartSuiUsd  = 3.5;
-let lpPoolData   = null;
-let lpPositionData = null;
-let withdrawPct  = 0;
 
 // Candle store built from on-chain events
 const TF_MS = { '1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000 };
@@ -3490,7 +3309,6 @@ async function seedCandlesFromChain() {
 
     const SOURCES = [
       { pkg: '0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48ce3cd6952', mod: 'pool' },
-      { pkg: '0xf554dad1683cb25386ddf57f2d40f2774fb8287b17f467ebc657c5bc20f226e3', mod: 'pool_lp' },
     ];
 
     for (const src of SOURCES) {
@@ -3533,13 +3351,8 @@ async function seedCandlesFromChain() {
 async function pollNewCandles() {
   try {
     const OLD_POOL_PKG = '0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48ce3cd6952';
-    const LP_POOL_PKG  = '0xf554dad1683cb25386ddf57f2d40f2774fb8287b17f467ebc657c5bc20f226e3';
-    // Query both pools simultaneously
-    const [oldEvents, lpEvents] = await Promise.all([
-      rpcCall('suix_queryEvents', [{ MoveModule: { package: OLD_POOL_PKG, module: 'pool' } }, lastEventCursor, 10, false]),
-      rpcCall('suix_queryEvents', [{ MoveModule: { package: LP_POOL_PKG,  module: 'pool_lp' } }, null, 5, false])
-    ]);
-    const allEvents = [...(oldEvents?.data || []), ...(lpEvents?.data || [])].sort((a,b) => parseInt(b.timestampMs||0) - parseInt(a.timestampMs||0));
+    const oldEvents = await rpcCall('suix_queryEvents', [{ MoveModule: { package: OLD_POOL_PKG, module: 'pool' } }, lastEventCursor, 10, false]);
+    const allEvents = (oldEvents?.data || []).sort((a,b) => parseInt(b.timestampMs||0) - parseInt(a.timestampMs||0));
     if (!allEvents.length) return;
     for (const e of allEvents) {
       const f       = e.parsedJson || {};
@@ -3714,92 +3527,6 @@ window.__walletStandardGetWallets = function() {
 
 // v26: removed lightweight-charts loader — AGENT chart is now a DexScreener iframe
 
-// ─── LP POOL — direct from chain ───
-async function fetchLpPool() {
-  try {
-    const obj = await rpcCall('sui_getObject', [LP_POOL_ID_SITE, { showContent: true }]);
-    const f   = obj?.data?.content?.fields || {};
-    const sui   = parseInt(f.sui_reserve?.fields?.balance   || f.sui_reserve   || 0);
-    const agent = parseInt(f.agent_reserve?.fields?.balance || f.agent_reserve || 0);
-    const lptot = parseInt(f.lp_total || 0);
-    lpPoolData  = { suiReserve: sui, agentReserve: agent, lpTotal: lptot };
-    const el = id => document.getElementById(id);
-    if (el('lpPoolSui'))   el('lpPoolSui').textContent   = (sui/1e9).toFixed(2) + ' SUI';
-    if (el('lpPoolAgent')) el('lpPoolAgent').textContent = (agent/1e6).toFixed(0) + ' $AGENT';
-    if (el('lpTotal'))     el('lpTotal').textContent     = lptot.toLocaleString() || '0';
-  } catch(e) { console.log('LP fetch error:', e.message); }
-}
-
-async function fetchLpPosition() {
-  const wallet = document.getElementById('lpWallet')?.value?.trim();
-  if (!wallet || !wallet.startsWith('0x') || wallet.length !== 66) return;
-  try {
-    const balRes = await rpcCall('suix_getBalance', [wallet, LP_COIN_TYPE]);
-    const userLp = parseInt(balRes?.totalBalance || 0);
-    const el     = id => document.getElementById(id);
-    if (userLp > 0 && lpPoolData) {
-      const lptot    = lpPoolData.lpTotal || userLp;
-      const suiVal   = Math.floor(userLp * lpPoolData.suiReserve   / lptot);
-      const agentVal = Math.floor(userLp * lpPoolData.agentReserve / lptot);
-      const sharePct = (userLp / lptot * 100).toFixed(4);
-      lpPositionData = { lpBalance: userLp, suiValue: suiVal, agentValue: agentVal, sharePct };
-      if (el('lpNoPosition')) el('lpNoPosition').style.display = 'none';
-      if (el('lpPosition'))   el('lpPosition').style.display   = 'block';
-      if (el('posLp'))        el('posLp').textContent   = userLp.toLocaleString();
-      if (el('posShare'))     el('posShare').textContent = sharePct + '%';
-      if (el('posSui'))       el('posSui').textContent   = (suiVal/1e9).toFixed(4) + ' SUI';
-      if (el('posAgent'))     el('posAgent').textContent = (agentVal/1e6).toFixed(0) + ' $AGENT';
-    } else {
-      if (el('lpNoPosition')) el('lpNoPosition').innerHTML = '<div class="font-mono text-xs text-slate-600">No LP position found for this wallet.</div>';
-    }
-  } catch(e) {}
-}
-
-function calcLpPreview() {
-  const sui   = parseFloat(document.getElementById('lpSuiAmount')?.value || 0);
-  if (!sui || !lpPoolData?.suiReserve) return;
-  const ratio     = lpPoolData.agentReserve / lpPoolData.suiReserve;
-  const autoAgent = (sui * 1e9) * ratio / 1e6;
-  const agentEl   = document.getElementById('lpAgentAmount');
-  // Auto-fill the $AGENT amount based on current pool ratio
-  if (agentEl) {
-    agentEl.value = autoAgent.toFixed(0);
-  }
-  const preview = document.getElementById('lpPreview');
-  const text    = document.getElementById('lpPreviewText');
-  if (preview && text) {
-    preview.style.display = 'block';
-    text.textContent = 'Depositing ' + sui + ' SUI + ' + autoAgent.toFixed(0) + ' $AGENT';
-  }
-}
-
-function setWithdrawPct(pct) {
-  withdrawPct = pct;
-  if (!lpPositionData) return;
-  const suiOut   = (lpPositionData.suiValue   * pct / 100 / 1e9).toFixed(4);
-  const agentOut = Math.floor(lpPositionData.agentValue * pct / 100 / 1e6);
-  const el = document.getElementById('withdrawPreview');
-  if (el) el.textContent = 'Withdraw ' + pct + '%: ~' + suiOut + ' SUI + ~' + agentOut + ' $AGENT';
-}
-
-async function addLiquidity() {
-  const status = document.getElementById('lpDepositStatus');
-  if (status) {
-    status.style.color = 'var(--cyan)';
-    status.textContent = '⏳ Use the Telegram bot to add liquidity — /lp command coming soon!';
-  }
-}
-
-async function withdrawLiquidity() {
-  const status = document.getElementById('lpWithdrawStatus');
-  if (status) {
-    status.style.color = 'var(--cyan)';
-    status.textContent = '⏳ Use the Telegram bot to withdraw liquidity — /lp command coming soon!';
-  }
-}
-
-fetchLpPool();
-setInterval(fetchLpPool, 30000);
 
 // ─── SWAP WIDGET ───
 let swapMode = 'buy';
@@ -3905,10 +3632,7 @@ function executeSwap() {
 // ══════════════════════════════════════════════════════
 
 const POOL_PKG_ID = '0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48ce3cd6952';
-const LP_PKG_ID   = '0xf554dad1683cb25386ddf57f2d40f2774fb8287b17f467ebc657c5bc20f226e3';
-const LP_POOL_OBJ = '0xe2cb18758423840159a11243387efc27c21db171ba97c1bad2d6009a474d2e79';
 const AGENT_COIN  = '0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT';
-const LP_COIN     = LP_PKG_ID + '::pool_lp::POOL_LP';
 
 let connectedWallet   = null;
 let connectedProvider = null;
@@ -4119,12 +3843,6 @@ function clearWalletSession() {
 function disconnectWallet() {
   clearWalletSession();
   updateWalletUI(null);
-  const lpIn = document.getElementById('lpWallet');
-  if (lpIn) { lpIn.value = ''; }
-  const lpPos = document.getElementById('lpPosition');
-  const lpNo  = document.getElementById('lpNoPosition');
-  if (lpPos) lpPos.style.display = 'none';
-  if (lpNo)  { lpNo.style.display = 'block'; lpNo.innerHTML = '<div class="font-mono text-xs text-slate-600">Enter your wallet address on the left to see your LP position</div>'; }
   console.log('Wallet disconnected');
 }
 
@@ -4132,11 +3850,11 @@ function updateWalletUI(address) {
   const short = address ? address.slice(0,8)+'...'+address.slice(-6) : null;
   const connected = !!address;
   // Update all wallet indicators
-  ['walletDot','lpWalletDot'].forEach(id => {
+  ['walletDot'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.background = connected ? 'var(--green)' : '#4a5568';
   });
-  ['walletAddr','lpWalletAddrDisplay'].forEach(id => {
+  ['walletAddr'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.textContent = short || 'No wallet connected'; el.style.color = connected ? 'var(--green)' : '#4a5568'; }
   });
@@ -4157,9 +3875,6 @@ function updateWalletUI(address) {
   document.querySelectorAll('#swapBtnText').forEach(el => {
     el.textContent = connected ? '◈ EXECUTE SWAP ON-CHAIN' : '◈ CONNECT WALLET TO SWAP';
   });
-  // Auto-fill LP wallet field
-  const lpIn = document.getElementById('lpWallet');
-  if (lpIn && address && !lpIn.value) { lpIn.value = address; fetchLpPosition(); }
   // Persist to localStorage
   if (address) {
     try { localStorage.setItem('suiagent_wallet', JSON.stringify({ address, name: connectedWallet?.name || '' })); }
@@ -4167,9 +3882,6 @@ function updateWalletUI(address) {
   } else {
     try { localStorage.removeItem('suiagent_wallet'); } catch(e) {}
   }
-  // Show/hide connected state on LP add button
-  const lpAddBtn = document.querySelector('#lpDepositStatus');
-  if (lpAddBtn && connected) lpAddBtn.textContent = '';
 }
 
 async function signAndExecuteTx(tx) {
@@ -4230,32 +3942,17 @@ window.__buildTx = async function(sender, txData) {
   const tx = new Transaction();
   tx.setSender(sender);
 
-  const LP_PKG   = '0xf554dad1683cb25386ddf57f2d40f2774fb8287b17f467ebc657c5bc20f226e3';
-  const LP_POOL  = '0xe2cb18758423840159a11243387efc27c21db171ba97c1bad2d6009a474d2e79';
   const POOL_PKG = '0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48ce3cd6952';
   const POOL     = '0xba79012088507127692c8c8ba97d4fdc4a83d2f9fff4e9a1ea61ebdc00ff460c';
   const REG      = '0x63af8f92c3988601b889a543615b0984ebabbfa420d8b38b2461751f8c05194f';
   const CLK      = '0x0000000000000000000000000000000000000000000000000000000000000006';
   const COIN_T   = '0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT';
-  const LP_COIN  = LP_PKG + '::pool_lp::POOL_LP';
 
   if (txData.action === 'buy') {
     const { amount, badgeId } = txData;
-    // Check if LP pool has liquidity for 50/50 split
-    const lpRes = lpPoolData?.suiReserve || 0;
-    if (lpRes > 1_000_000_000) {
-      const half1 = Math.floor(amount / 2);
-      const half2 = amount - half1;
-      const [c1] = tx.splitCoins(tx.gas, [half1]);
-      const [c2] = tx.splitCoins(tx.gas, [half2]);
-      const [o1] = tx.moveCall({ target: `${POOL_PKG}::pool::buy_agent_verified`, arguments: [tx.object(POOL), tx.object(badgeId), tx.object(REG), c1, tx.pure.u64(0), tx.object(CLK)] });
-      const [o2] = tx.moveCall({ target: `${LP_PKG}::pool_lp::buy_agent`, arguments: [tx.object(LP_POOL), c2, tx.pure.u64(0), tx.object(CLK)] });
-      tx.transferObjects([o1, o2], sender);
-    } else {
       const [coin] = tx.splitCoins(tx.gas, [amount]);
       const [out]  = tx.moveCall({ target: `${POOL_PKG}::pool::buy_agent_verified`, arguments: [tx.object(POOL), tx.object(badgeId), tx.object(REG), coin, tx.pure.u64(0), tx.object(CLK)] });
       tx.transferObjects([out], sender);
-    }
     tx.setGasBudget(20_000_000);
 
   } else if (txData.action === 'sell') {
@@ -4266,74 +3963,9 @@ window.__buildTx = async function(sender, txData) {
     if (!coins.length) throw new Error('No $AGENT coins found');
     const primary = tx.object(coins[0].coinObjectId);
     if (coins.length > 1) tx.mergeCoins(primary, coins.slice(1).map(c => tx.object(c.coinObjectId)));
-    const lpRes = lpPoolData?.suiReserve || 0;
-    if (lpRes > 1_000_000_000) {
-      const half1 = Math.floor(amount / 2);
-      const half2 = amount - half1;
-      const [a1] = tx.splitCoins(primary, [half1]);
-      const [a2] = tx.splitCoins(primary, [half2]);
-      const [s1] = tx.moveCall({ target: `${POOL_PKG}::pool::sell_agent_verified`, arguments: [tx.object(POOL), tx.object(badgeId), tx.object(REG), a1, tx.pure.u64(0), tx.object(CLK)] });
-      const [s2] = tx.moveCall({ target: `${LP_PKG}::pool_lp::sell_agent`, arguments: [tx.object(LP_POOL), a2, tx.pure.u64(0), tx.object(CLK)] });
-      tx.transferObjects([s1, s2], sender);
-    } else {
       const [aCoin] = tx.splitCoins(primary, [amount]);
       const [sCoin] = tx.moveCall({ target: `${POOL_PKG}::pool::sell_agent_verified`, arguments: [tx.object(POOL), tx.object(badgeId), tx.object(REG), aCoin, tx.pure.u64(0), tx.object(CLK)] });
       tx.transferObjects([sCoin], sender);
-    }
-    tx.setGasBudget(20_000_000);
-
-  } else if (txData.action === 'add_liquidity') {
-    const { suiAmount, agentAmount } = txData;
-    const GAS_BUDGET = 50_000_000; // 0.05 SUI — LP needs more gas than simple swaps
-    // Pre-check: user needs suiAmount + gas budget in SUI balance
-    const suiBalRes = await rpcCall('suix_getBalance', [sender, '0x2::sui::SUI']);
-    const suiBal = parseInt(suiBalRes?.totalBalance || 0);
-    if (suiBal < suiAmount + GAS_BUDGET) {
-      const needSui = ((suiAmount + GAS_BUDGET) / 1e9).toFixed(4);
-      const haveSui = (suiBal / 1e9).toFixed(4);
-      throw new Error(`Insufficient SUI — need ${needSui} SUI (deposit + 0.05 gas), have ${haveSui} SUI`);
-    }
-    const coinsRes = await rpcCall('suix_getCoins', [sender, COIN_T, null, 50]);
-    const coins = coinsRes?.data || [];
-    if (!coins.length) throw new Error('No $AGENT coins found in wallet');
-    // Check AGENT balance
-    const agentBal = coins.reduce((s, c) => s + parseInt(c.balance || 0), 0);
-    if (agentBal < agentAmount) {
-      const needAg = (agentAmount / 1e6).toFixed(0);
-      const haveAg = (agentBal / 1e6).toFixed(0);
-      throw new Error(`Insufficient $AGENT — need ${needAg}, have ${haveAg}`);
-    }
-    const [suiCoin]   = tx.splitCoins(tx.gas, [suiAmount]);
-    const primaryAg   = tx.object(coins[0].coinObjectId);
-    if (coins.length > 1) tx.mergeCoins(primaryAg, coins.slice(1).map(c => tx.object(c.coinObjectId)));
-    const [agentCoin] = tx.splitCoins(primaryAg, [agentAmount]);
-    const [lpOut]     = tx.moveCall({ target: `${LP_PKG}::pool_lp::add_liquidity`, arguments: [tx.object(LP_POOL), suiCoin, agentCoin, tx.pure.u64(0), tx.object(CLK)] });
-    tx.transferObjects([lpOut], sender);
-    tx.setGasBudget(GAS_BUDGET);
-
-  } else if (txData.action === 'remove_liquidity') {
-    const { lpAmount } = txData;
-    const lpCoinsRes = await rpcCall('suix_getCoins', [sender, LP_COIN, null, 50]);
-    const lpCoins = lpCoinsRes?.data || [];
-    if (!lpCoins.length) throw new Error('No LP tokens found in wallet');
-    const primaryLp = tx.object(lpCoins[0].coinObjectId);
-    if (lpCoins.length > 1) tx.mergeCoins(primaryLp, lpCoins.slice(1).map(c => tx.object(c.coinObjectId)));
-    const [lpCoin] = tx.splitCoins(primaryLp, [lpAmount]);
-    const [suiOut, agentOut] = tx.moveCall({ target: `${LP_PKG}::pool_lp::remove_liquidity`, arguments: [tx.object(LP_POOL), lpCoin, tx.pure.u64(0), tx.pure.u64(0), tx.object(CLK)] });
-    tx.transferObjects([suiOut, agentOut], sender);
-    tx.setGasBudget(50_000_000);
-
-  } else if (txData.action === 'claim_eco_fees') {
-    // Admin only — requires LP AdminCap
-    // withdraw_protocol_fees returns Coin<SUI> that must be transferred
-    const [feeCoin] = tx.moveCall({
-      target: `${LP_PKG}::pool_lp::withdraw_protocol_fees`,
-      arguments: [
-        tx.object(LP_POOL),
-        tx.object('0xcaf008988b557cc9ddf4a5921e42d2440db13e108f05c884c44c57903bc7c4e5'), // LP AdminCap
-      ]
-    });
-    tx.transferObjects([feeCoin], sender);
     tx.setGasBudget(20_000_000);
 
   } else {
@@ -4415,158 +4047,6 @@ async function executeSwapOnChain() {
   }
 }
 
-// ─── ADD LIQUIDITY ON-CHAIN ───
-async function addLiquidityOnChain() {
-  const status = document.getElementById('lpDepositStatus');
-  
-  if (!connectedWallet) {
-    await connectWallet();
-    if (!connectedWallet) return;
-  }
-
-  const suiAmt   = parseFloat(document.getElementById('lpSuiAmount')?.value || 0);
-  const agentAmt = parseFloat(document.getElementById('lpAgentAmount')?.value || 0);
-
-  if (!suiAmt || suiAmt <= 0) {
-    if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ Enter SUI amount'; }
-    return;
-  }
-  if (!agentAmt || agentAmt <= 0) {
-    if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ Enter $AGENT amount'; }
-    return;
-  }
-
-  if (status) { status.style.color = 'var(--cyan)'; status.textContent = '⏳ Building LP transaction...'; }
-
-  if (!connectedWallet?.address) {
-    if (status) { status.style.color = '#ff465a'; status.textContent = '❌ Wallet not connected'; }
-    return;
-  }
-  try {
-    const result = await window.__buildTx(connectedWallet.address, {
-      action:      'add_liquidity',
-      suiAmount:   Math.floor(suiAmt   * 1e9),
-      agentAmount: Math.floor(agentAmt * 1e6),
-    });
-
-    if (result?.effects?.status?.status === 'success') {
-      if (status) {
-        status.style.color = 'var(--green)';
-        status.textContent = '✅ Liquidity added! LP tokens sent to your wallet.';
-      }
-      fetchLpPool();
-      fetchLpPosition();
-    } else {
-      if (status) { status.style.color = '#ff465a'; status.textContent = '❌ Transaction failed: ' + (result?.effects?.status?.error || 'unknown'); }
-    }
-  } catch(e) {
-    if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ ' + (e.message || 'Error adding liquidity'); }
-  }
-}
-
-// ─── WITHDRAW LIQUIDITY ON-CHAIN ───
-async function withdrawLiquidityOnChain() {
-  const status = document.getElementById('lpWithdrawStatus');
-  
-  if (!connectedWallet) {
-    await connectWallet();
-    if (!connectedWallet) return;
-  }
-
-  if (!lpPositionData || lpPositionData.lpBalance === 0) {
-    if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ No LP position to withdraw'; }
-    return;
-  }
-  if (!withdrawPct || withdrawPct === 0) {
-    if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ Select withdrawal % first'; }
-    return;
-  }
-
-  const lpBurn = Math.floor(lpPositionData.lpBalance * withdrawPct / 100);
-  if (status) { status.style.color = 'var(--cyan)'; status.textContent = '⏳ Building withdrawal transaction...'; }
-
-  if (!connectedWallet?.address) {
-    if (status) { status.style.color = '#ff465a'; status.textContent = '❌ Wallet not connected'; }
-    return;
-  }
-  try {
-    const result = await window.__buildTx(connectedWallet.address, {
-      action:  'remove_liquidity',
-      lpAmount: lpBurn,
-    });
-
-    if (result?.effects?.status?.status === 'success') {
-      if (status) {
-        status.style.color = 'var(--green)';
-        status.textContent = '✅ Withdrawn! SUI + $AGENT sent to your wallet.';
-      }
-      fetchLpPool();
-      fetchLpPosition();
-    } else {
-      if (status) { status.style.color = '#ff465a'; status.textContent = '❌ Withdrawal failed: ' + (result?.effects?.status?.error || 'unknown'); }
-    }
-  } catch(e) {
-    if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ ' + (e.message || 'Error withdrawing'); }
-  }
-}
-
-
-// ─── CLAIM PROTOCOL ECO FEES (LP admin only, on-chain) ───
-const LP_ADMIN_ADDRESS  = '0x47cee6fed8a44224350d0565a45dd97b320a9c3f54a8feb6036fb9b2d3a81a08';
-const LP_ADMIN_CAP_ID   = '0xcaf008988b557cc9ddf4a5921e42d2440db13e108f05c884c44c57903bc7c4e5';
-
-async function refreshEcoFeeBalance() {
-  try {
-    const obj = await rpcCall('sui_getObject', [LP_POOL_OBJ, { showContent: true }]);
-    const fields = obj?.data?.content?.fields || {};
-    const raw = parseInt(fields.protocol_sui || 0);
-    const el = document.getElementById('ecoFeeBalance');
-    if (el) el.textContent = (raw / 1e9).toFixed(4) + ' SUI';
-  } catch(e) {}
-}
-
-function checkLpAdminPanel() {
-  const panel = document.getElementById('lpAdminPanel');
-  if (!panel) return;
-  const addr = connectedWallet?.address?.toLowerCase();
-  if (addr && addr === LP_ADMIN_ADDRESS.toLowerCase()) {
-    panel.style.display = 'block';
-    refreshEcoFeeBalance();
-  } else {
-    panel.style.display = 'none';
-  }
-}
-
-async function claimProtocolFees() {
-  const status = document.getElementById('ecoFeeStatus');
-  if (!connectedWallet?.address) {
-    await connectWallet();
-    if (!connectedWallet?.address) return;
-  }
-  if (connectedWallet.address.toLowerCase() !== LP_ADMIN_ADDRESS.toLowerCase()) {
-    if (status) { status.style.color = '#ff465a'; status.textContent = '❌ Not LP admin wallet'; }
-    return;
-  }
-  if (status) { status.style.color = 'var(--cyan)'; status.textContent = '⏳ Building claim transaction...'; }
-  try {
-    const result = await window.__buildTx(connectedWallet.address, { action: 'claim_eco_fees' });
-    if (result?.effects?.status?.status === 'success') {
-      if (status) {
-        status.style.color = 'var(--green)';
-        status.innerHTML = '✅ Fees claimed! <a href="https://suiscan.xyz/mainnet/tx/' + result.digest + '" target="_blank" style="color:var(--purple);text-decoration:underline">View TX ↗</a>';
-      }
-      setTimeout(refreshEcoFeeBalance, 3000);
-    } else {
-      const err = result?.effects?.status?.error || 'Transaction failed';
-      if (status) { status.style.color = '#ff465a'; status.textContent = '❌ ' + err; }
-    }
-  } catch(e) {
-    if (status) { status.style.color = '#ff465a'; status.textContent = '⚠ ' + e.message; }
-  }
-}
-
-// Legacy alias
-async function claimLpFees() { return claimProtocolFees(); }
 // Auto-connect if wallet was previously connected (Wallet Standard)
 window.addEventListener('load', async () => {
   await new Promise(r => setTimeout(r, 600)); // wait for wallet extensions to inject
@@ -4733,7 +4213,6 @@ window.updateWalletUI = function(addr) {
   if (origUpdateWalletUI) origUpdateWalletUI(addr);
   mlMyWallet = addr;
   mlUpdateRefLink();
-  checkLpAdminPanel(); // show eco-fee claim panel if LP deployer wallet connected
 };
 
 // ── Load tokens ──
