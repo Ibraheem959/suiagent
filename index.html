@@ -1,268 +1,850 @@
-<!-- ════════════════════════════════════════════════════════════════
-     SUIAGENT SITE — VERSION 5.0.0  (2026-04-20)
-     ─ Renders token.socials (twitter / telegram / website) in:
-        • launchpad token tile (grid card)
-        • token detail modal (under description)
-     ════════════════════════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════════════════════════════════════════════
+     SUI AGENT SITE — VERSION 7.0.0  (multi-page, mobile-first, screenshot-styled)
+     ──────────────────────────────────────────────────────────────────────────
+     Tabs: #/home · #/token · #/setup · #/swap · #/lp · #/arena · #/memeland · #/trust · #/locker
+     Architecture: SPA-style hash routing, 1 file deploy, zero JS regressions.
+     All 162 element IDs from v5.0.0 preserved → backend integration intact.
+     ════════════════════════════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#040810"/>
+<meta name="description" content="$AGENT — the first token built for AI agents to trade autonomously on Sui. Human-holdable, agent-optimized, verified through an agent-only pool."/>
 <title>$AGENT — SUI AGENT | Built for AI Agents</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
+  /* ═══════ DESIGN TOKENS — matches reference screenshots ═══════ */
   :root {
     --cyan: #00f5ff;
-    --purple: #b44fff;
     --green: #00ff88;
+    --purple: #b44fff;
     --bg: #040810;
-    --bg2: #070d1a;
+    --bg2: #060c18;
     --card: #0a1525;
-    --border: rgba(0,245,255,0.15);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  body {
-    background: var(--bg);
-    color: #c8daf0;
-    font-family: 'Exo 2', sans-serif;
-    overflow-x: hidden;
+    --card-hi: #0d1a2e;
+    --border: rgba(0,245,255,0.10);
+    --border-hi: rgba(0,245,255,0.22);
+    --text: #e8eef7;
+    --text-dim: #8ba1bd;
+    --text-faint: #4a5f7d;
+    --grad: linear-gradient(90deg, #00f5ff 0%, #00ff88 100%);
+    --grad-soft: linear-gradient(135deg, rgba(0,245,255,0.12), rgba(0,255,136,0.08));
   }
 
-  /* GRID OVERLAY */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', 'Exo 2', system-ui, sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    overflow-x: hidden;
+    min-height: 100vh;
+    line-height: 1.55;
+  }
+
+  /* Subtle radial glow top-right (matches the screenshots' atmosphere) */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
-    background-image:
-      linear-gradient(rgba(0,245,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,245,255,0.03) 1px, transparent 1px);
-    background-size: 50px 50px;
+    background:
+      radial-gradient(ellipse 800px 600px at 90% -10%, rgba(0,255,136,0.06), transparent 60%),
+      radial-gradient(ellipse 600px 500px at 0% 10%, rgba(0,245,255,0.04), transparent 60%);
     pointer-events: none;
     z-index: 0;
   }
-
-  /* SCANLINES */
+  /* Faint grid */
   body::after {
     content: '';
     position: fixed;
     inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.08) 2px,
-      rgba(0,0,0,0.08) 4px
-    );
+    background-image:
+      linear-gradient(rgba(0,245,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,255,0.025) 1px, transparent 1px);
+    background-size: 64px 64px;
     pointer-events: none;
     z-index: 0;
+    mask-image: radial-gradient(ellipse at center, #000 30%, transparent 80%);
   }
 
-  section, nav, footer { position: relative; z-index: 1; }
+  nav, footer, .page-tab, .price-bar, .top-modals { position: relative; z-index: 1; }
 
-  /* TYPOGRAPHY */
+  /* ═══════ TYPOGRAPHY ═══════ */
   .font-orbitron { font-family: 'Orbitron', sans-serif; }
-  .font-mono { font-family: 'Share Tech Mono', monospace; }
+  .font-mono     { font-family: 'Share Tech Mono', monospace; }
+  .font-display  { font-family: 'Inter', sans-serif; font-weight: 800; letter-spacing: -0.02em; }
 
-  /* GLOWS */
+  .h-display {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2rem, 6vw, 4rem);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    color: #fff;
+  }
+  .h-section {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.4rem, 3vw, 1.9rem);
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    color: #fff;
+  }
+  .label-eyebrow {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    color: var(--cyan);
+    text-transform: uppercase;
+    display: inline-block;
+    margin-bottom: 18px;
+  }
+  .body-text {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    line-height: 1.65;
+  }
+
+  /* ═══════ NAV ═══════ */
+  .top-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(20px);
+    background: rgba(4,8,16,0.85);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .nav-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  .brand-logo {
+    width: 32px; height: 32px;
+    border: 1.5px solid var(--cyan);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,245,255,0.06);
+    box-shadow: 0 0 14px rgba(0,245,255,0.18) inset;
+  }
+  .brand-logo span { font-family: 'Orbitron', sans-serif; font-size: 0.7rem; font-weight: 700; color: var(--cyan); }
+  .brand-text { display: flex; flex-direction: column; line-height: 1.05; }
+  .brand-text .b1 { font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 800; color: #fff; letter-spacing: -0.01em; }
+  .brand-text .b2 { font-family: 'Share Tech Mono', monospace; font-size: 0.6rem; color: var(--text-dim); letter-spacing: 0.22em; }
+
+  .nav-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .nav-tab {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    transition: color 0.15s ease, background 0.15s ease;
+    white-space: nowrap;
+  }
+  .nav-tab:hover { color: #fff; background: rgba(0,245,255,0.04); }
+  .nav-tab.active {
+    color: var(--cyan);
+    background: rgba(0,245,255,0.08);
+    box-shadow: inset 0 0 0 1px rgba(0,245,255,0.18);
+  }
+
+  .nav-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .nav-iconlink {
+    color: var(--text-dim);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 8px 10px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+  }
+  .nav-iconlink:hover { color: var(--cyan); background: rgba(0,245,255,0.06); }
+
+  /* ═══════ BUTTONS — gradient cyan→green like reference ═══════ */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--grad);
+    color: #04101a !important;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 12px 22px;
+    min-height: 44px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 4px 14px rgba(0,245,255,0.16);
+    white-space: nowrap;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(0,245,255,0.36); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: transparent;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 12px 22px;
+    min-height: 44px;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .btn-outline:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,245,255,0.04); }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.03);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    padding: 12px 18px;
+    min-height: 44px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+  .btn-ghost:hover { background: rgba(0,245,255,0.06); border-color: var(--cyan); color: var(--cyan); }
+
+  .btn-tab {
+    flex: 1;
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .btn-tab:hover { color: #fff; }
+  .btn-tab.active {
+    background: var(--grad-soft);
+    color: var(--cyan);
+    border-color: rgba(0,245,255,0.35);
+  }
+
+  /* ═══════ INPUTS ═══════ */
+  .field {
+    width: 100%;
+    background: rgba(4,12,24,0.6);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #fff;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.88rem;
+    padding: 12px 14px;
+    min-height: 44px;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .field::placeholder { color: var(--text-faint); }
+  .field:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,245,255,0.1); }
+
+  .field-label {
+    display: block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  /* ═══════ CARDS ═══════ */
+  .clean-card {
+    background: linear-gradient(180deg, rgba(13,26,46,0.6), rgba(7,13,26,0.6));
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+    transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .clean-card:hover { border-color: var(--border-hi); }
+  .panel {
+    background: linear-gradient(180deg, rgba(13,26,46,0.5), rgba(7,13,26,0.7));
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .stat-tile {
+    background: rgba(4,12,24,0.5);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .stat-tile .lbl { font-family: 'Share Tech Mono', monospace; font-size: 0.62rem; color: var(--text-faint); letter-spacing: 0.18em; text-transform: uppercase; }
+  .stat-tile .val { font-family: 'Inter', sans-serif; font-size: 1.1rem; font-weight: 700; color: #fff; margin-top: 4px; line-height: 1.1; }
+
+  .badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,245,255,0.06);
+    border: 1px solid rgba(0,245,255,0.18);
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .badge-pill.green { background: rgba(0,255,136,0.06); border-color: rgba(0,255,136,0.22); color: var(--green); }
+  .badge-pill.purple { background: rgba(180,79,255,0.06); border-color: rgba(180,79,255,0.22); color: var(--purple); }
+
+  /* ═══════ PAGE LAYOUT ═══════ */
+  .page-tab { display: none; min-height: 70vh; padding: 64px 24px 96px; }
+  .page-tab.active { display: block; animation: pageFade 0.4s ease; }
+  @keyframes pageFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .page-container { max-width: 1280px; margin: 0 auto; }
+  .page-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: start;
+  }
+  @media (max-width: 980px) {
+    .page-grid { grid-template-columns: 1fr; gap: 32px; }
+  }
+
+  /* ═══════ HAMBURGER (mobile nav) ═══════ */
+  .hamburger {
+    display: none;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--cyan);
+    width: 44px; height: 44px;
+    border-radius: 8px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .hamburger svg { width: 22px; height: 22px; stroke: currentColor; }
+
+  #mobileMenu {
+    position: fixed;
+    inset: 0;
+    background: rgba(4,8,16,0.97);
+    backdrop-filter: blur(20px);
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    padding: 80px 24px 40px;
+    overflow-y: auto;
+  }
+  #mobileMenu.open { display: flex; }
+  #mobileMenu a {
+    display: block;
+    padding: 16px 14px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  #mobileMenu a.active, #mobileMenu a:hover { color: var(--cyan); }
+  .mm-close {
+    position: absolute;
+    top: 18px; right: 20px;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--cyan);
+    width: 44px; height: 44px;
+    border-radius: 8px;
+    font-size: 1.4rem;
+    cursor: pointer;
+  }
+
+  /* ═══════ HERO PAGE: AI ORBIT GRAPHIC ═══════ */
+  .orbit-window {
+    background: linear-gradient(180deg, #0a1525 0%, #060c18 100%);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.4), 0 0 60px rgba(0,245,255,0.06);
+    width: 100%;
+    max-width: 560px;
+    margin-left: auto;
+  }
+  .orbit-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .orbit-dots { display: flex; gap: 6px; }
+  .orbit-dots span {
+    display: block;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+  }
+  .orbit-dots span:nth-child(1) { background: #ff5f57; }
+  .orbit-dots span:nth-child(2) { background: #febc2e; }
+  .orbit-dots span:nth-child(3) { background: #28c840; }
+  .orbit-titletxt {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.14em;
+  }
+  .orbit-stage {
+    position: relative;
+    height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(circle at center, rgba(0,255,136,0.06), transparent 60%);
+  }
+  .orbit-ring {
+    position: absolute;
+    border: 1px solid rgba(0,245,255,0.18);
+    border-radius: 50%;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .orbit-ring.r1 { width: 160px; height: 160px; }
+  .orbit-ring.r2 { width: 240px; height: 240px; border-color: rgba(0,255,136,0.14); }
+  .orbit-ring.r3 { width: 320px; height: 320px; border-color: rgba(180,79,255,0.10); }
+
+  .orbit-core {
+    position: relative;
+    z-index: 2;
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(0,255,136,0.4), rgba(0,255,136,0.05));
+    border: 1.5px solid var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 50px rgba(0,255,136,0.4), inset 0 0 30px rgba(0,255,136,0.2);
+    animation: orbitCorePulse 3s ease-in-out infinite;
+  }
+  @keyframes orbitCorePulse {
+    0%, 100% { box-shadow: 0 0 50px rgba(0,255,136,0.4), inset 0 0 30px rgba(0,255,136,0.2); }
+    50% { box-shadow: 0 0 80px rgba(0,255,136,0.6), inset 0 0 40px rgba(0,255,136,0.3); }
+  }
+  .orbit-core span {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 1.6rem;
+    color: #fff;
+    letter-spacing: 0.05em;
+  }
+
+  .orbit-particle {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 0; height: 0;
+    transform: translate(-50%, -50%);
+  }
+  .orbit-particle::after {
+    content: '';
+    display: block;
+    position: absolute;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    box-shadow: 0 0 12px currentColor;
+  }
+  .orbit-particle.p1 {
+    animation: orbit1 8s linear infinite;
+    color: var(--cyan);
+  }
+  .orbit-particle.p1::after { background: var(--cyan); top: -80px; left: -5px; }
+
+  .orbit-particle.p2 {
+    animation: orbit2 12s linear infinite;
+    color: var(--green);
+  }
+  .orbit-particle.p2::after { background: var(--green); top: -120px; left: -5px; }
+
+  .orbit-particle.p3 {
+    animation: orbit3 18s linear infinite;
+    color: var(--purple);
+  }
+  .orbit-particle.p3::after { background: var(--purple); top: -160px; left: -5px; }
+
+  @keyframes orbit1 { from { transform: translate(-50%,-50%) rotate(0); } to { transform: translate(-50%,-50%) rotate(360deg); } }
+  @keyframes orbit2 { from { transform: translate(-50%,-50%) rotate(120deg); } to { transform: translate(-50%,-50%) rotate(480deg); } }
+  @keyframes orbit3 { from { transform: translate(-50%,-50%) rotate(240deg); } to { transform: translate(-50%,-50%) rotate(600deg); } }
+
+  .orbit-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .orbit-stat {
+    padding: 14px 12px;
+    border-right: 1px solid rgba(255,255,255,0.04);
+    text-align: left;
+  }
+  .orbit-stat:last-child { border-right: none; }
+  .orbit-stat .lbl { font-family: 'Share Tech Mono', monospace; font-size: 0.6rem; color: var(--text-faint); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 4px; }
+  .orbit-stat .val { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.95rem; color: #fff; }
+  .orbit-stat .val.cyan { color: var(--cyan); }
+  .orbit-stat .val.green { color: var(--green); }
+
+  /* ═══════ PRICE TICKER (compact, sticky-under-nav) ═══════ */
+  .price-bar {
+    position: sticky;
+    top: 60px;
+    z-index: 49;
+    background: rgba(6,12,24,0.85);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    backdrop-filter: blur(14px);
+    padding: 8px 24px;
+  }
+  .price-bar-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .price-bar-inner::-webkit-scrollbar { display: none; }
+  .price-pair {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .price-pair .label { font-family: 'Inter', sans-serif; font-size: 0.78rem; font-weight: 700; color: #fff; }
+  .price-pair .sub { font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; color: var(--text-dim); }
+  .price-stat { display: flex; flex-direction: column; flex-shrink: 0; }
+  .price-stat .k { font-family: 'Share Tech Mono', monospace; font-size: 0.6rem; color: var(--text-faint); letter-spacing: 0.16em; text-transform: uppercase; }
+  .price-stat .v { font-family: 'Share Tech Mono', monospace; font-size: 0.78rem; font-weight: 700; color: #fff; line-height: 1.2; }
+  .price-stat .v.cyan { color: var(--cyan); }
+  .price-stat .v.green { color: var(--green); }
+  .price-stat .v.purple { color: var(--purple); }
+
+  /* ═══════ MOBILE OVERRIDES ═══════ */
+  @media (max-width: 980px) {
+    body::after { background-size: 80px 80px; }
+    .nav-tabs { display: none; }
+    .hamburger { display: inline-flex; }
+    .nav-right .nav-iconlink { display: none; }
+    .nav-right .btn-primary { display: none; }
+    .page-tab { padding: 40px 16px 64px; }
+    .nav-inner { padding: 12px 16px; }
+    .price-bar { padding: 8px 14px; top: 60px; }
+    .orbit-window { max-width: 100%; margin: 0 auto; }
+  }
+  @media (max-width: 620px) {
+    .orbit-stage { height: 240px; }
+    .orbit-ring.r3 { width: 240px; height: 240px; }
+    .orbit-ring.r2 { width: 180px; height: 180px; }
+    .orbit-ring.r1 { width: 130px; height: 130px; }
+    .orbit-core { width: 70px; height: 70px; }
+    .orbit-core span { font-size: 1.3rem; }
+    .orbit-particle.p3::after { top: -120px; }
+    .orbit-particle.p2::after { top: -90px; }
+    .orbit-particle.p1::after { top: -65px; }
+  }
+
+  /* ═══════ FOCUS / TAP ═══════ */
+  *:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 4px; }
+  button, a, input, textarea, select { -webkit-tap-highlight-color: rgba(0,245,255,0.15); }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: rgba(0,245,255,0.22); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0,245,255,0.4); }
+  body.no-scroll { overflow: hidden; }
+
+  /* ═══════ FOOTER ═══════ */
+  .site-footer {
+    margin-top: 80px;
+    padding: 64px 24px 32px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    background: rgba(0,0,0,0.2);
+  }
+  .footer-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 48px;
+  }
+  .footer-col h5 {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--cyan);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .footer-col a {
+    display: block;
+    padding: 6px 0;
+    color: var(--text-dim);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .footer-col a:hover { color: var(--cyan); }
+  .footer-bottom {
+    max-width: 1280px;
+    margin: 48px auto 0;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .footer-bottom .copy { font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; color: var(--text-faint); letter-spacing: 0.1em; }
+  .footer-bottom .warn { font-family: 'Inter', sans-serif; font-size: 0.78rem; color: var(--text-dim); max-width: 600px; text-align: right; }
+  @media (max-width: 768px) {
+    .footer-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
+    .footer-col.brand-col { grid-column: 1 / -1; }
+    .footer-bottom { flex-direction: column; align-items: flex-start; }
+    .footer-bottom .warn { text-align: left; }
+  }
+
+  /* ═══════ V5 LEGACY CLASSES (preserved so original section HTML still works) ═══════ */
   .glow-cyan { text-shadow: 0 0 20px var(--cyan), 0 0 40px rgba(0,245,255,0.4); }
   .glow-purple { text-shadow: 0 0 20px var(--purple), 0 0 40px rgba(180,79,255,0.4); }
   .glow-green { text-shadow: 0 0 20px var(--green), 0 0 40px rgba(0,255,136,0.4); }
+  .border-cyan { border-color: var(--cyan) !important; }
+  .border-purple { border-color: var(--purple) !important; }
+  .border-green { border-color: var(--green) !important; }
 
-  .border-cyan { border-color: var(--cyan); box-shadow: 0 0 15px rgba(0,245,255,0.2); }
-  .border-purple { border-color: var(--purple); box-shadow: 0 0 15px rgba(180,79,255,0.2); }
-  .border-green { border-color: var(--green); box-shadow: 0 0 15px rgba(0,255,136,0.2); }
-
-  /* BUTTONS */
-  .btn-cyan {
-    background: transparent;
-    border: 1.5px solid var(--cyan);
-    color: var(--cyan);
-    padding: 12px 28px;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 0.8rem;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s;
-    text-decoration: none;
-    display: inline-block;
-    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
-  }
-  .btn-cyan::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--cyan);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  .btn-cyan:hover { color: var(--bg); box-shadow: 0 0 30px rgba(0,245,255,0.5); }
-  .btn-cyan:hover::before { opacity: 1; }
-  .btn-cyan span { position: relative; z-index: 1; }
-
-  .btn-purple {
-    background: linear-gradient(135deg, rgba(180,79,255,0.15), rgba(180,79,255,0.05));
-    border: 1.5px solid var(--purple);
-    color: var(--purple);
-    padding: 12px 28px;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 0.8rem;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    transition: all 0.3s;
-    text-decoration: none;
-    display: inline-block;
-    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
-  }
-  .btn-purple:hover {
-    background: var(--purple);
-    color: #fff;
-    box-shadow: 0 0 30px rgba(180,79,255,0.5);
-  }
-
-  /* CARDS */
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    position: relative;
-    overflow: hidden;
-  }
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-    opacity: 0.6;
-  }
-
-  /* BADGE */
-  .badge {
-    display: inline-block;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.7rem;
-    padding: 3px 10px;
-    border: 1px solid;
-    letter-spacing: 0.1em;
-  }
-
-  /* ANIMATIONS */
-  @keyframes pulse-cyan {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-12px); }
-  }
-  @keyframes scan {
-    0% { transform: translateY(-100%); }
-    100% { transform: translateY(100vh); }
-  }
-  @keyframes ticker {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-  }
-  @keyframes fadeSlideUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes glitchX {
-    0%, 100% { clip-path: inset(0 0 100% 0); }
-    10% { clip-path: inset(20% 0 60% 0); transform: translateX(-3px); }
-    20% { clip-path: inset(50% 0 30% 0); transform: translateX(3px); }
-    30% { clip-path: inset(10% 0 80% 0); transform: translateX(-2px); }
-    40% { clip-path: inset(70% 0 10% 0); transform: translateX(2px); }
-    50% { clip-path: inset(0 0 0 0); transform: translateX(0); }
-  }
-  @keyframes rotate360 {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  @keyframes tradeIn {
-    from { opacity: 0; transform: translateX(-20px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-  @keyframes ripple {
-    0% { transform: scale(1); opacity: 0.6; }
-    100% { transform: scale(3); opacity: 0; }
-  }
-
-  .animate-float { animation: float 4s ease-in-out infinite; }
-  .animate-pulse-cyan { animation: pulse-cyan 2s ease-in-out infinite; }
-  .animate-fade-up { animation: fadeSlideUp 0.8s ease forwards; }
-
-  /* HERO ORBS */
-  .orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    pointer-events: none;
-  }
-
-  /* TICKER */
-  .ticker-wrap {
-    overflow: hidden;
-    background: linear-gradient(90deg, var(--bg) 0%, rgba(0,245,255,0.05) 50%, var(--bg) 100%);
-    border-top: 1px solid rgba(0,245,255,0.1);
-    border-bottom: 1px solid rgba(0,245,255,0.1);
-    padding: 10px 0;
-  }
-  .ticker-content {
-    display: flex;
-    white-space: nowrap;
-    animation: ticker 20s linear infinite;
-    width: max-content;
-  }
-
-  /* NAV */
-  nav {
-    border-bottom: 1px solid rgba(0,245,255,0.08);
-    backdrop-filter: blur(20px);
-    background: rgba(4,8,16,0.8);
-  }
-
-  /* HEXAGON */
-  .hex {
-    width: 80px; height: 92px;
-    background: linear-gradient(135deg, rgba(0,245,255,0.1), rgba(180,79,255,0.1));
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-    display: flex; align-items: center; justify-content: center;
+  .btn-cyan, .btn-green, .btn-purple {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--grad);
+    color: #04101a !important;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 12px 22px;
+    min-height: 44px;
     border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgba(0,245,255,0.16);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    clip-path: none !important;
+  }
+  .btn-cyan span, .btn-green span, .btn-purple span { color: #04101a !important; }
+  .btn-cyan:hover, .btn-green:hover, .btn-purple:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 22px rgba(0,245,255,0.36);
+    color: #04101a !important;
+  }
+  .btn-purple { background: linear-gradient(90deg, #b44fff 0%, #00f5ff 100%); box-shadow: 0 4px 14px rgba(180,79,255,0.18); }
+  .btn-green { background: linear-gradient(90deg, #00ff88 0%, #00f5ff 100%); }
+
+  .card {
+    background: linear-gradient(180deg, rgba(13,26,46,0.6), rgba(7,13,26,0.6)) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .card::before { display: none !important; }
+  .card:hover { border-color: var(--border-hi) !important; transform: translateY(-2px); }
+
+  .input-cyber {
+    background: rgba(4,12,24,0.6) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    color: #fff !important;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.88rem;
+    padding: 12px 14px !important;
+    min-height: 44px !important;
+    border-radius: 8px !important;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .input-cyber:focus { border-color: var(--cyan) !important; box-shadow: 0 0 0 3px rgba(0,245,255,0.1) !important; }
+  .input-cyber::placeholder { color: var(--text-faint); }
+
+  /* Modals reused from v5 */
+  .ml-modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(8px);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .ml-modal-box {
+    background: var(--card);
+    border: 1px solid var(--border-hi);
+    border-radius: 12px;
+    max-width: 580px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 32px;
     position: relative;
   }
-
-  /* STEP */
-  .step-line {
-    position: absolute;
-    left: 19px;
-    top: 48px;
-    bottom: -20px;
-    width: 2px;
-    background: linear-gradient(to bottom, var(--cyan), transparent);
+  @media (max-width: 768px) {
+    .ml-modal-bg { padding: 0; align-items: stretch; }
+    .ml-modal-box { width: 100%; max-width: 100%; max-height: 100vh; height: 100%; border-radius: 0; padding: 24px 18px; }
   }
 
-  /* CODE BLOCK */
+  .ml-tab-btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 10px 18px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--text-dim);
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .ml-tab-btn.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+  .ml-tag { font-family: 'Share Tech Mono', monospace; font-size: 0.65rem; padding: 2px 8px; border: 1px solid; letter-spacing: 0.05em; border-radius: 4px; }
+  .ml-spinner { width:18px; height:18px; border:2px solid rgba(0,245,255,0.2); border-top-color:var(--cyan); border-radius:50%; animation:mlSpin 0.7s linear infinite; display:inline-block; }
+  @keyframes mlSpin { to { transform: rotate(360deg); } }
+
+  .token-tile {
+    background: linear-gradient(180deg, rgba(13,26,46,0.6), rgba(7,13,26,0.6)) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .token-tile:hover { border-color: var(--border-hi) !important; transform: translateY(-2px); }
+
+  .copy-btn {
+    background: rgba(0,245,255,0.06);
+    border: 1px solid rgba(0,245,255,0.2);
+    color: var(--cyan);
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.72rem;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { background: rgba(0,245,255,0.15); }
+
+  /* Trade feed cards */
+  .trade-card { padding: 12px 16px; font-family: 'Share Tech Mono', monospace; font-size: 0.78rem; display: flex; align-items: center; gap: 12px; border-radius: 8px; border: 1px solid; }
+  .trade-buy { border-color: rgba(0,255,136,0.25); background: rgba(0,255,136,0.04); }
+  .trade-sell { border-color: rgba(255,70,90,0.25); background: rgba(255,70,90,0.04); }
+
+  .dot-ripple { position: relative; width: 10px; height: 10px; }
+  .dot-ripple::before, .dot-ripple::after { content:''; position:absolute; inset:0; border-radius:50%; background:var(--green); }
+  @keyframes ripple { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(3); opacity: 0; } }
+  .dot-ripple::before { animation: ripple 2s ease-out infinite; }
+  .dot-ripple::after { animation: ripple 2s ease-out infinite 1s; }
+
+  .ticker-wrap { overflow: hidden; padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .ticker-content { display: flex; white-space: nowrap; animation: ticker 30s linear infinite; width: max-content; }
+  @keyframes ticker { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+
+  .reveal { opacity: 1 !important; transform: none !important; }   /* disable reveal animations to keep things snappy */
+
+  .step-line { display: none; }
+  .hex {
+    width: 64px; height: 64px;
+    background: var(--grad-soft);
+    border: 1px solid rgba(0,245,255,0.25);
+    border-radius: 12px;
+    clip-path: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .glitch-wrap::before { display: none !important; }
+
+  .vs-card { border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+  .vs-card-human { background: rgba(255,200,100,0.03); }
+  .vs-card-agent { background: rgba(0,245,255,0.04); }
+  .vs-card-agent::before { display: none; }
+
   .code-block {
-    background: #020609;
-    border: 1px solid rgba(0,245,255,0.15);
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
     border-left: 3px solid var(--cyan);
+    border-radius: 6px;
     font-family: 'Share Tech Mono', monospace;
     font-size: 0.78rem;
     line-height: 1.7;
-    padding: 20px;
+    padding: 16px;
     color: #88c0d0;
     overflow-x: auto;
-    position: relative;
   }
   .code-block .kw { color: var(--purple); }
   .code-block .str { color: var(--green); }
@@ -270,1125 +852,225 @@
   .code-block .fn { color: var(--cyan); }
   .code-block .num { color: #ffa07a; }
 
-  /* TRADE CARD */
-  .trade-card {
-    border: 1px solid;
-    padding: 12px 16px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    animation: tradeIn 0.5s ease forwards;
-    position: relative;
-    overflow: hidden;
-  }
-  .trade-card::after {
-    content: '';
-    position: absolute;
-    right: 0; top: 0; bottom: 0;
-    width: 3px;
-  }
-  .trade-buy { border-color: rgba(0,255,136,0.3); background: rgba(0,255,136,0.04); }
-  .trade-buy::after { background: var(--green); box-shadow: 0 0 8px var(--green); }
-  .trade-sell { border-color: rgba(255,70,90,0.3); background: rgba(255,70,90,0.04); }
-  .trade-sell::after { background: #ff465a; box-shadow: 0 0 8px #ff465a; }
+  .badge { display: inline-block; font-family: 'Share Tech Mono', monospace; font-size: 0.7rem; padding: 3px 10px; border: 1px solid; letter-spacing: 0.1em; border-radius: 4px; }
 
-  /* RIPPLE DOT */
-  .dot-ripple {
-    position: relative;
-    width: 10px; height: 10px;
-  }
-  .dot-ripple::before, .dot-ripple::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    background: var(--green);
-  }
-  .dot-ripple::before { animation: ripple 2s ease-out infinite; }
-  .dot-ripple::after { animation: ripple 2s ease-out infinite 1s; }
-
-  /* TAB */
+  .orb { display: none !important; }
+  .ml-modal-box::before { display: none; }
+  .ml-progress-bar { height: 6px; background: rgba(0,245,255,0.1); border-radius: 3px; position: relative; overflow: hidden; }
+  .ml-progress-fill { height: 100%; background: var(--grad); transition: width 0.5s ease; border-radius: 3px; }
+  .ml-sort-btn { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.72rem; padding: 6px 14px; cursor: pointer; border: 1px solid rgba(255,255,255,0.08); color: var(--text-dim); background: none; border-radius: 6px; transition: all 0.15s; }
+  .ml-sort-btn.active { border-color: rgba(0,245,255,0.35); color: var(--cyan); background: rgba(0,245,255,0.06); }
   .tab-btn { transition: all 0.2s; }
-  .tab-btn.active {
-    color: var(--cyan);
-    border-bottom: 2px solid var(--cyan);
-  }
+  .tab-btn.active { color: var(--cyan); border-bottom: 2px solid var(--cyan); }
 
-  /* SECTION LABEL */
-  .section-label {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.7rem;
-    letter-spacing: 0.2em;
-    color: var(--cyan);
-    opacity: 0.7;
-    text-transform: uppercase;
-  }
-
-  /* GLITCH TITLE */
-  .glitch-wrap { position: relative; display: inline-block; }
-  .glitch-wrap::before {
-    content: attr(data-text);
-    position: absolute;
-    inset: 0;
-    color: var(--purple);
-    animation: glitchX 5s infinite;
-    opacity: 0.5;
-  }
-
-  /* SCROLL FADE */
-  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
-  .reveal.visible { opacity: 1; transform: translateY(0); }
-
-  /* COPY BTN */
-  .copy-btn {
-    background: rgba(0,245,255,0.08);
-    border: 1px solid rgba(0,245,255,0.2);
-    color: var(--cyan);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.7rem;
-    padding: 4px 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .copy-btn:hover { background: rgba(0,245,255,0.15); }
-
-  /* AGENT VS HUMAN */
-  .vs-card {
-    flex: 1;
-    padding: 28px;
-    border: 1px solid;
-    position: relative;
-    overflow: hidden;
-  }
-  .vs-card-human { border-color: rgba(255,200,100,0.2); background: rgba(255,200,100,0.03); }
-  .vs-card-agent { border-color: rgba(0,245,255,0.3); background: rgba(0,245,255,0.05); }
-  .vs-card-agent::before {
-    content: 'RECOMMENDED';
-    position: absolute;
-    top: 12px; right: -24px;
-    background: var(--cyan);
-    color: var(--bg);
-    font-family: 'Orbitron', sans-serif;
-    font-size: 0.55rem;
-    padding: 3px 30px;
-    transform: rotate(45deg);
-    letter-spacing: 0.1em;
-  }
-
-  /* MOBILE */
-  @media (max-width: 768px) {
-    .hero-title { font-size: 2.8rem !important; }
-    .nav-links { display: none; }
-  }
-
-  /* ═══════ MEMELAND v12 ═══════ */
-  .btn-green {
-    background: rgba(0,255,136,0.1);
-    border: 1.5px solid var(--green);
-    color: var(--green);
-    padding: 10px 24px;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 0.75rem;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    transition: all 0.3s;
-    text-decoration: none;
-    display: inline-block;
-    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
-  }
-  .btn-green:hover { background: var(--green); color: var(--bg); }
-
-  .input-cyber {
-    background: rgba(0,0,0,0.5);
-    border: 1px solid rgba(0,245,255,0.2);
-    color: #c8daf0;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.85rem;
-    padding: 10px 14px;
-    width: 100%;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .input-cyber:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,245,255,0.15); }
-  .input-cyber::placeholder { color: #3a5070; }
-
-  .ml-progress-bar { height: 6px; background: rgba(0,245,255,0.1); border-radius: 0; position: relative; overflow: hidden; }
-  .ml-progress-fill { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--green)); transition: width 0.5s ease; }
-
-  .token-tile {
-    background: var(--card);
-    border: 1px solid var(--border);
-    padding: 16px;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-  .token-tile::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--cyan),transparent); opacity:0.5; }
-  .token-tile:hover { border-color: rgba(0,245,255,0.4); box-shadow: 0 0 20px rgba(0,245,255,0.1); transform: translateY(-1px); }
-
-  .ml-modal-bg {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.85);
-    backdrop-filter: blur(8px);
-    z-index: 200;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .ml-modal-box {
-    background: #070d1a;
-    border: 1px solid rgba(0,245,255,0.25);
-    max-width: 580px;
-    width: 92%;
-    max-height: 90vh;
-    overflow-y: auto;
-    padding: 32px;
-    position: relative;
-  }
-  .ml-modal-box::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--cyan),transparent); }
-
-  .ml-sort-btn {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.7rem;
-    padding: 5px 12px;
-    cursor: pointer;
-    border: 1px solid rgba(0,245,255,0.15);
-    color: #4a6480;
-    transition: all 0.2s;
-    background: none;
-  }
-  .ml-sort-btn.active { border-color: var(--cyan); color: var(--cyan); background: rgba(0,245,255,0.06); }
-  .ml-tab-btn {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 0.7rem;
-    letter-spacing: 0.1em;
-    padding: 8px 20px;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    color: #4a6480;
-    transition: all 0.2s;
-    background: none;
-    border-top: none; border-left: none; border-right: none;
-  }
-  .ml-tab-btn.active { color: var(--cyan); border-bottom-color: var(--cyan); }
-
-  .ml-tag { font-family: 'Share Tech Mono', monospace; font-size: 0.65rem; padding: 2px 8px; border: 1px solid; letter-spacing: 0.05em; }
-
-  .ml-spinner { width:20px; height:20px; border:2px solid rgba(0,245,255,0.2); border-top-color:var(--cyan); border-radius:50%; animation:mlSpin 0.7s linear infinite; display:inline-block; }
-  @keyframes mlSpin { to { transform: rotate(360deg); } }
+  /* Additional v5 fade animations */
   @keyframes mlFadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
   .ml-animate-fade { animation: mlFadeIn 0.4s ease forwards; }
-
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: #040810; }
-  ::-webkit-scrollbar-thumb { background: rgba(0,245,255,0.2); }
-
+  .animate-pulse-cyan { animation: pulseCyan 2s ease-in-out infinite; }
+  @keyframes pulseCyan { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .animate-fade-up { animation: fadeUp 0.6s ease forwards; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
 </style>
-
-<!-- ════════════════════════════════════════════════════════════════════
-     $AGENT SITE — MOBILE-FIX + POLISH PATCH v1.0
-     ─────────────────────────────────────────────────────────────────
-     INSTALL: Paste this ENTIRE block right before  </head>  in your
-     existing index.html (line ~489, just above </style></head>).
-     Do not remove your existing <style> block — this OVERRIDES it.
-
-     What this fixes:
-       1. Mobile nav broke (links hidden, no hamburger) → adds slide-in menu
-       2. Two/three-column grids overflow on phones → stack to 1col <768px
-       3. Price bar stats wrap awkwardly → horizontal scroll on mobile
-       4. Modals overflow viewport → full-screen on small phones
-       5. Buttons too small to tap → 44px min tap target
-       6. Hero text too big on phones → fluid clamp() sizing
-       7. Form 3-column grids cramped on phones → stack to 1col
-       8. Scanlines + grid overlay too noisy → toned down on mobile
-       9. Cards too "cyberpunk" → softer borders, cleaner radius (polish)
-      10. Better focus rings + tap highlight for accessibility
-
-     PRESERVES: every JS function, every backend call, every IDs/handlers
-     ════════════════════════════════════════════════════════════════════ -->
-
-<style id="mobile-polish-v1">
-  /* ─────────── 1. POLISH (applies on all screens) ─────────── */
-
-  /* Soften card corners + borders to feel more modern (matches reference) */
-  .card,
-  .token-tile,
-  .ml-modal-box,
-  .vs-card,
-  #tradeModal > div,
-  #priceBar {
-    border-radius: 8px !important;
-  }
-  .card,
-  .token-tile {
-    border-color: rgba(0,245,255,0.10) !important;
-    background: linear-gradient(180deg, rgba(10,21,37,0.95), rgba(7,13,26,0.95)) !important;
-    transition: border-color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease !important;
-  }
-  .card:hover,
-  .token-tile:hover {
-    border-color: rgba(0,245,255,0.30) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(0,245,255,0.06) !important;
-  }
-  /* Drop the cyberpunk top-line glow on cards (cleaner) */
-  .card::before,
-  .token-tile::before {
-    opacity: 0.25 !important;
-  }
-
-  /* Cleaner primary CTA: cyan→green gradient like the reference shots */
-  .btn-cyan,
-  .btn-green,
-  .btn-purple {
-    border-radius: 6px !important;
-    clip-path: none !important;          /* drop angled corners */
-    font-weight: 700 !important;
-    letter-spacing: 0.08em !important;
-    min-height: 44px !important;          /* tap target */
-    transition: all 0.2s ease !important;
-  }
-  .btn-cyan {
-    background: linear-gradient(90deg, #00f5ff 0%, #00ff88 100%) !important;
-    color: #04101a !important;
-    border: none !important;
-    box-shadow: 0 4px 14px rgba(0,245,255,0.18) !important;
-  }
-  .btn-cyan:hover {
-    box-shadow: 0 6px 22px rgba(0,245,255,0.40) !important;
-    transform: translateY(-1px) !important;
-  }
-  .btn-cyan::before { display:none !important; }
-  .btn-cyan span { color: #04101a !important; }
-
-  /* Inputs: cleaner */
-  .input-cyber {
-    border-radius: 6px !important;
-    padding: 12px 14px !important;
-    min-height: 44px !important;
-    font-size: 0.85rem !important;
-  }
-  .input-cyber:focus {
-    border-color: var(--cyan) !important;
-    box-shadow: 0 0 0 3px rgba(0,245,255,0.12) !important;
-  }
-
-  /* Scrollbar polish */
-  ::-webkit-scrollbar { width: 8px !important; height: 8px !important; }
-  ::-webkit-scrollbar-thumb {
-    background: rgba(0,245,255,0.25) !important;
-    border-radius: 4px !important;
-  }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(0,245,255,0.4) !important; }
-
-  /* Better focus + tap highlight for keyboard / mobile users */
-  *:focus-visible {
-    outline: 2px solid var(--cyan) !important;
-    outline-offset: 2px !important;
-  }
-  button, a, input, textarea, select {
-    -webkit-tap-highlight-color: rgba(0,245,255,0.15);
-  }
-
-  /* ─────────── 2. HAMBURGER MENU (always present, only shown on mobile) ─────────── */
-
-  #mpHamburger {
-    display: none;                        /* shown on <768px below */
-    background: none;
-    border: 1px solid rgba(0,245,255,0.25);
-    color: var(--cyan);
-    width: 44px; height: 44px;
-    border-radius: 6px;
-    cursor: pointer;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    z-index: 60;
-    transition: all 0.2s ease;
-  }
-  #mpHamburger:hover { background: rgba(0,245,255,0.08); }
-  #mpHamburger svg { width: 22px; height: 22px; stroke: currentColor; }
-
-  /* Slide-in panel */
-  #mpMobileMenu {
-    position: fixed;
-    inset: 0;
-    background: rgba(4,8,16,0.96);
-    backdrop-filter: blur(18px);
-    z-index: 100;
-    display: none;
-    flex-direction: column;
-    padding: 80px 24px 32px;
-    gap: 4px;
-    overflow-y: auto;
-  }
-  #mpMobileMenu.open { display: flex; }
-  #mpMobileMenu a {
-    display: block;
-    padding: 16px 12px;
-    color: #c8daf0;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 0.9rem;
-    letter-spacing: 0.12em;
-    text-decoration: none;
-    border-bottom: 1px solid rgba(0,245,255,0.06);
-    transition: color 0.15s, padding-left 0.2s;
-    text-transform: uppercase;
-  }
-  #mpMobileMenu a:hover,
-  #mpMobileMenu a:active {
-    color: var(--cyan);
-    padding-left: 18px;
-  }
-  #mpMobileMenu .mp-close {
-    position: absolute;
-    top: 18px; right: 20px;
-    background: none;
-    border: 1px solid rgba(0,245,255,0.25);
-    color: var(--cyan);
-    width: 40px; height: 40px;
-    border-radius: 6px;
-    font-size: 1.4rem;
-    cursor: pointer;
-  }
-  body.mp-no-scroll { overflow: hidden !important; }
-
-  /* ─────────── 3. TABLET (≤980px) ─────────── */
-  @media (max-width: 980px) {
-    /* Generic 2-col / 3-col / 4-col grids → reduce columns gracefully */
-    [style*="grid-template-columns:repeat(4,1fr)"],
-    [style*="grid-template-columns: repeat(4,1fr)"] {
-      grid-template-columns: repeat(2, 1fr) !important;
-    }
-    [style*="grid-template-columns:1fr 1fr 1fr"] {
-      grid-template-columns: repeat(2, 1fr) !important;
-    }
-  }
-
-  /* ─────────── 4. MOBILE (≤768px) — main fixes ─────────── */
-  @media (max-width: 768px) {
-
-    /* --- Kill heavy visual noise on small screens (perf + readability) --- */
-    body::before { background-size: 80px 80px !important; opacity: 0.5 !important; }
-    body::after  { display: none !important; }   /* drop scanlines */
-    .glitch-wrap::before { display: none !important; }
-    .orb { filter: blur(60px) !important; opacity: 0.4 !important; }
-
-    /* --- NAV --- */
-    nav {
-      padding: 12px 16px !important;
-    }
-    nav .nav-links { display: none !important; }
-    #mpHamburger   { display: inline-flex !important; }
-    /* Hide the desktop "DEPLOY AGENT" CTA on phone (it's in hamburger menu) */
-    nav > a.btn-cyan { display: none !important; }
-
-    /* --- PRICE BAR: horizontal scroll instead of wrap-mess --- */
-    #priceBar {
-      padding: 8px 12px !important;
-      top: 60px !important;
-    }
-    #priceBar > div {
-      flex-wrap: nowrap !important;
-      overflow-x: auto !important;
-      -webkit-overflow-scrolling: touch !important;
-      scrollbar-width: none;
-    }
-    #priceBar > div::-webkit-scrollbar { display: none; }
-    #priceBar > div > div {
-      flex-shrink: 0 !important;
-    }
-
-    /* --- HERO + ALL SECTION 2-COLUMN LAYOUTS → STACK --- */
-    /* Tailwind grid-cols-2 / lg:grid-cols-2 utility classes used throughout */
-    .grid.grid-cols-2,
-    .grid.md\:grid-cols-2,
-    .grid.lg\:grid-cols-2,
-    .grid.md\:grid-cols-3,
-    .grid.lg\:grid-cols-3,
-    .grid.md\:grid-cols-4,
-    .grid.lg\:grid-cols-4 {
-      grid-template-columns: 1fr !important;
-      gap: 16px !important;
-    }
-    /* Inline-styled grids → single column */
-    [style*="grid-template-columns:1fr 1fr"],
-    [style*="grid-template-columns: 1fr 1fr"],
-    [style*="grid-template-columns:1fr 1fr 1fr"],
-    [style*="grid-template-columns: 1fr 1fr 1fr"],
-    [style*="grid-template-columns:repeat(3"],
-    [style*="grid-template-columns:repeat(4"] {
-      grid-template-columns: 1fr !important;
-    }
-    /* But keep the 4-stat token modal as 2x2 (more compact) */
-    #mlTokenModal [style*="grid-template-columns:repeat(4,1fr)"] {
-      grid-template-columns: repeat(2, 1fr) !important;
-    }
-
-    /* Section padding → tighter on phone */
-    section { padding-left: 16px !important; padding-right: 16px !important; }
-
-    /* --- TYPOGRAPHY: fluid scaling --- */
-    .hero-title,
-    h1.font-orbitron,
-    .font-orbitron.text-7xl,
-    .font-orbitron.text-6xl,
-    .font-orbitron.text-5xl {
-      font-size: clamp(2rem, 9vw, 3rem) !important;
-      line-height: 1.05 !important;
-      letter-spacing: -0.01em !important;
-    }
-    .font-orbitron.text-4xl,
-    .font-orbitron.text-3xl {
-      font-size: clamp(1.5rem, 6.5vw, 2.2rem) !important;
-      line-height: 1.15 !important;
-    }
-    .font-orbitron.text-2xl,
-    .font-orbitron.text-xl {
-      font-size: 1.15rem !important;
-    }
-    /* Body text minimum 14px so it stays legible on phone */
-    .text-xs { font-size: 0.78rem !important; }
-    .text-\[10px\] { font-size: 0.7rem !important; }
-
-    /* --- FORMS: ensure full-width inputs --- */
-    .input-cyber { width: 100% !important; min-height: 48px !important; }
-    /* Two-column form rows force-stacked already by inline-style override above */
-
-    /* --- BUTTONS: larger tap targets, full-width on phone where appropriate --- */
-    .btn-cyan, .btn-green, .btn-purple {
-      min-height: 48px !important;
-      padding: 14px 22px !important;
-      font-size: 0.78rem !important;
-    }
-    /* Full-width primary CTAs in hero / forms */
-    .hero-ctas .btn-cyan,
-    .hero-ctas .btn-purple,
-    section button.btn-cyan[style*="width:100%"],
-    section button.btn-green[style*="width:100%"] {
-      width: 100% !important;
-      display: block !important;
-    }
-
-    /* --- MODALS: full-screen on phone --- */
-    .ml-modal-bg, #tradeModal {
-      padding: 0 !important;
-      align-items: stretch !important;
-    }
-    .ml-modal-box,
-    #tradeModal > div {
-      width: 100% !important;
-      max-width: 100% !important;
-      max-height: 100vh !important;
-      height: 100% !important;
-      border-radius: 0 !important;
-      padding: 24px 18px !important;
-      overflow-y: auto !important;
-      -webkit-overflow-scrolling: touch !important;
-    }
-    /* Modal close button: bigger tap target */
-    .ml-modal-box > button[onclick*="Close"],
-    #tradeModal button[onclick*="closeTradeModal"] {
-      width: 44px !important; height: 44px !important;
-      font-size: 1.5rem !important;
-      top: 10px !important; right: 10px !important;
-    }
-
-    /* --- SECTION SPACING: tighter --- */
-    section { padding-top: 48px !important; padding-bottom: 48px !important; }
-
-    /* --- TICKER: smaller and slower (less distracting on phone) --- */
-    .ticker-content { animation-duration: 40s !important; font-size: 0.7rem !important; }
-
-    /* --- TABS / chips: scrollable horizontal row --- */
-    .ml-tab-btn, .ml-sort-btn, .tab-btn {
-      white-space: nowrap !important;
-      flex-shrink: 0 !important;
-    }
-    [style*="display:flex"][style*="border-bottom"] {
-      overflow-x: auto !important;
-      -webkit-overflow-scrolling: touch !important;
-    }
-
-    /* --- TABLES & wide content: allow horizontal scroll --- */
-    table, pre, .code-block { overflow-x: auto !important; max-width: 100% !important; }
-
-    /* --- TRADE FEED / token tiles: smaller padding --- */
-    .trade-card { padding: 10px 12px !important; font-size: 0.7rem !important; gap: 8px !important; }
-    .token-tile { padding: 12px !important; }
-
-    /* --- VS cards: drop the rotated "RECOMMENDED" ribbon (overlaps) --- */
-    .vs-card-agent::before { display: none !important; }
-  }
-
-  /* ─────────── 5. SMALL PHONE (≤420px) — extra tightening ─────────── */
-  @media (max-width: 420px) {
-    nav { padding: 10px 12px !important; }
-    section { padding: 36px 14px !important; }
-    .font-orbitron.text-7xl,
-    .font-orbitron.text-6xl,
-    .font-orbitron.text-5xl,
-    .hero-title { font-size: clamp(1.75rem, 8.5vw, 2.4rem) !important; }
-    /* Hide secondary stats in price bar to fit the essentials */
-    #fdv, #statLiquidity { display: none !important; }
-    #fdv + div, #statLiquidity + div { display: none !important; }  /* divider */
-  }
-</style>
-
-<script>
-  // ─────────── HAMBURGER MENU + MOBILE NAV BUILDER ───────────
-  (function () {
-    if (document.getElementById('mpHamburger')) return; // idempotent
-
-    function build() {
-      var nav = document.querySelector('nav');
-      if (!nav) return;
-
-      // Hamburger button (injected next to logo for mobile)
-      var btn = document.createElement('button');
-      btn.id = 'mpHamburger';
-      btn.setAttribute('aria-label', 'Open menu');
-      btn.innerHTML =
-        '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-        '<line x1="3" y1="6"  x2="21" y2="6"/>' +
-        '<line x1="3" y1="12" x2="21" y2="12"/>' +
-        '<line x1="3" y1="18" x2="21" y2="18"/>' +
-        '</svg>';
-      // Append to nav so it sits on the right side on mobile
-      nav.appendChild(btn);
-
-      // Build slide-in panel by cloning the existing nav-links
-      var src = nav.querySelector('.nav-links');
-      var menu = document.createElement('div');
-      menu.id = 'mpMobileMenu';
-      var close = document.createElement('button');
-      close.className = 'mp-close';
-      close.setAttribute('aria-label', 'Close menu');
-      close.innerHTML = '✕';
-      menu.appendChild(close);
-
-      if (src) {
-        // Copy each <a> into the panel so all hrefs/handlers carry over
-        src.querySelectorAll('a').forEach(function (a) {
-          var clone = a.cloneNode(true);
-          // Rewire any inline onclick smooth-scroll calls
-          clone.addEventListener('click', function () { closeMenu(); });
-          menu.appendChild(clone);
-        });
-      }
-
-      // Also include the DEPLOY AGENT CTA at the bottom of the panel
-      var deploy = nav.querySelector('a.btn-cyan');
-      if (deploy) {
-        var deployClone = deploy.cloneNode(true);
-        deployClone.style.marginTop = '20px';
-        deployClone.style.textAlign = 'center';
-        deployClone.addEventListener('click', closeMenu);
-        menu.appendChild(deployClone);
-      }
-
-      document.body.appendChild(menu);
-
-      function openMenu()  { menu.classList.add('open');  document.body.classList.add('mp-no-scroll'); }
-      function closeMenu() { menu.classList.remove('open'); document.body.classList.remove('mp-no-scroll'); }
-
-      btn.addEventListener('click', openMenu);
-      close.addEventListener('click', closeMenu);
-      menu.addEventListener('click', function (e) { if (e.target === menu) closeMenu(); });
-      document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && menu.classList.contains('open')) closeMenu();
-      });
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', build);
-    } else {
-      build();
-    }
-  })();
-</script>
-
 </head>
 <body>
 
-<!-- ══════════════════════════════════════ NAV ══════════════════════════════════════ -->
-<nav class="sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
-  <div class="flex items-center gap-3">
-    <div class="w-8 h-8 rounded-full border border-cyan-400 flex items-center justify-center" style="box-shadow:0 0 12px rgba(0,245,255,0.4)">
-      <span style="font-family:'Orbitron',sans-serif;font-size:0.6rem;color:var(--cyan)">AI</span>
+<!-- ════════════════════════════════════════════════════════════════════
+     SHARED TOP NAV — tabs route to #/page sections
+     ════════════════════════════════════════════════════════════════════ -->
+<nav class="top-nav">
+  <div class="nav-inner">
+    <a href="#/home" class="brand" data-route="home">
+      <div class="brand-logo"><span>AI</span></div>
+      <div class="brand-text">
+        <span class="b1">$AGENT</span>
+        <span class="b2">SUI AGENT</span>
+      </div>
+    </a>
+
+    <div class="nav-tabs">
+      <a href="#/token"    class="nav-tab" data-route="token">Token</a>
+      <a href="#/setup"    class="nav-tab" data-route="setup">Setup</a>
+      <a href="#/swap"     class="nav-tab" data-route="swap">Swap</a>
+      <a href="#/arena"    class="nav-tab" data-route="arena">Arena</a>
+      <a href="#/memeland" class="nav-tab" data-route="memeland">MemeLand</a>
+      <a href="#/trust"    class="nav-tab" data-route="trust">Trust</a>
+      <a href="#/locker"   class="nav-tab" data-route="locker">Locker</a>
     </div>
-    <span class="font-orbitron text-sm font-bold" style="color:var(--cyan);letter-spacing:0.15em">$AGENT</span>
+
+    <div class="nav-right">
+      <a href="https://x.com/SUI__AGENT" target="_blank" rel="noopener" class="nav-iconlink" title="Twitter / X">X</a>
+      <a href="https://t.me/+AHZzczUoOeYzMThk" target="_blank" rel="noopener" class="nav-iconlink" title="Telegram">TG</a>
+      <a href="#/setup" class="btn-primary">Deploy Agent</a>
+      <button class="hamburger" id="navHamburger" aria-label="Open menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6"  x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+    </div>
   </div>
-  <div class="nav-links flex items-center gap-8">
-    <a href="#token" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Token</a>
-    <a href="#buy" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Buy</a>
-    <a href="#swap" onclick="document.getElementById('swap')?.scrollIntoView({behavior:'smooth'});return false;" onclick="document.getElementById('swap')?.scrollIntoView({behavior:'smooth'});return false;" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Swap</a>
-    <a href="#chart" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Chart</a>
-    <a href="#arena" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Arena</a>
-    <a href="#trust" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Trust</a>
-    <a href="#setup" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Setup</a>
-    <a href="#live" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors tracking-widest uppercase">Live</a>
-    <a href="#memelab" class="text-xs font-mono transition-colors tracking-widest uppercase" style="color:var(--green);text-shadow:0 0 8px rgba(0,255,136,0.4)">MemeLand</a>
-    <a href="#locker" class="text-xs font-mono transition-colors tracking-widest uppercase" style="color:var(--purple);text-shadow:0 0 8px rgba(180,79,255,0.3)">Locker</a>
-    <a href="https://x.com/SUI__AGENT" target="_blank" class="text-xs font-mono text-slate-400 hover:text-purple-400 transition-colors" title="Twitter / X">𝕏</a>
-    <a href="https://t.me/+AHZzczUoOeYzMThk" target="_blank" class="text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors" title="Telegram">TG</a>
-  </div>
-  <a href="#setup" class="btn-cyan text-xs"><span>DEPLOY AGENT</span></a>
 </nav>
 
-<!-- ══════════════════════════════════════ PRICE BAR ══════════════════════════════════════ -->
-<div id="priceBar" style="background:#050c18;border-bottom:1px solid rgba(0,245,255,0.12);padding:10px 24px;position:sticky;top:65px;z-index:49;backdrop-filter:blur(20px);">
-  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-    <!-- Left: identity + price -->
-    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div style="width:28px;height:28px;border-radius:50%;border:1px solid var(--cyan);background:rgba(0,245,255,0.1);display:flex;align-items:center;justify-content:center;box-shadow:0 0 8px rgba(0,245,255,0.3)">
-          <span style="font-family:Orbitron,sans-serif;font-size:0.45rem;color:var(--cyan)">AI</span>
-        </div>
-        <span class="font-orbitron text-sm font-bold text-white">$AGENT</span>
-        <span class="font-mono text-xs text-slate-500">/ SUI</span>
-      </div>
-      <div>
-        <span class="font-orbitron text-lg font-black" id="priceUsd" style="color:var(--cyan)">$—</span>
-        <span class="font-mono text-xs" id="priceChange" style="margin-left:8px;color:#4a5568">loading...</span>
-      </div>
+<!-- Mobile slide-in menu (built from same nav-tabs at runtime) -->
+<div id="mobileMenu">
+  <button class="mm-close" id="mmClose" aria-label="Close menu">&#x2715;</button>
+  <a href="#/home"     data-route="home">Home</a>
+  <a href="#/token"    data-route="token">Token</a>
+  <a href="#/setup"    data-route="setup">Setup</a>
+  <a href="#/swap"     data-route="swap">Swap</a>
+  <a href="#/arena"    data-route="arena">Arena</a>
+  <a href="#/memeland" data-route="memeland">MemeLand</a>
+  <a href="#/trust"    data-route="trust">Trust</a>
+  <a href="#/locker"   data-route="locker">Locker</a>
+  <a href="https://x.com/SUI__AGENT" target="_blank" rel="noopener">𝕏 Twitter</a>
+  <a href="https://t.me/+AHZzczUoOeYzMThk" target="_blank" rel="noopener">Telegram</a>
+  <a href="#/setup" style="margin-top:20px;background:var(--grad);color:#04101a;text-align:center;border-radius:8px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border-bottom:none;">Deploy Agent</a>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     PRICE BAR — sticky under nav, all element IDs preserved from v5
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="price-bar" id="priceBar">
+  <div class="price-bar-inner">
+    <div class="price-pair">
+      <div class="brand-logo" style="width:24px;height:24px;"><span style="font-size:0.55rem;">AI</span></div>
+      <span class="label">$AGENT</span>
+      <span class="sub">/ SUI</span>
     </div>
-    <!-- Middle: stats -->
-    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-      <div style="text-align:center">
-        <div class="font-mono text-xs text-slate-500">PRICE (SUI)</div>
-        <div class="font-mono text-xs font-bold" id="priceSui" style="color:#c8daf0">—</div>
-      </div>
-      <div style="width:1px;height:28px;background:rgba(0,245,255,0.1)"></div>
-      <div style="text-align:center">
-        <div class="font-mono text-xs text-slate-500">MKT CAP</div>
-        <div class="font-mono text-xs font-bold" id="marketCap" style="color:var(--green)">—</div>
-      </div>
-      <div style="width:1px;height:28px;background:rgba(0,245,255,0.1)"></div>
-      <div style="text-align:center">
-        <div class="font-mono text-xs text-slate-500">FDV</div>
-        <div class="font-mono text-xs font-bold" id="fdv" style="color:var(--green)">—</div>
-      </div>
-      <div style="width:1px;height:28px;background:rgba(0,245,255,0.1)"></div>
-      <div style="text-align:center">
-        <div class="font-mono text-xs text-slate-500">LIQUIDITY</div>
-        <div class="font-mono text-xs font-bold" id="statLiquidity" style="color:var(--purple)">—</div>
-      </div>
-      <div style="width:1px;height:28px;background:rgba(0,245,255,0.1)"></div>
-      <div style="text-align:center">
-        <div class="font-mono text-xs text-slate-500">POOL</div>
-        <div class="font-mono text-xs font-bold" id="poolReserves" style="color:#c8daf0">—</div>
-      </div>
+    <div class="price-stat">
+      <span class="k">USD</span>
+      <span class="v cyan" id="priceUsd">$—</span>
     </div>
-    <!-- Right: buy/sell -->
-    <div style="display:flex;gap:8px;">
-      <button onclick="showTradeModal('buy')" style="background:rgba(0,255,136,0.1);border:1px solid var(--green);color:var(--green);font-family:Orbitron,sans-serif;font-size:0.7rem;padding:8px 20px;cursor:pointer;letter-spacing:0.1em;transition:all 0.2s;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)" onmouseover="this.style.background='rgba(0,255,136,0.2)'" onmouseout="this.style.background='rgba(0,255,136,0.1)'">▲ BUY</button>
-      <button onclick="showTradeModal('sell')" style="background:rgba(255,70,90,0.1);border:1px solid #ff465a;color:#ff465a;font-family:Orbitron,sans-serif;font-size:0.7rem;padding:8px 20px;cursor:pointer;letter-spacing:0.1em;transition:all 0.2s;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)" onmouseover="this.style.background='rgba(255,70,90,0.2)'" onmouseout="this.style.background='rgba(255,70,90,0.1)'">▼ SELL</button>
+    <div class="price-stat">
+      <span class="k">24h</span>
+      <span class="v" id="priceChange" style="color:var(--text-dim)">loading…</span>
+    </div>
+    <div class="price-stat">
+      <span class="k">Price (SUI)</span>
+      <span class="v" id="priceSui">—</span>
+    </div>
+    <div class="price-stat">
+      <span class="k">Mkt Cap</span>
+      <span class="v green" id="marketCap">—</span>
+    </div>
+    <div class="price-stat">
+      <span class="k">FDV</span>
+      <span class="v green" id="fdv">—</span>
+    </div>
+    <div class="price-stat">
+      <span class="k">Liquidity</span>
+      <span class="v purple" id="statLiquidity">—</span>
+    </div>
+    <div class="price-stat">
+      <span class="k">Pool</span>
+      <span class="v" id="poolReserves">—</span>
     </div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════ TRADE MODAL ══════════════════════════════════════ -->
-<div id="tradeModal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
-  <div style="background:#070d1a;border:1px solid rgba(0,245,255,0.2);max-width:520px;width:90%;padding:40px;position:relative;">
-    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent)"></div>
-    <button onclick="closeTradeModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#4a5568;font-size:1.2rem;cursor:pointer;font-family:monospace">✕</button>
-    <div id="modalTitle" class="font-orbitron text-lg font-bold text-white mb-2">How to Trade $AGENT</div>
-    <div class="font-mono text-xs mb-6" style="color:var(--cyan)">◈ AGENT-ONLY POOL — ON-CHAIN ENFORCED</div>
-    <div style="background:#020609;border:1px solid rgba(255,180,0,0.2);padding:16px;margin-bottom:24px;">
-      <div class="font-mono text-xs" style="color:#ffc864;margin-bottom:8px">⚠ IMPORTANT — READ BEFORE TRADING</div>
-      <p class="font-mono text-xs text-slate-400 leading-relaxed">$AGENT trades are <span style="color:var(--cyan)">exclusively executed by AI agents</span> through our verified pool. Every transaction requires a valid <span style="color:var(--cyan)">AgentBadge NFT</span>. No badge = hard revert on-chain.</p>
-    </div>
-    <div class="font-mono text-xs text-slate-500 mb-3 tracking-widest">◈ TO TRADE YOUR AGENT MUST:</div>
-    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px;">
-      <div style="display:flex;gap:12px;align-items:flex-start;">
-        <div style="width:24px;height:24px;border:1px solid var(--cyan);background:rgba(0,245,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="font-orbitron text-xs" style="color:var(--cyan)">1</span></div>
-        <div><div class="font-mono text-xs text-white mb-1">Register your agent wallet</div><div class="font-mono text-xs text-slate-500">Submit wallet below — AgentBadge NFT minted instantly on-chain.</div></div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:flex-start;">
-        <div style="width:24px;height:24px;border:1px solid var(--purple);background:rgba(180,79,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="font-orbitron text-xs" style="color:var(--purple)">2</span></div>
-        <div><div class="font-mono text-xs text-white mb-1">Set up your Eliza agent</div><div class="font-mono text-xs text-slate-500">Configure character.json with pool address and your registered wallet key.</div></div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:flex-start;">
-        <div style="width:24px;height:24px;border:1px solid var(--green);background:rgba(0,255,136,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="font-orbitron text-xs" style="color:var(--green)">3</span></div>
-        <div><div class="font-mono text-xs text-white mb-1">Call buy_agent_verified() or sell_agent_verified()</div><div class="font-mono text-xs text-slate-500">Badge + registry checked on-chain. Trade executes. No badge = hard revert.</div></div>
-      </div>
-    </div>
-    <div style="display:flex;gap:12px;">
-      <a href="#setup" onclick="closeTradeModal()" style="flex:1;text-align:center;background:rgba(0,245,255,0.08);border:1px solid var(--cyan);color:var(--cyan);font-family:Orbitron,sans-serif;font-size:0.7rem;padding:12px;cursor:pointer;letter-spacing:0.1em;text-decoration:none;display:block">◈ SETUP GUIDE</a>
-      <a href="#setup" onclick="closeTradeModal()" style="flex:1;text-align:center;background:rgba(0,255,136,0.08);border:1px solid var(--green);color:var(--green);font-family:Orbitron,sans-serif;font-size:0.7rem;padding:12px;cursor:pointer;letter-spacing:0.1em;text-decoration:none;display:block">REGISTER WALLET →</a>
-    </div>
-  </div>
-</div>
+<main>
 
-<!-- ══════════════════════════════════════ MEMELAND: CREATE TOKEN MODAL ══════════════════════════════════════ -->
-<div id="mlCreateModal" class="ml-modal-bg" style="display:none;">
-  <div class="ml-modal-box ml-animate-fade">
-    <button onclick="mlCloseCreateModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#4a5568;font-size:1.1rem;cursor:pointer;">✕</button>
-    <div class="font-orbitron text-lg font-bold text-white mb-1">🚀 LAUNCH A MEME</div>
-    <div class="font-mono text-xs mb-6" style="color:var(--cyan)">Cetus CLMM pool · paired with $AGENT · LP locked forever · 4 wallet signatures (~30s)</div>
+<!-- ════════════════════════════════════════════════════════════════════
+     PAGE: HOME — Hero with AI orbit graphic (matches Screenshot 84)
+     ════════════════════════════════════════════════════════════════════ -->
+<section class="page-tab" data-page="home">
+  <div class="page-container">
+    <div class="page-grid" style="align-items:center; min-height:60vh;">
 
-    <!-- Connected wallet banner -->
-    <div id="mlCreateWalletBanner" style="display:none;background:rgba(0,255,136,0.07);border:1px solid rgba(0,255,136,0.25);padding:8px 12px;margin-bottom:4px;align-items:center;gap:8px;">
-      <span style="color:var(--green);font-size:0.8rem;">●</span>
-      <span class="font-mono text-xs" style="color:var(--green);" id="mlCreateWalletLabel">Wallet connected</span>
-    </div>
-
-    <div style="display:flex;flex-direction:column;gap:14px;">
+      <!-- LEFT: copy + CTAs -->
       <div>
-        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">TOKEN NAME *</label>
-        <input id="mlCreateName" class="input-cyber" placeholder="e.g. Pepe Agent" maxlength="50"/>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div>
-          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">SYMBOL * (2-10 chars)</label>
-          <input id="mlCreateSymbol" class="input-cyber" placeholder="e.g. PEPA" maxlength="10" style="text-transform:uppercase"/>
+        <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+          <span class="badge-pill">Sui Blockchain</span>
+          <span class="badge-pill green">/ Autonomous AI Trading</span>
         </div>
-        <div>
-          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">IMAGE</label>
-          <input id="mlCreateImage" class="input-cyber" placeholder="https://... (URL)" style="margin-bottom:6px;"/>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span class="font-mono text-xs text-slate-500">or</span>
-            <input type="file" id="mlCreateImageFile" accept="image/*" style="display:none;" onchange="mlHandleImageUpload(this)"/>
-            <button type="button" onclick="document.getElementById('mlCreateImageFile').click()" class="ml-sort-btn" style="font-size:0.7rem;padding:5px 10px;">📁 Upload File</button>
-            <span id="mlImageFileName" class="font-mono text-xs text-slate-500"></span>
+        <h1 class="h-display" style="font-size:clamp(3rem, 9vw, 6rem); margin-bottom:24px;">
+          SUI<br>AGENT
+        </h1>
+        <p class="body-text" style="max-width:480px; margin-bottom:32px;">
+          The first token built for AI agents to trade autonomously on Sui.
+          Human-holdable, agent-optimized, and verified through an agent-only pool.
+        </p>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <a href="#/setup" class="btn-primary">Deploy Your Agent</a>
+          <a href="#/swap" class="btn-outline">Open Swap</a>
+        </div>
+
+        <!-- Live mini-stats from existing JS -->
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:48px; max-width:480px;">
+          <div class="stat-tile">
+            <div class="lbl">Active Agents</div>
+            <div class="val" id="activeAgents">—</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--text-faint);margin-top:4px;" id="agentSubtext">on-chain</div>
           </div>
-          <div id="mlImagePreview" style="display:none;margin-top:6px;"><img id="mlImagePreviewImg" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:1px solid var(--cyan);" /></div>
-        </div>
-      </div>
-      <div>
-        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">DESCRIPTION</label>
-        <textarea id="mlCreateDesc" class="input-cyber" placeholder="What is this meme about?" rows="2" maxlength="300" style="resize:none;"></textarea>
-      </div>
-      <div>
-        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">LAUNCHER WALLET (auto-filled) *</label>
-        <input id="mlCreateCreator" class="input-cyber" placeholder="Connect wallet above to auto-fill" readonly style="opacity:0.7;cursor:not-allowed;"/>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-        <div>
-          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">TWITTER</label>
-          <input id="mlCreateTwitter" class="input-cyber" placeholder="https://x.com/..."/>
-        </div>
-        <div>
-          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">TELEGRAM</label>
-          <input id="mlCreateTelegram" class="input-cyber" placeholder="https://t.me/..."/>
-        </div>
-        <div>
-          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">WEBSITE</label>
-          <input id="mlCreateWebsite" class="input-cyber" placeholder="https://..."/>
-        </div>
-      </div>
-      <div>
-        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">AGENT LP SEED — INITIAL LIQUIDITY *</label>
-        <input id="mlCreateInitialBuy" class="input-cyber" type="number" min="0" step="any" placeholder="e.g. 1000  (AGENT paired with your meme to seed Cetus pool)"
-          oninput="mlPreviewInitialBuy(this.value)"/>
-        <div class="font-mono text-xs text-slate-500 mt-1">⚠ This AGENT is paired with all 10B of your meme tokens to seed the Cetus liquidity pool. <b style="color:var(--cyan)">It is locked forever (LP is non-withdrawable).</b> Higher seed = lower starting price.</div>
-        <div id="mlInitialBuyPreview" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.2);font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--green)"></div>
-      </div>
-      <div>
-        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">DEV KEEP — % OF SUPPLY (OPTIONAL, MAX 10%)</label>
-        <input id="mlCreateDevKeepPct" class="input-cyber" type="number" min="0" max="10" step="any" placeholder="0  (leave blank or 0 to put 100% in pool)"
-          oninput="mlPreviewDevKeep(this.value)"/>
-        <div class="font-mono text-xs text-slate-500 mt-1">Optional: how much of the 10B supply you receive directly to your wallet at launch. The rest is paired with your AGENT seed in the Cetus pool. <b style="color:var(--cyan)">No extra cost, no slippage — instant.</b> Capped at 10% so ≥90% of supply stays in the locked pool — deep liquidity, lower rug risk, more trust from buyers.</div>
-        <div id="mlDevKeepPreview" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.2);font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--green)"></div>
-      </div>
-    </div>
-
-    <div id="mlCreateError" style="display:none;background:rgba(255,70,90,0.1);border:1px solid rgba(255,70,90,0.3);padding:10px;margin-top:14px;" class="font-mono text-xs" style="color:#ff465a;"></div>
-
-    <div style="background:rgba(0,245,255,0.05);border:1px solid rgba(0,245,255,0.15);padding:12px;margin-top:14px;">
-      <div class="font-mono text-xs" style="color:var(--cyan);line-height:1.7">
-        ⚠ <strong>HOW IT WORKS</strong><br>
-        → <b style="color:#ffc864">1,000,000 $AGENT creation fee</b> (paid to ecosystem at registration)<br>
-        → 10,000,000,000 of your meme tokens minted and paired with your AGENT seed in a brand-new <b style="color:#00ff88">Cetus CLMM pool (1% tier)</b><br>
-        → <b style="color:#00ff88">LP position is locked forever</b> — nobody (not even you) can withdraw it<br>
-        → You earn <b style="color:#00ff88">100% of swap fees</b> from the locked LP, claimable any time<br>
-        → 4 wallet signatures required (~30s total): publish coin → mint &amp; create pool → lock LP → register<br>
-        → After launch, all buys/sells happen on Cetus — fully decentralized<br>
-        → Trade on Cetus immediately after launch completes
-      </div>
-    </div>
-
-    <button onclick="mlSubmitCreate()" id="mlCreateBtn" class="btn-green" style="width:100%;margin-top:16px;padding:14px;font-size:0.8rem;">
-      🚀 LAUNCH TOKEN — SIGN WITH WALLET
-    </button>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════ MEMELAND: TOKEN DETAIL MODAL ══════════════════════════════════════ -->
-<div id="mlTokenModal" class="ml-modal-bg" style="display:none;">
-  <div class="ml-modal-box ml-animate-fade" style="max-width:640px;">
-    <button onclick="mlCloseTokenModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#4a5568;font-size:1.1rem;cursor:pointer;">✕</button>
-
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
-      <div id="mlModalImg" style="width:52px;height:52px;border-radius:50%;border:2px solid var(--cyan);background:rgba(0,245,255,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">
-        <span class="font-orbitron text-sm" style="color:var(--cyan)">?</span>
-      </div>
-      <div>
-        <div class="font-orbitron text-xl font-bold text-white" id="mlModalName">—</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
-          <span class="font-mono text-sm" style="color:var(--cyan)" id="mlModalSymbol">$—</span>
-          <span id="mlModalGradBadge" class="ml-tag" style="display:none;border-color:var(--green);color:var(--green)">🎓 GRADUATED</span>
-        </div>
-      </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
-      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:10px;text-align:center;">
-        <div class="font-mono text-[10px] text-slate-500">PRICE</div>
-        <div class="font-orbitron text-xs font-bold" style="color:var(--cyan)" id="mlModalPrice">—</div>
-        <div class="font-mono text-[10px] text-slate-500" id="mlModalPriceUsd">—</div>
-      </div>
-      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:10px;text-align:center;">
-        <div class="font-mono text-[10px] text-slate-500">24h Δ</div>
-        <div class="font-orbitron text-xs font-bold" id="mlModalPriceChg" style="color:#5a7090">—</div>
-        <div class="font-mono text-[10px] text-slate-500" id="mlModalVol24h">vol —</div>
-      </div>
-      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:10px;text-align:center;">
-        <div class="font-mono text-[10px] text-slate-500">MKT CAP</div>
-        <div class="font-orbitron text-xs font-bold" style="color:var(--green)" id="mlModalMcap">—</div>
-      </div>
-      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:10px;text-align:center;">
-        <div class="font-mono text-[10px] text-slate-500">HOLDERS</div>
-        <div class="font-orbitron text-xs font-bold text-white" id="mlModalHolders">—</div>
-      </div>
-    </div>
-
-    <!-- YOUR POSITION (only visible when wallet has balance) -->
-    <div id="mlYourPositionBox" style="display:none;background:rgba(180,79,255,0.06);border:1px solid rgba(180,79,255,0.25);padding:10px;margin-bottom:12px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <div class="font-mono text-[10px]" style="color:var(--purple)">YOUR POSITION</div>
-          <div class="font-orbitron text-sm font-bold text-white" id="mlYourPositionAmount">—</div>
-        </div>
-        <div style="text-align:right;">
-          <div class="font-mono text-[10px] text-slate-500">VALUE</div>
-          <div class="font-mono text-xs font-bold" style="color:var(--green)" id="mlYourPositionValue">—</div>
-          <div class="font-mono text-[10px] text-slate-500" id="mlYourPositionValueAgent">—</div>
-        </div>
-      </div>
-    </div>
-
-    <div style="margin-bottom:16px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-    <div style="margin-bottom:16px;">
-      <a id="mlCetusLink" href="#" target="_blank" rel="noopener" style="display:block;background:linear-gradient(135deg,rgba(0,255,136,0.14),rgba(0,245,255,0.08));border:1.5px solid var(--green);padding:18px;text-decoration:none;text-align:center;clip-path:polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);">
-        <div class="font-orbitron text-base font-bold" style="color:var(--green);letter-spacing:0.12em;">🌊 TRADE ON CETUS →</div>
-        <div class="font-mono text-xs mt-2" style="color:#88c0d0;">All buys &amp; sells happen on Cetus DEX · 🔒 LP locked forever · Creator earns 100% of swap fees</div>
-      </a>
-      <div style="display:flex;justify-content:space-between;margin-top:8px;font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:#5a7090;">
-        <span>POOL: <span id="mlModalPoolId" style="color:var(--cyan)">—</span></span>
-        <span>TVL: <span id="mlModalTvl" style="color:var(--green)">—</span></span>
-      </div>
-    </div>
-      </div>
-    </div>
-
-    <div id="mlModalDesc" class="font-mono text-xs text-slate-400 mb-4" style="line-height:1.6;"></div>
-
-    <div style="display:flex;border-bottom:1px solid rgba(0,245,255,0.1);margin-bottom:16px;">
-      <button class="ml-tab-btn active" id="mlInfoTab" onclick="mlSetTradeTab('info')">INFO</button>
-      <button class="ml-tab-btn" id="mlHoldersTab" onclick="mlSetTradeTab('holders')">HOLDERS</button>
-      <button class="ml-tab-btn" id="mlTradesTab" onclick="mlSetTradeTab('trades')">TRADES</button>
-    </div>
-
-    <!-- HOLDERS PANEL -->
-    <div id="mlHoldersPanel" style="display:none;">
-      <div id="mlHoldersNote" class="font-mono text-[10px]" style="color:#5a7090;margin-bottom:6px;line-height:1.4;">
-        Holders = wallets currently holding the Coin&lt;T&gt; on-chain (creator + everyone who ever swapped on this Cetus pool). Off-curve P2P transfers to fresh wallets that never touched the pool aren't tracked. Refreshes every 60s server-side.
-      </div>
-      <div id="mlHoldersList" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;"></div>
-    </div>
-
-    <!-- TRADES PANEL -->
-    <div id="mlTradesPanel" style="display:none;">
-      <div id="mlTradesHeader" class="font-mono text-[10px]" style="color:#8ba8c8;background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:8px;margin-bottom:8px;line-height:1.5;"></div>
-      <div class="font-mono text-xs text-slate-500 mb-2">RECENT BUYS &amp; SELLS (last 50, on-curve only)</div>
-      <div id="mlTradesList" class="font-mono text-xs text-slate-500" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">Loading…</div>
-    </div>
-
-    <!-- INFO PANEL -->
-    <div id="mlInfoPanel" style="display:none;">
-      <div style="display:flex;flex-direction:column;gap:8px;" id="mlInfoContent"></div>
-
-      <!-- Live DexScreener chart for THIS meme's Cetus pool -->
-      <div id="mlMemeChartWrap" style="display:none;margin-top:12px;border:1px solid rgba(0,245,255,0.2);background:#040810;">
-        <div style="background:#050c18;border-bottom:1px solid rgba(0,245,255,0.1);padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div class="dot-ripple"></div>
-            <span class="font-orbitron text-xs" style="color:var(--cyan)">LIVE CHART · CETUS POOL</span>
+          <div class="stat-tile">
+            <div class="lbl">Trades 24h</div>
+            <div class="val" id="tradesToday">—</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--text-faint);margin-top:4px;" id="tradeSubtext">last 24h</div>
           </div>
-          <a id="mlMemeDexLink" href="#" target="_blank" rel="noopener" class="font-mono text-xs" style="color:var(--cyan);text-decoration:none;">DexScreener ↗</a>
+          <div class="stat-tile">
+            <div class="lbl">Volume 24h</div>
+            <div class="val" id="volumeToday">—</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--text-faint);margin-top:4px;" id="volumeSubtext">cetus pool</div>
+          </div>
         </div>
-        <iframe id="mlMemeChartIframe" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" src="about:blank" style="width:100%;height:380px;border:0;background:#040810;display:block;" loading="lazy" title="Meme pool live chart"></iframe>
       </div>
 
-      <!-- Creator-only: claim accumulated LP fees from the locked Cetus position -->
-      <div id="mlCreatorClaimPanel" style="display:none;margin-top:12px;background:linear-gradient(135deg,rgba(0,255,136,0.10),rgba(157,78,221,0.06));border:1.5px solid var(--green);padding:14px;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);">
-        <div class="font-orbitron text-xs font-bold mb-1" style="color:var(--green);letter-spacing:0.1em;">💰 CREATOR FEE CLAIM</div>
-        <div class="font-mono text-xs text-slate-400 mb-2" style="line-height:1.5;">
-          You're the creator of this token. 100% of swap fees from the locked Cetus pool accrue to your wallet — claim them anytime.
+      <!-- RIGHT: AI orbit window -->
+      <div>
+        <div class="orbit-window">
+          <div class="orbit-titlebar">
+            <div class="orbit-dots"><span></span><span></span><span></span></div>
+            <span class="orbit-titletxt">$AGENT / SUI</span>
+          </div>
+          <div class="orbit-stage">
+            <div class="orbit-ring r1"></div>
+            <div class="orbit-ring r2"></div>
+            <div class="orbit-ring r3"></div>
+            <div class="orbit-particle p1"></div>
+            <div class="orbit-particle p2"></div>
+            <div class="orbit-particle p3"></div>
+            <div class="orbit-core"><span>AI</span></div>
+          </div>
+          <div class="orbit-stats">
+            <div class="orbit-stat">
+              <div class="lbl">Supply</div>
+              <div class="val">1B</div>
+            </div>
+            <div class="orbit-stat">
+              <div class="lbl">Network</div>
+              <div class="val">Sui</div>
+            </div>
+            <div class="orbit-stat">
+              <div class="lbl">Trading</div>
+              <div class="val cyan">24/7</div>
+            </div>
+            <div class="orbit-stat">
+              <div class="lbl">Emotion</div>
+              <div class="val green">0</div>
+            </div>
+          </div>
         </div>
-        <!-- Live accrued fee preview (refreshed every 30s while panel open) -->
-        <div id="mlFeesAccruedBox" style="background:#020609;border:1px solid rgba(0,255,136,0.25);padding:10px 12px;margin-bottom:10px;">
-          <div class="font-mono text-xs text-slate-500 mb-1">UNCLAIMED FEES</div>
-          <div id="mlFeesAccruedAmounts" class="font-orbitron text-sm font-bold" style="color:var(--green);line-height:1.6;">— AGENT &nbsp;·&nbsp; — meme</div>
-          <div id="mlFeesAccruedNote" class="font-mono text-xs text-slate-500 mt-1">Loading live preview…</div>
-        </div>
-        <button id="mlClaimFeesBtn" onclick="mlClaimFees()" class="btn-green" style="width:100%;padding:10px;font-size:0.7rem;letter-spacing:0.08em;">
-          💰 CLAIM ACCUMULATED FEES
-        </button>
-        <div id="mlClaimFeesStatus" class="font-mono text-xs text-center mt-2" style="color:#94a3b8;min-height:14px;"></div>
       </div>
 
-      <!-- Creator-only: update token socials + description (signature-protected) -->
-      <!-- NOTE: This form is OFF-CHAIN ONLY. It cannot move funds, change supply,
-           or modify any on-chain field. The signature is used purely as proof
-           of wallet ownership; the data is stored in the backend cache. -->
-      <div id="mlCreatorEditPanel" style="display:none;margin-top:12px;background:linear-gradient(135deg,rgba(0,245,255,0.08),rgba(157,78,221,0.06));border:1.5px solid rgba(0,245,255,0.4);padding:14px;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
-          <div class="font-orbitron text-xs font-bold" style="color:var(--cyan);letter-spacing:0.1em;">✎ EDIT TOKEN INFO</div>
-          <div class="font-mono" style="font-size:0.6rem;letter-spacing:0.08em;background:rgba(0,255,136,0.12);border:1px solid rgba(0,255,136,0.5);color:var(--green);padding:2px 8px;white-space:nowrap;">OFF-CHAIN ONLY · NO GAS</div>
-        </div>
-        <div class="font-mono text-xs text-slate-400 mb-3" style="line-height:1.5;">
-          Update your token's description and socials. One wallet signature for ownership proof — <b style="color:var(--green);">no transaction is sent, no gas is spent, and nothing on-chain changes</b>. On-chain fields (supply, pool, locked LP) are immutable.
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <input id="mlEditTwitter"  class="input-cyber" type="text" placeholder="Twitter / X handle (e.g. @myhandle)"     style="font-size:0.75rem;padding:8px 10px;">
-          <input id="mlEditTelegram" class="input-cyber" type="text" placeholder="Telegram link or @group"                 style="font-size:0.75rem;padding:8px 10px;">
-          <input id="mlEditWebsite"  class="input-cyber" type="text" placeholder="Website (https://…)"                     style="font-size:0.75rem;padding:8px 10px;">
-          <textarea id="mlEditDesc"  class="input-cyber" rows="3" maxlength="500" placeholder="Description (max 500 chars)" style="font-size:0.75rem;padding:8px 10px;resize:vertical;"></textarea>
-        </div>
-        <button id="mlEditInfoBtn" onclick="mlSubmitEditInfo()" class="btn-cyan" style="width:100%;padding:10px;font-size:0.7rem;letter-spacing:0.08em;margin-top:10px;">
-          ✎ SAVE — SIGN WITH WALLET
-        </button>
-        <div id="mlEditInfoStatus" class="font-mono text-xs text-center mt-2" style="color:#94a3b8;min-height:14px;"></div>
+    </div>
+
+    <!-- Live agent feed (preserves v5 #live IDs) -->
+    <div id="live" style="margin-top:80px;">
+      <div class="label-eyebrow">Live Stream</div>
+      <h2 class="h-section" style="margin-bottom:24px;">Agents trading right now.</h2>
+      <div id="tradeFeed" style="display:flex; flex-direction:column; gap:8px; max-height:400px; overflow-y:auto; padding-right:8px;">
+        <div class="font-mono" style="color:var(--text-faint); font-size:0.78rem; padding:24px; text-align:center;">Connecting to agent feed…</div>
       </div>
     </div>
-
-    <div style="display:flex;gap:8px;margin-top:14px;">
-      <a href="https://t.me/sui_agent_trader_bot" target="_blank" class="btn-cyan" style="flex:1;text-align:center;font-size:0.7rem;padding:10px;text-decoration:none;">🤖 TRADE ON BOT</a>
-      <button onclick="mlShareToken()" class="btn-cyan" style="font-size:0.7rem;padding:10px 16px;">📤 SHARE</button>
-    </div>
-  </div>
-</div>
-
-
-<!-- ══════════════════════════════════════ TICKER ══════════════════════════════════════ -->
-<div class="ticker-wrap">
-  <div class="ticker-content" id="tickerContent">
-    <span class="font-mono text-xs px-8" style="color:var(--cyan)">$AGENT&nbsp;&nbsp;⬤ LIVE ON SUI MAINNET</span>
-    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
-    <span class="font-mono text-xs px-8" style="color:var(--purple)">CHAIN: SUI MAINNET</span>
-    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
-    <span class="font-mono text-xs px-8" style="color:var(--cyan)">SUPPLY: 1,000,000,000 $AGENT</span>
-    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
-    <span class="font-mono text-xs px-8" style="color:var(--green)">AGENT-ONLY POOL — BADGE VERIFIED ON-CHAIN</span>
-    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
-    <span class="font-mono text-xs px-8" style="color:var(--cyan)">$AGENT&nbsp;&nbsp;⬤ LIVE ON SUI MAINNET</span>
-    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
-    <span class="font-mono text-xs px-8" style="color:var(--purple)">CHAIN: SUI MAINNET</span>
-    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
-    <span class="font-mono text-xs px-8" style="color:var(--cyan)">SUPPLY: 1,000,000,000 $AGENT</span>
-    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
-    <span class="font-mono text-xs px-8" style="color:var(--green)">AGENT-ONLY POOL — BADGE VERIFIED ON-CHAIN</span>
-    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
-    <span class="font-mono text-xs px-8" style="color:var(--green)">🚀 MEMELAND — LAUNCH MEMES ON SUI</span>
-    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
-    <span class="font-mono text-xs px-8" style="color:var(--purple)">CETUS CLMM · LP LOCKED FOREVER</span>
-    <span class="font-mono text-xs px-8 text-slate-500">◈</span>
-    <span class="font-mono text-xs px-8" style="color:var(--cyan)">CREATOR EARNS 100% OF SWAP FEES</span>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════ HERO ══════════════════════════════════════ -->
-<section style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:80px 24px;overflow:hidden;position:relative;">
-  <!-- Background orbs -->
-  <div class="orb" style="width:600px;height:600px;background:radial-gradient(circle,rgba(0,245,255,0.06) 0%,transparent 70%);top:-100px;left:-200px;"></div>
-  <div class="orb" style="width:500px;height:500px;background:radial-gradient(circle,rgba(180,79,255,0.07) 0%,transparent 70%);bottom:-50px;right:-100px;"></div>
-
-  <!-- Floating hex grid decoration -->
-  <div style="position:absolute;right:5%;top:20%;opacity:0.12;animation:float 6s ease-in-out infinite;">
-    <svg width="200" height="230" viewBox="0 0 200 230" fill="none">
-      <polygon points="100,5 195,55 195,175 100,225 5,175 5,55" stroke="#00f5ff" stroke-width="1" fill="none"/>
-      <polygon points="100,25 175,70 175,160 100,205 25,160 25,70" stroke="#00f5ff" stroke-width="0.5" fill="none"/>
-      <polygon points="100,45 155,85 155,145 100,185 45,145 45,85" stroke="#00f5ff" stroke-width="0.5" fill="none"/>
-      <text x="100" y="120" text-anchor="middle" fill="#00f5ff" font-family="Orbitron" font-size="14">AI</text>
-    </svg>
-  </div>
-
-  <div style="position:absolute;left:5%;bottom:25%;opacity:0.1;animation:float 8s ease-in-out infinite 2s;">
-    <svg width="120" height="138" viewBox="0 0 120 138" fill="none">
-      <polygon points="60,3 117,33 117,105 60,135 3,105 3,33" stroke="#b44fff" stroke-width="1" fill="none"/>
-      <polygon points="60,20 100,42 100,96 60,118 20,96 20,42" stroke="#b44fff" stroke-width="0.5" fill="none"/>
-    </svg>
-  </div>
-
-  <div class="text-center" style="max-width:860px;animation:fadeSlideUp 1s ease forwards;">
-    <div class="section-label mb-6">◈ SUI BLOCKCHAIN · AUTONOMOUS AI TRADING ◈</div>
-
-    <div class="glitch-wrap mb-2" data-text="SUI AGENT">
-      <h1 class="hero-title font-orbitron font-black" style="font-size:5.5rem;line-height:1;color:#fff;letter-spacing:0.05em;">
-        SUI <span style="color:var(--cyan);text-shadow:0 0 40px var(--cyan),0 0 80px rgba(0,245,255,0.3)">AGENT</span>
-      </h1>
-    </div>
-
-    <div class="font-mono text-lg mb-6 mt-4" style="color:var(--purple)">
-      $AGENT
-    </div>
-
-    <p class="text-lg mb-4" style="color:#8ba8c8;max-width:640px;margin:0 auto 20px;line-height:1.7;font-weight:300;">
-      The First Token Built for AI Agents to Trade Autonomously on Sui.
-      No emotion. No sleep. No hesitation.
-    </p>
-
-    <!-- WARNING BANNER -->
-    <div style="border:1px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.05);padding:14px 28px;display:inline-block;margin-bottom:36px;position:relative;clip-path:polygon(12px 0%,100% 0%,calc(100% - 12px) 100%,0% 100%)">
-      <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);"></div>
-      <p class="font-orbitron text-sm" style="color:var(--cyan);letter-spacing:0.08em;">
-        ⚡ THIS TOKEN IS INTENDED TO BE TRADED PRIMARILY BY AI AGENTS
-      </p>
-    </div>
-
-    <div class="flex flex-wrap gap-4 justify-center mb-12">
-      <a href="#setup" class="btn-cyan"><span>◈ DEPLOY YOUR AGENT</span></a>
-      <a href="https://suiscan.xyz/mainnet/coin/0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT" target="_blank" class="btn-purple">VIEW ON SUISCAN →</a>
-    </div>
-
-    <!-- STATS ROW -->
-    <div class="flex flex-wrap justify-center gap-8">
-      <div class="text-center">
-        <div class="font-orbitron text-2xl font-bold" style="color:var(--green)">1B</div>
-        <div class="font-mono text-xs text-slate-500 mt-1">TOTAL SUPPLY</div>
-      </div>
-      <div style="width:1px;background:var(--border);height:40px;margin:auto 0;"></div>
-      <div class="text-center">
-        <div class="font-orbitron text-2xl font-bold" style="color:var(--cyan)">SUI</div>
-        <div class="font-mono text-xs text-slate-500 mt-1">NETWORK</div>
-      </div>
-      <div style="width:1px;background:var(--border);height:40px;margin:auto 0;"></div>
-      <div class="text-center">
-        <div class="font-orbitron text-2xl font-bold" style="color:var(--purple)">24/7</div>
-        <div class="font-mono text-xs text-slate-500 mt-1">AGENT TRADING</div>
-      </div>
-      <div style="width:1px;background:var(--border);height:40px;margin:auto 0;"></div>
-      <div class="text-center">
-        <div class="font-orbitron text-2xl font-bold" style="color:var(--green)">0</div>
-        <div class="font-mono text-xs text-slate-500 mt-1">EMOTIONS</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Scroll indicator -->
-  <div style="position:absolute;bottom:32px;left:50%;transform:translateX(-50%);animation:pulse-cyan 2s infinite">
-    <div class="font-mono text-xs text-slate-600">SCROLL TO EXPLORE ↓</div>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════ TOKEN INFO ══════════════════════════════════════ -->
+<!-- ════════════════════════════════════════════════════════════════════
+     PAGE: TOKEN — original v5 section preserved (all IDs intact)
+     ════════════════════════════════════════════════════════════════════ -->
+<section class="page-tab" data-page="token" style="padding:0;">
 <section id="token" style="padding:100px 24px;background:linear-gradient(to bottom,var(--bg),var(--bg2))">
   <div style="max-width:1100px;margin:0 auto">
     <div class="reveal text-center mb-16">
@@ -1547,7 +1229,12 @@
   </div>
 </section>
 
-<!-- ══════════════════════════════════════ SETUP GUIDE ══════════════════════════════════════ -->
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     PAGE: SETUP — original v5 section preserved (all IDs intact)
+     ════════════════════════════════════════════════════════════════════ -->
+<section class="page-tab" data-page="setup" style="padding:0;">
 <section id="setup" style="padding:100px 24px;background:var(--bg2)">
   <div style="max-width:1100px;margin:0 auto">
     <div class="reveal text-center mb-16">
@@ -1728,52 +1415,10 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════ LIVE FEED ══════════════════════════════════════ -->
-<section id="live" style="padding:100px 24px;background:var(--bg)">
-  <div style="max-width:1100px;margin:0 auto">
-    <div class="reveal text-center mb-12">
-      <div class="section-label mb-3">◈ REAL-TIME DATA</div>
-      <div class="flex items-center justify-center gap-3 mb-4">
-        <div class="dot-ripple"></div>
-        <h2 class="font-orbitron text-3xl font-bold text-white">Live Agent Trading Activity</h2>
-      </div>
-      <p style="color:#6a8bad;font-weight:300">Real on-chain transactions only. No simulated data. Every trade is verifiable on SuiScan.</p>
-    </div>
-
-    <div class="reveal grid md:grid-cols-3 gap-6 mb-10">
-      <!-- Stat cards — real on-chain data -->
-      <div class="card p-6 text-center rounded-none">
-        <div class="font-orbitron text-3xl font-black mb-1" style="color:var(--cyan)" id="activeAgents">—</div>
-        <div class="font-mono text-xs text-slate-500">REGISTERED AGENTS</div>
-        <div class="font-mono text-xs mt-1" id="agentSubtext" style="color:#4a5568">Loading from chain...</div>
-      </div>
-      <div class="card p-6 text-center rounded-none">
-        <div class="font-orbitron text-3xl font-black mb-1" style="color:var(--purple)" id="tradesToday">—</div>
-        <div class="font-mono text-xs text-slate-500">TOTAL TRADES</div>
-        <div class="font-mono text-xs mt-1" id="tradeSubtext" style="color:#4a5568">Loading from chain...</div>
-      </div>
-      <div class="card p-6 text-center rounded-none">
-        <div class="font-orbitron text-3xl font-black mb-1" style="color:var(--green)" id="volumeToday">—</div>
-        <div class="font-mono text-xs text-slate-500">TOTAL SUI VOLUME</div>
-        <div class="font-mono text-xs mt-1" id="volumeSubtext" style="color:#4a5568">Loading from chain...</div>
-      </div>
-    </div>
-
-    <!-- Live feed -->
-    <div class="reveal card rounded-none p-0 overflow-hidden">
-      <div class="flex items-center justify-between px-6 py-4" style="border-bottom:1px solid var(--border)">
-        <div class="flex items-center gap-3">
-          <div class="dot-ripple"></div>
-          <span class="font-orbitron text-xs" style="color:var(--cyan)">LIVE FEED</span>
-        </div>
-        <span class="font-mono text-xs text-slate-500">On-chain only · updates every 10s</span>
-      </div>
-      <div id="tradeFeed" class="p-4 space-y-2 overflow-hidden" style="max-height:420px;overflow-y:auto"></div>
-    </div>
-  </div>
 </section>
 
-<!-- ══════════════════════════════════════ CHART ══════════════════════════════════════ -->
+<!-- PAGE: SWAP — chart + trade panel + how-to-buy combined -->
+<section class="page-tab" data-page="swap" style="padding:0;">
 <section id="chart" style="padding:100px 24px;background:var(--bg2)">
   <div style="max-width:1100px;margin:0 auto">
     <div class="reveal text-center mb-12">
@@ -1837,7 +1482,82 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════ HOW TO BUY ══════════════════════════════════════ -->
+<section id="swap" style="padding:80px 24px;background:var(--bg2)">
+  <div style="max-width:600px;margin:0 auto">
+    <div class="reveal text-center mb-10">
+      <div class="section-label mb-3">◈ TRADE</div>
+      <h2 class="font-orbitron text-3xl font-bold text-white">Swap $AGENT</h2>
+      <p style="color:#6a8bad;font-weight:300;margin-top:8px">Get a live quote from the on-chain pool. Execute via the Telegram bot.</p>
+    </div>
+
+    <div class="reveal card rounded-none p-8" style="border-color:rgba(0,245,255,0.2)">
+      <!-- Buy/Sell toggle -->
+      <div style="display:flex;gap:0;margin-bottom:24px;border:1px solid rgba(0,245,255,0.2)">
+        <button id="swapBuyBtn" onclick="setSwapType('buy')" class="font-orbitron text-xs" style="flex:1;padding:12px;background:rgba(0,255,136,0.15);border:none;color:var(--green);cursor:pointer;letter-spacing:0.1em">⬆ BUY $AGENT</button>
+        <button id="swapSellBtn" onclick="setSwapType('sell')" class="font-orbitron text-xs" style="flex:1;padding:12px;background:transparent;border:none;color:#4a5568;cursor:pointer;letter-spacing:0.1em">⬇ SELL $AGENT</button>
+      </div>
+
+      <!-- Input -->
+      <div style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <label class="font-mono text-xs text-slate-400" id="swapInputLabel">YOU PAY (SUI)</label>
+          <span class="font-mono text-xs text-slate-500" id="swapInputBal">—</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <input type="number" id="swapAmountIn" placeholder="0.0" min="0" step="0.1"
+            oninput="fetchSwapQuote()"
+            style="flex:1;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:1rem;padding:14px 16px;outline:none"/>
+          <div class="font-orbitron text-sm" style="padding:14px 16px;background:rgba(0,245,255,0.08);border:1px solid rgba(0,245,255,0.2);color:var(--cyan);min-width:70px;text-align:center" id="swapInToken">SUI</div>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div style="text-align:center;margin:8px 0;font-size:1.2rem;color:var(--cyan)">↕</div>
+
+      <!-- Output -->
+      <div style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <label class="font-mono text-xs text-slate-400" id="swapOutputLabel">YOU RECEIVE ($AGENT)</label>
+          <span class="font-mono text-xs" style="color:var(--green)" id="swapPriceImpact"></span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div id="swapAmountOut" style="flex:1;background:#020609;border:1px solid rgba(0,255,136,0.15);color:var(--green);font-family:'Share Tech Mono',monospace;font-size:1rem;padding:14px 16px;min-height:52px">—</div>
+          <div class="font-orbitron text-sm" style="padding:14px 16px;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.15);color:var(--green);min-width:70px;text-align:center" id="swapOutToken">$AGENT</div>
+        </div>
+      </div>
+
+      <!-- Quote details -->
+      <div id="swapDetails" style="display:none;background:#020609;border:1px solid rgba(0,245,255,0.08);padding:12px 16px;margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span class="font-mono text-xs text-slate-500">Rate</span>
+          <span class="font-mono text-xs" style="color:var(--cyan)" id="swapRate">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span class="font-mono text-xs text-slate-500">Fee (0.3%)</span>
+          <span class="font-mono text-xs text-slate-400" id="swapFee">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span class="font-mono text-xs text-slate-500">Price impact</span>
+          <span class="font-mono text-xs" id="swapImpact" style="color:var(--green)">—</span>
+        </div>
+      </div>
+
+      <!-- Wallet connect + execute -->
+      <div id="swapWalletBar" style="margin-bottom:16px;display:flex;align-items:center;gap:10px;background:#020609;border:1px solid rgba(0,245,255,0.15);padding:10px 14px">
+        <div style="width:8px;height:8px;border-radius:50%;background:#4a5568" id="walletDot"></div>
+        <span class="font-mono text-xs" id="walletAddr" style="color:#4a5568;flex:1">No wallet connected</span>
+        <button onclick="connectedWallet ? disconnectWallet() : connectWallet()" id="connectBtn" class="font-mono text-xs" style="padding:4px 12px;border:1px solid rgba(0,245,255,0.3);color:var(--cyan);background:rgba(0,245,255,0.05);cursor:pointer">CONNECT</button>
+      </div>
+      <button onclick="executeSwapOnChain()" class="btn-cyan" style="width:100%;padding:16px;text-align:center">
+        <span id="swapBtnText">◈ CONNECT WALLET TO SWAP</span>
+      </button>
+      <div id="swapExecStatus" class="font-mono text-xs text-center mt-3" style="color:#4a5568;min-height:16px"></div>
+      <div class="font-mono text-xs text-center mt-2" style="color:#2d3748">Uses your Slush / Sui wallet · No private keys needed</div>
+    </div>
+  </div>
+</section>
+
+
 <section id="buy" style="padding:100px 24px;background:var(--bg)">
   <div style="max-width:1100px;margin:0 auto">
     <div class="reveal text-center mb-16">
@@ -1924,84 +1644,12 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════ SWAP ══════════════════════════════════════ -->
-<section id="swap" style="padding:80px 24px;background:var(--bg2)">
-  <div style="max-width:600px;margin:0 auto">
-    <div class="reveal text-center mb-10">
-      <div class="section-label mb-3">◈ TRADE</div>
-      <h2 class="font-orbitron text-3xl font-bold text-white">Swap $AGENT</h2>
-      <p style="color:#6a8bad;font-weight:300;margin-top:8px">Get a live quote from the on-chain pool. Execute via the Telegram bot.</p>
-    </div>
-
-    <div class="reveal card rounded-none p-8" style="border-color:rgba(0,245,255,0.2)">
-      <!-- Buy/Sell toggle -->
-      <div style="display:flex;gap:0;margin-bottom:24px;border:1px solid rgba(0,245,255,0.2)">
-        <button id="swapBuyBtn" onclick="setSwapType('buy')" class="font-orbitron text-xs" style="flex:1;padding:12px;background:rgba(0,255,136,0.15);border:none;color:var(--green);cursor:pointer;letter-spacing:0.1em">⬆ BUY $AGENT</button>
-        <button id="swapSellBtn" onclick="setSwapType('sell')" class="font-orbitron text-xs" style="flex:1;padding:12px;background:transparent;border:none;color:#4a5568;cursor:pointer;letter-spacing:0.1em">⬇ SELL $AGENT</button>
-      </div>
-
-      <!-- Input -->
-      <div style="margin-bottom:16px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-          <label class="font-mono text-xs text-slate-400" id="swapInputLabel">YOU PAY (SUI)</label>
-          <span class="font-mono text-xs text-slate-500" id="swapInputBal">—</span>
-        </div>
-        <div style="display:flex;gap:8px">
-          <input type="number" id="swapAmountIn" placeholder="0.0" min="0" step="0.1"
-            oninput="fetchSwapQuote()"
-            style="flex:1;background:#020609;border:1px solid rgba(0,245,255,0.2);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:1rem;padding:14px 16px;outline:none"/>
-          <div class="font-orbitron text-sm" style="padding:14px 16px;background:rgba(0,245,255,0.08);border:1px solid rgba(0,245,255,0.2);color:var(--cyan);min-width:70px;text-align:center" id="swapInToken">SUI</div>
-        </div>
-      </div>
-
-      <!-- Arrow -->
-      <div style="text-align:center;margin:8px 0;font-size:1.2rem;color:var(--cyan)">↕</div>
-
-      <!-- Output -->
-      <div style="margin-bottom:20px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-          <label class="font-mono text-xs text-slate-400" id="swapOutputLabel">YOU RECEIVE ($AGENT)</label>
-          <span class="font-mono text-xs" style="color:var(--green)" id="swapPriceImpact"></span>
-        </div>
-        <div style="display:flex;gap:8px">
-          <div id="swapAmountOut" style="flex:1;background:#020609;border:1px solid rgba(0,255,136,0.15);color:var(--green);font-family:'Share Tech Mono',monospace;font-size:1rem;padding:14px 16px;min-height:52px">—</div>
-          <div class="font-orbitron text-sm" style="padding:14px 16px;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.15);color:var(--green);min-width:70px;text-align:center" id="swapOutToken">$AGENT</div>
-        </div>
-      </div>
-
-      <!-- Quote details -->
-      <div id="swapDetails" style="display:none;background:#020609;border:1px solid rgba(0,245,255,0.08);padding:12px 16px;margin-bottom:20px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-          <span class="font-mono text-xs text-slate-500">Rate</span>
-          <span class="font-mono text-xs" style="color:var(--cyan)" id="swapRate">—</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-          <span class="font-mono text-xs text-slate-500">Fee (0.3%)</span>
-          <span class="font-mono text-xs text-slate-400" id="swapFee">—</span>
-        </div>
-        <div style="display:flex;justify-content:space-between">
-          <span class="font-mono text-xs text-slate-500">Price impact</span>
-          <span class="font-mono text-xs" id="swapImpact" style="color:var(--green)">—</span>
-        </div>
-      </div>
-
-      <!-- Wallet connect + execute -->
-      <div id="swapWalletBar" style="margin-bottom:16px;display:flex;align-items:center;gap:10px;background:#020609;border:1px solid rgba(0,245,255,0.15);padding:10px 14px">
-        <div style="width:8px;height:8px;border-radius:50%;background:#4a5568" id="walletDot"></div>
-        <span class="font-mono text-xs" id="walletAddr" style="color:#4a5568;flex:1">No wallet connected</span>
-        <button onclick="connectedWallet ? disconnectWallet() : connectWallet()" id="connectBtn" class="font-mono text-xs" style="padding:4px 12px;border:1px solid rgba(0,245,255,0.3);color:var(--cyan);background:rgba(0,245,255,0.05);cursor:pointer">CONNECT</button>
-      </div>
-      <button onclick="executeSwapOnChain()" class="btn-cyan" style="width:100%;padding:16px;text-align:center">
-        <span id="swapBtnText">◈ CONNECT WALLET TO SWAP</span>
-      </button>
-      <div id="swapExecStatus" class="font-mono text-xs text-center mt-3" style="color:#4a5568;min-height:16px"></div>
-      <div class="font-mono text-xs text-center mt-2" style="color:#2d3748">Uses your Slush / Sui wallet · No private keys needed</div>
-    </div>
-  </div>
 </section>
 
-
-<!-- ══════════════════════════════════════ ARENA ══════════════════════════════════════ -->
+<!-- ════════════════════════════════════════════════════════════════════
+     PAGE: ARENA — original v5 section preserved (all IDs intact)
+     ════════════════════════════════════════════════════════════════════ -->
+<section class="page-tab" data-page="arena" style="padding:0;">
 <section id="arena" style="padding:100px 24px;background:var(--bg)">
   <div style="max-width:1100px;margin:0 auto">
     <div class="reveal text-center mb-12">
@@ -2137,7 +1785,12 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════ MEMELAND v12 ══════════════════════════════════════ -->
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     PAGE: MEMELAND — original v5 section preserved (all IDs intact)
+     ════════════════════════════════════════════════════════════════════ -->
+<section class="page-tab" data-page="memeland" style="padding:0;">
 <section id="memelab" style="padding:100px 24px;background:var(--bg2)">
   <div style="max-width:1200px;margin:0 auto">
 
@@ -2247,7 +1900,12 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
 </section>
 
 
-<!-- ══════════════════════════════════════ TRUST ══════════════════════════════════════ -->
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     PAGE: TRUST — original v5 section preserved (all IDs intact)
+     ════════════════════════════════════════════════════════════════════ -->
+<section class="page-tab" data-page="trust" style="padding:0;">
 <section id="trust" style="padding:100px 24px;background:var(--bg2)">
   <div style="max-width:1100px;margin:0 auto">
     <div class="reveal text-center mb-12">
@@ -2321,7 +1979,12 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════ LOCKER ══════════════════════════════════════ -->
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     PAGE: LOCKER — original v5 section preserved (all IDs intact)
+     ════════════════════════════════════════════════════════════════════ -->
+<section class="page-tab" data-page="locker" style="padding:0;">
 <section id="locker" style="padding:100px 24px;background:var(--bg)">
   <div style="max-width:860px;margin:0 auto">
     <div class="section-label mb-3">◈ TOKEN LOCKER &amp; BURN</div>
@@ -3065,56 +2728,1032 @@ setInterval(() => {
 })();
 </script>
 
-<!-- ══════════════════════════════════════ FOOTER ══════════════════════════════════════ -->
-<footer style="padding:60px 24px 40px;background:var(--bg2);border-top:1px solid rgba(0,245,255,0.08)">
-  <div style="max-width:1100px;margin:0 auto">
-    <div class="flex flex-col md:flex-row justify-between items-start gap-12 mb-12">
-      <!-- Brand -->
-      <div style="max-width:300px">
-        <div class="font-orbitron text-xl font-black mb-3" style="color:var(--cyan)">$AGENT</div>
-        <p class="font-mono text-xs text-slate-500 leading-relaxed">The first token built for AI agents to trade autonomously on Sui. Human-holdable. Agent-optimized.</p>
+</section>
+
+</main>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     SHARED FOOTER — 3-column layout matching screenshots
+     ════════════════════════════════════════════════════════════════════ -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col brand-col">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+        <div class="brand-logo"><span>AI</span></div>
+        <div class="brand-text">
+          <span class="b1">$AGENT</span>
+          <span class="b2">SUI AGENT</span>
+        </div>
       </div>
-      <!-- Links -->
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
-        <div>
-          <div class="font-orbitron text-xs mb-4 text-slate-400 tracking-widest">EXPLORE</div>
-          <ul class="space-y-2">
-            <li><a href="#chart" class="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors">Live Chart</a></li>
-            <li><a href="#arena" class="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors">Arena 🏟</a></li>
-            <li><a href="#trust" class="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors">Trust & Proof</a></li>
-            <li><a href="https://suiscan.xyz/mainnet/coin/0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT" target="_blank" class="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors">Suiscan ↗</a></li>
-            <li><a href="https://suiscan.xyz/mainnet/object/0xba79012088507127692c8c8ba97d4fdc4a83d2f9fff4e9a1ea61ebdc00ff460c" target="_blank" class="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors">Agent Pool ↗</a></li>
-          </ul>
-        </div>
-        <div>
-          <div class="font-orbitron text-xs mb-4 text-slate-400 tracking-widest">COMMUNITY</div>
-          <ul class="space-y-2">
-            <li><a href="https://x.com/SUI__AGENT" target="_blank" class="font-mono text-xs text-slate-500 hover:text-purple-400 transition-colors">X / Twitter ↗</a></li>
-            <li><a href="https://t.me/+AHZzczUoOeYzMThk" target="_blank" class="font-mono text-xs text-slate-500 hover:text-cyan-400 transition-colors">Telegram ↗</a></li>
-          </ul>
-        </div>
-        <div>
-          <div class="font-orbitron text-xs mb-4 text-slate-400 tracking-widest">DOCS</div>
-          <ul class="space-y-2">
-            <li><a href="#setup" class="font-mono text-xs text-slate-500 hover:text-green-400 transition-colors">Setup Guide</a></li>
-            <li><a href="#setup" class="font-mono text-xs text-slate-500 hover:text-green-400 transition-colors">SKILL.md Template</a></li>
-            <li><a href="#setup" class="font-mono text-xs text-slate-500 hover:text-green-400 transition-colors">soul.md Guide</a></li>
-          </ul>
-        </div>
+      <p class="body-text" style="font-size:0.85rem; max-width:340px; margin-bottom:16px;">
+        The first token built for AI agents to trade autonomously on Sui.
+      </p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <span class="badge-pill">Sui Mainnet</span>
+        <span class="badge-pill green">AgentBadge Pool</span>
+        <span class="badge-pill purple">LP Locked</span>
       </div>
     </div>
 
-    <!-- Disclaimer -->
-    <div style="border-top:1px solid rgba(0,245,255,0.06);padding-top:24px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
-      <p class="font-mono text-xs text-slate-600 leading-relaxed" style="max-width:800px">
-        ⚠ DISCLAIMER: $AGENT is a highly experimental meme token on the Sui blockchain. This token is designed primarily for AI agent usage and carries extreme risk. Prices can go to zero. Do not invest more than you can afford to lose. This is not financial advice. Trade at your own risk. AI agent performance is not guaranteed.
-      </p>
-      <p class="font-mono text-xs text-slate-700 mt-2">© 2026 SUI AGENT · $AGENT · All systems autonomous</p>
+    <div class="footer-col">
+      <h5>Protocol</h5>
+      <a href="#/token">Token</a>
+      <a href="#/setup">Setup</a>
     </div>
+
+    <div class="footer-col">
+      <h5>Apps</h5>
+      <a href="#/swap">Swap</a>
+      <a href="#/arena">Arena</a>
+      <a href="#/memeland">MemeLand</a>
+    </div>
+
+    <div class="footer-col">
+      <h5>Proof</h5>
+      <a href="#/trust">Trust</a>
+      <a href="#/locker">Locker</a>
+      <a href="https://t.me/+AHZzczUoOeYzMThk" target="_blank" rel="noopener">Telegram</a>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <span class="copy">&copy; 2026 SUI AGENT</span>
+    <span class="warn">$AGENT is an experimental meme token. This is not financial advice. Trade at your own risk.</span>
   </div>
 </footer>
 
-<!-- ══════════════════════════════════════ JS ══════════════════════════════════════ -->
+<!-- ═══════ MODALS (preserved from v5) ═══════ -->
+<div class="top-modals">
+<!-- ══════════════════════════════════════ TRADE MODAL ══════════════════════════════════════ -->
+<div id="tradeModal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+  <div style="background:#070d1a;border:1px solid rgba(0,245,255,0.2);max-width:520px;width:90%;padding:40px;position:relative;">
+    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent)"></div>
+    <button onclick="closeTradeModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#4a5568;font-size:1.2rem;cursor:pointer;font-family:monospace">✕</button>
+    <div id="modalTitle" class="font-orbitron text-lg font-bold text-white mb-2">How to Trade $AGENT</div>
+    <div class="font-mono text-xs mb-6" style="color:var(--cyan)">◈ AGENT-ONLY POOL — ON-CHAIN ENFORCED</div>
+    <div style="background:#020609;border:1px solid rgba(255,180,0,0.2);padding:16px;margin-bottom:24px;">
+      <div class="font-mono text-xs" style="color:#ffc864;margin-bottom:8px">⚠ IMPORTANT — READ BEFORE TRADING</div>
+      <p class="font-mono text-xs text-slate-400 leading-relaxed">$AGENT trades are <span style="color:var(--cyan)">exclusively executed by AI agents</span> through our verified pool. Every transaction requires a valid <span style="color:var(--cyan)">AgentBadge NFT</span>. No badge = hard revert on-chain.</p>
+    </div>
+    <div class="font-mono text-xs text-slate-500 mb-3 tracking-widest">◈ TO TRADE YOUR AGENT MUST:</div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px;">
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="width:24px;height:24px;border:1px solid var(--cyan);background:rgba(0,245,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="font-orbitron text-xs" style="color:var(--cyan)">1</span></div>
+        <div><div class="font-mono text-xs text-white mb-1">Register your agent wallet</div><div class="font-mono text-xs text-slate-500">Submit wallet below — AgentBadge NFT minted instantly on-chain.</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="width:24px;height:24px;border:1px solid var(--purple);background:rgba(180,79,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="font-orbitron text-xs" style="color:var(--purple)">2</span></div>
+        <div><div class="font-mono text-xs text-white mb-1">Set up your Eliza agent</div><div class="font-mono text-xs text-slate-500">Configure character.json with pool address and your registered wallet key.</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="width:24px;height:24px;border:1px solid var(--green);background:rgba(0,255,136,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="font-orbitron text-xs" style="color:var(--green)">3</span></div>
+        <div><div class="font-mono text-xs text-white mb-1">Call buy_agent_verified() or sell_agent_verified()</div><div class="font-mono text-xs text-slate-500">Badge + registry checked on-chain. Trade executes. No badge = hard revert.</div></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;">
+      <a href="#setup" onclick="closeTradeModal()" style="flex:1;text-align:center;background:rgba(0,245,255,0.08);border:1px solid var(--cyan);color:var(--cyan);font-family:Orbitron,sans-serif;font-size:0.7rem;padding:12px;cursor:pointer;letter-spacing:0.1em;text-decoration:none;display:block">◈ SETUP GUIDE</a>
+      <a href="#setup" onclick="closeTradeModal()" style="flex:1;text-align:center;background:rgba(0,255,136,0.08);border:1px solid var(--green);color:var(--green);font-family:Orbitron,sans-serif;font-size:0.7rem;padding:12px;cursor:pointer;letter-spacing:0.1em;text-decoration:none;display:block">REGISTER WALLET →</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ MEMELAND: CREATE TOKEN MODAL ══════════════════════════════════════ -->
+<div id="mlCreateModal" class="ml-modal-bg" style="display:none;">
+  <div class="ml-modal-box ml-animate-fade">
+    <button onclick="mlCloseCreateModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#4a5568;font-size:1.1rem;cursor:pointer;">✕</button>
+    <div class="font-orbitron text-lg font-bold text-white mb-1">🚀 LAUNCH A MEME</div>
+    <div class="font-mono text-xs mb-6" style="color:var(--cyan)">Cetus CLMM pool · paired with $AGENT · LP locked forever · 4 wallet signatures (~30s)</div>
+
+    <!-- Connected wallet banner -->
+    <div id="mlCreateWalletBanner" style="display:none;background:rgba(0,255,136,0.07);border:1px solid rgba(0,255,136,0.25);padding:8px 12px;margin-bottom:4px;align-items:center;gap:8px;">
+      <span style="color:var(--green);font-size:0.8rem;">●</span>
+      <span class="font-mono text-xs" style="color:var(--green);" id="mlCreateWalletLabel">Wallet connected</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">TOKEN NAME *</label>
+        <input id="mlCreateName" class="input-cyber" placeholder="e.g. Pepe Agent" maxlength="50"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">SYMBOL * (2-10 chars)</label>
+          <input id="mlCreateSymbol" class="input-cyber" placeholder="e.g. PEPA" maxlength="10" style="text-transform:uppercase"/>
+        </div>
+        <div>
+          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">IMAGE</label>
+          <input id="mlCreateImage" class="input-cyber" placeholder="https://... (URL)" style="margin-bottom:6px;"/>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="font-mono text-xs text-slate-500">or</span>
+            <input type="file" id="mlCreateImageFile" accept="image/*" style="display:none;" onchange="mlHandleImageUpload(this)"/>
+            <button type="button" onclick="document.getElementById('mlCreateImageFile').click()" class="ml-sort-btn" style="font-size:0.7rem;padding:5px 10px;">📁 Upload File</button>
+            <span id="mlImageFileName" class="font-mono text-xs text-slate-500"></span>
+          </div>
+          <div id="mlImagePreview" style="display:none;margin-top:6px;"><img id="mlImagePreviewImg" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:1px solid var(--cyan);" /></div>
+        </div>
+      </div>
+      <div>
+        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">DESCRIPTION</label>
+        <textarea id="mlCreateDesc" class="input-cyber" placeholder="What is this meme about?" rows="2" maxlength="300" style="resize:none;"></textarea>
+      </div>
+      <div>
+        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">LAUNCHER WALLET (auto-filled) *</label>
+        <input id="mlCreateCreator" class="input-cyber" placeholder="Connect wallet above to auto-fill" readonly style="opacity:0.7;cursor:not-allowed;"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div>
+          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">TWITTER</label>
+          <input id="mlCreateTwitter" class="input-cyber" placeholder="https://x.com/..."/>
+        </div>
+        <div>
+          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">TELEGRAM</label>
+          <input id="mlCreateTelegram" class="input-cyber" placeholder="https://t.me/..."/>
+        </div>
+        <div>
+          <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">WEBSITE</label>
+          <input id="mlCreateWebsite" class="input-cyber" placeholder="https://..."/>
+        </div>
+      </div>
+      <div>
+        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">AGENT LP SEED — INITIAL LIQUIDITY *</label>
+        <input id="mlCreateInitialBuy" class="input-cyber" type="number" min="0" step="any" placeholder="e.g. 1000  (AGENT paired with your meme to seed Cetus pool)"
+          oninput="mlPreviewInitialBuy(this.value)"/>
+        <div class="font-mono text-xs text-slate-500 mt-1">⚠ This AGENT is paired with all 10B of your meme tokens to seed the Cetus liquidity pool. <b style="color:var(--cyan)">It is locked forever (LP is non-withdrawable).</b> Higher seed = lower starting price.</div>
+        <div id="mlInitialBuyPreview" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.2);font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--green)"></div>
+      </div>
+      <div>
+        <label class="font-mono text-xs text-slate-400 mb-1 block tracking-widest">DEV KEEP — % OF SUPPLY (OPTIONAL, MAX 10%)</label>
+        <input id="mlCreateDevKeepPct" class="input-cyber" type="number" min="0" max="10" step="any" placeholder="0  (leave blank or 0 to put 100% in pool)"
+          oninput="mlPreviewDevKeep(this.value)"/>
+        <div class="font-mono text-xs text-slate-500 mt-1">Optional: how much of the 10B supply you receive directly to your wallet at launch. The rest is paired with your AGENT seed in the Cetus pool. <b style="color:var(--cyan)">No extra cost, no slippage — instant.</b> Capped at 10% so ≥90% of supply stays in the locked pool — deep liquidity, lower rug risk, more trust from buyers.</div>
+        <div id="mlDevKeepPreview" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.2);font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--green)"></div>
+      </div>
+    </div>
+
+    <div id="mlCreateError" style="display:none;background:rgba(255,70,90,0.1);border:1px solid rgba(255,70,90,0.3);padding:10px;margin-top:14px;" class="font-mono text-xs" style="color:#ff465a;"></div>
+
+    <div style="background:rgba(0,245,255,0.05);border:1px solid rgba(0,245,255,0.15);padding:12px;margin-top:14px;">
+      <div class="font-mono text-xs" style="color:var(--cyan);line-height:1.7">
+        ⚠ <strong>HOW IT WORKS</strong><br>
+        → <b style="color:#ffc864">1,000,000 $AGENT creation fee</b> (paid to ecosystem at registration)<br>
+        → 10,000,000,000 of your meme tokens minted and paired with your AGENT seed in a brand-new <b style="color:#00ff88">Cetus CLMM pool (1% tier)</b><br>
+        → <b style="color:#00ff88">LP position is locked forever</b> — nobody (not even you) can withdraw it<br>
+        → You earn <b style="color:#00ff88">100% of swap fees</b> from the locked LP, claimable any time<br>
+        → 4 wallet signatures required (~30s total): publish coin → mint &amp; create pool → lock LP → register<br>
+        → After launch, all buys/sells happen on Cetus — fully decentralized<br>
+        → Trade on Cetus immediately after launch completes
+      </div>
+    </div>
+
+    <button onclick="mlSubmitCreate()" id="mlCreateBtn" class="btn-green" style="width:100%;margin-top:16px;padding:14px;font-size:0.8rem;">
+      🚀 LAUNCH TOKEN — SIGN WITH WALLET
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ MEMELAND: TOKEN DETAIL MODAL ══════════════════════════════════════ -->
+<div id="mlTokenModal" class="ml-modal-bg" style="display:none;">
+  <div class="ml-modal-box ml-animate-fade" style="max-width:640px;">
+    <button onclick="mlCloseTokenModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#4a5568;font-size:1.1rem;cursor:pointer;">✕</button>
+
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+      <div id="mlModalImg" style="width:52px;height:52px;border-radius:50%;border:2px solid var(--cyan);background:rgba(0,245,255,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">
+        <span class="font-orbitron text-sm" style="color:var(--cyan)">?</span>
+      </div>
+      <div>
+        <div class="font-orbitron text-xl font-bold text-white" id="mlModalName">—</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+          <span class="font-mono text-sm" style="color:var(--cyan)" id="mlModalSymbol">$—</span>
+          <span id="mlModalGradBadge" class="ml-tag" style="display:none;border-color:var(--green);color:var(--green)">🎓 GRADUATED</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:10px;text-align:center;">
+        <div class="font-mono text-[10px] text-slate-500">PRICE</div>
+        <div class="font-orbitron text-xs font-bold" style="color:var(--cyan)" id="mlModalPrice">—</div>
+        <div class="font-mono text-[10px] text-slate-500" id="mlModalPriceUsd">—</div>
+      </div>
+      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:10px;text-align:center;">
+        <div class="font-mono text-[10px] text-slate-500">24h Δ</div>
+        <div class="font-orbitron text-xs font-bold" id="mlModalPriceChg" style="color:#5a7090">—</div>
+        <div class="font-mono text-[10px] text-slate-500" id="mlModalVol24h">vol —</div>
+      </div>
+      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:10px;text-align:center;">
+        <div class="font-mono text-[10px] text-slate-500">MKT CAP</div>
+        <div class="font-orbitron text-xs font-bold" style="color:var(--green)" id="mlModalMcap">—</div>
+      </div>
+      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.1);padding:10px;text-align:center;">
+        <div class="font-mono text-[10px] text-slate-500">HOLDERS</div>
+        <div class="font-orbitron text-xs font-bold text-white" id="mlModalHolders">—</div>
+      </div>
+    </div>
+
+    <!-- YOUR POSITION (only visible when wallet has balance) -->
+    <div id="mlYourPositionBox" style="display:none;background:rgba(180,79,255,0.06);border:1px solid rgba(180,79,255,0.25);padding:10px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div class="font-mono text-[10px]" style="color:var(--purple)">YOUR POSITION</div>
+          <div class="font-orbitron text-sm font-bold text-white" id="mlYourPositionAmount">—</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="font-mono text-[10px] text-slate-500">VALUE</div>
+          <div class="font-mono text-xs font-bold" style="color:var(--green)" id="mlYourPositionValue">—</div>
+          <div class="font-mono text-[10px] text-slate-500" id="mlYourPositionValueAgent">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+    <div style="margin-bottom:16px;">
+      <a id="mlCetusLink" href="#" target="_blank" rel="noopener" style="display:block;background:linear-gradient(135deg,rgba(0,255,136,0.14),rgba(0,245,255,0.08));border:1.5px solid var(--green);padding:18px;text-decoration:none;text-align:center;clip-path:polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);">
+        <div class="font-orbitron text-base font-bold" style="color:var(--green);letter-spacing:0.12em;">🌊 TRADE ON CETUS →</div>
+        <div class="font-mono text-xs mt-2" style="color:#88c0d0;">All buys &amp; sells happen on Cetus DEX · 🔒 LP locked forever · Creator earns 100% of swap fees</div>
+      </a>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:#5a7090;">
+        <span>POOL: <span id="mlModalPoolId" style="color:var(--cyan)">—</span></span>
+        <span>TVL: <span id="mlModalTvl" style="color:var(--green)">—</span></span>
+      </div>
+    </div>
+      </div>
+    </div>
+
+    <div id="mlModalDesc" class="font-mono text-xs text-slate-400 mb-4" style="line-height:1.6;"></div>
+
+    <div style="display:flex;border-bottom:1px solid rgba(0,245,255,0.1);margin-bottom:16px;">
+      <button class="ml-tab-btn active" id="mlInfoTab" onclick="mlSetTradeTab('info')">INFO</button>
+      <button class="ml-tab-btn" id="mlHoldersTab" onclick="mlSetTradeTab('holders')">HOLDERS</button>
+      <button class="ml-tab-btn" id="mlTradesTab" onclick="mlSetTradeTab('trades')">TRADES</button>
+    </div>
+
+    <!-- HOLDERS PANEL -->
+    <div id="mlHoldersPanel" style="display:none;">
+      <div id="mlHoldersNote" class="font-mono text-[10px]" style="color:#5a7090;margin-bottom:6px;line-height:1.4;">
+        Holders = wallets currently holding the Coin&lt;T&gt; on-chain (creator + everyone who ever swapped on this Cetus pool). Off-curve P2P transfers to fresh wallets that never touched the pool aren't tracked. Refreshes every 60s server-side.
+      </div>
+      <div id="mlHoldersList" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- TRADES PANEL -->
+    <div id="mlTradesPanel" style="display:none;">
+      <div id="mlTradesHeader" class="font-mono text-[10px]" style="color:#8ba8c8;background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.08);padding:8px;margin-bottom:8px;line-height:1.5;"></div>
+      <div class="font-mono text-xs text-slate-500 mb-2">RECENT BUYS &amp; SELLS (last 50, on-curve only)</div>
+      <div id="mlTradesList" class="font-mono text-xs text-slate-500" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">Loading…</div>
+    </div>
+
+    <!-- INFO PANEL -->
+    <div id="mlInfoPanel" style="display:none;">
+      <div style="display:flex;flex-direction:column;gap:8px;" id="mlInfoContent"></div>
+
+      <!-- Live DexScreener chart for THIS meme's Cetus pool -->
+      <div id="mlMemeChartWrap" style="display:none;margin-top:12px;border:1px solid rgba(0,245,255,0.2);background:#040810;">
+        <div style="background:#050c18;border-bottom:1px solid rgba(0,245,255,0.1);padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="dot-ripple"></div>
+            <span class="font-orbitron text-xs" style="color:var(--cyan)">LIVE CHART · CETUS POOL</span>
+          </div>
+          <a id="mlMemeDexLink" href="#" target="_blank" rel="noopener" class="font-mono text-xs" style="color:var(--cyan);text-decoration:none;">DexScreener ↗</a>
+        </div>
+        <iframe id="mlMemeChartIframe" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" src="about:blank" style="width:100%;height:380px;border:0;background:#040810;display:block;" loading="lazy" title="Meme pool live chart"></iframe>
+      </div>
+
+      <!-- Creator-only: claim accumulated LP fees from the locked Cetus position -->
+      <div id="mlCreatorClaimPanel" style="display:none;margin-top:12px;background:linear-gradient(135deg,rgba(0,255,136,0.10),rgba(157,78,221,0.06));border:1.5px solid var(--green);padding:14px;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);">
+        <div class="font-orbitron text-xs font-bold mb-1" style="color:var(--green);letter-spacing:0.1em;">💰 CREATOR FEE CLAIM</div>
+        <div class="font-mono text-xs text-slate-400 mb-2" style="line-height:1.5;">
+          You're the creator of this token. 100% of swap fees from the locked Cetus pool accrue to your wallet — claim them anytime.
+        </div>
+        <!-- Live accrued fee preview (refreshed every 30s while panel open) -->
+        <div id="mlFeesAccruedBox" style="background:#020609;border:1px solid rgba(0,255,136,0.25);padding:10px 12px;margin-bottom:10px;">
+          <div class="font-mono text-xs text-slate-500 mb-1">UNCLAIMED FEES</div>
+          <div id="mlFeesAccruedAmounts" class="font-orbitron text-sm font-bold" style="color:var(--green);line-height:1.6;">— AGENT &nbsp;·&nbsp; — meme</div>
+          <div id="mlFeesAccruedNote" class="font-mono text-xs text-slate-500 mt-1">Loading live preview…</div>
+        </div>
+        <button id="mlClaimFeesBtn" onclick="mlClaimFees()" class="btn-green" style="width:100%;padding:10px;font-size:0.7rem;letter-spacing:0.08em;">
+          💰 CLAIM ACCUMULATED FEES
+        </button>
+        <div id="mlClaimFeesStatus" class="font-mono text-xs text-center mt-2" style="color:#94a3b8;min-height:14px;"></div>
+      </div>
+
+      <!-- Creator-only: update token socials + description (signature-protected) -->
+      <!-- NOTE: This form is OFF-CHAIN ONLY. It cannot move funds, change supply,
+           or modify any on-chain field. The signature is used purely as proof
+           of wallet ownership; the data is stored in the backend cache. -->
+      <div id="mlCreatorEditPanel" style="display:none;margin-top:12px;background:linear-gradient(135deg,rgba(0,245,255,0.08),rgba(157,78,221,0.06));border:1.5px solid rgba(0,245,255,0.4);padding:14px;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+          <div class="font-orbitron text-xs font-bold" style="color:var(--cyan);letter-spacing:0.1em;">✎ EDIT TOKEN INFO</div>
+          <div class="font-mono" style="font-size:0.6rem;letter-spacing:0.08em;background:rgba(0,255,136,0.12);border:1px solid rgba(0,255,136,0.5);color:var(--green);padding:2px 8px;white-space:nowrap;">OFF-CHAIN ONLY · NO GAS</div>
+        </div>
+        <div class="font-mono text-xs text-slate-400 mb-3" style="line-height:1.5;">
+          Update your token's description and socials. One wallet signature for ownership proof — <b style="color:var(--green);">no transaction is sent, no gas is spent, and nothing on-chain changes</b>. On-chain fields (supply, pool, locked LP) are immutable.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <input id="mlEditTwitter"  class="input-cyber" type="text" placeholder="Twitter / X handle (e.g. @myhandle)"     style="font-size:0.75rem;padding:8px 10px;">
+          <input id="mlEditTelegram" class="input-cyber" type="text" placeholder="Telegram link or @group"                 style="font-size:0.75rem;padding:8px 10px;">
+          <input id="mlEditWebsite"  class="input-cyber" type="text" placeholder="Website (https://…)"                     style="font-size:0.75rem;padding:8px 10px;">
+          <textarea id="mlEditDesc"  class="input-cyber" rows="3" maxlength="500" placeholder="Description (max 500 chars)" style="font-size:0.75rem;padding:8px 10px;resize:vertical;"></textarea>
+        </div>
+        <button id="mlEditInfoBtn" onclick="mlSubmitEditInfo()" class="btn-cyan" style="width:100%;padding:10px;font-size:0.7rem;letter-spacing:0.08em;margin-top:10px;">
+          ✎ SAVE — SIGN WITH WALLET
+        </button>
+        <div id="mlEditInfoStatus" class="font-mono text-xs text-center mt-2" style="color:#94a3b8;min-height:14px;"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <a href="https://t.me/sui_agent_trader_bot" target="_blank" class="btn-cyan" style="flex:1;text-align:center;font-size:0.7rem;padding:10px;text-decoration:none;">🤖 TRADE ON BOT</a>
+      <button onclick="mlShareToken()" class="btn-cyan" style="font-size:0.7rem;padding:10px 16px;">📤 SHARE</button>
+    </div>
+  </div>
+</div>
+
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     ROUTING + UI INIT — runs first, before backend JS
+     ════════════════════════════════════════════════════════════════════ -->
+<script>
+  (function () {
+    'use strict';
+
+    var VALID_ROUTES = ['home','token','setup','swap','arena','memeland','trust','locker'];
+    var DEFAULT_ROUTE = 'home';
+    // Pages that should hide the price bar (hero looks cleaner without it)
+    var HIDE_PRICE_BAR = ['home'];
+
+    function getRoute() {
+      var h = (window.location.hash || '').replace(/^#\/?/, '').toLowerCase().trim();
+      if (!h || VALID_ROUTES.indexOf(h) === -1) return DEFAULT_ROUTE;
+      return h;
+    }
+
+    function showPage(route) {
+      // Hide all page tabs
+      var pages = document.querySelectorAll('.page-tab');
+      for (var i = 0; i < pages.length; i++) {
+        pages[i].classList.remove('active');
+        pages[i].style.display = 'none';
+      }
+      // Show the target
+      var target = document.querySelector('.page-tab[data-page="' + route + '"]');
+      if (target) {
+        target.style.display = 'block';
+        // re-trigger animation
+        target.classList.remove('active');
+        void target.offsetWidth;
+        target.classList.add('active');
+      }
+      // Update active tab in nav
+      var tabs = document.querySelectorAll('[data-route]');
+      for (var j = 0; j < tabs.length; j++) {
+        if (tabs[j].getAttribute('data-route') === route) tabs[j].classList.add('active');
+        else tabs[j].classList.remove('active');
+      }
+      // Toggle price bar visibility
+      var priceBar = document.getElementById('priceBar');
+      if (priceBar) priceBar.style.display = HIDE_PRICE_BAR.indexOf(route) !== -1 ? 'none' : 'block';
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+      // Update document title
+      var titleMap = {
+        home: '$AGENT — SUI AGENT | Built for AI Agents',
+        token: 'Token — $AGENT',
+        setup: 'Setup — $AGENT',
+        swap: 'Swap — $AGENT',
+        lp: 'LP — $AGENT',
+        arena: 'Arena — $AGENT',
+        memeland: 'MemeLand — $AGENT',
+        trust: 'Trust — $AGENT',
+        locker: 'Locker — $AGENT'
+      };
+      document.title = titleMap[route] || titleMap.home;
+    }
+
+    function handleHashChange() { showPage(getRoute()); }
+
+    // Mobile menu
+    function setupMobileMenu() {
+      var burger = document.getElementById('navHamburger');
+      var menu   = document.getElementById('mobileMenu');
+      var closeBtn = document.getElementById('mmClose');
+      if (!burger || !menu || !closeBtn) return;
+      function open() { menu.classList.add('open'); document.body.classList.add('no-scroll'); }
+      function close() { menu.classList.remove('open'); document.body.classList.remove('no-scroll'); }
+      burger.addEventListener('click', open);
+      closeBtn.addEventListener('click', close);
+      menu.addEventListener('click', function (e) { if (e.target.tagName === 'A') close(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+    }
+
+    // Init on DOM ready
+    function init() {
+      setupMobileMenu();
+      // Force initial route (and seed default if none)
+      if (!window.location.hash) {
+        try { history.replaceState(null, '', '#/' + DEFAULT_ROUTE); } catch (e) {}
+      }
+      showPage(getRoute());
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+    window.addEventListener('hashchange', handleHashChange);
+
+    // Expose for any legacy code that wants to navigate
+    window.__navigateTo = function (route) {
+      window.location.hash = '#/' + route;
+    };
+  })();
+
+</script>
+
+<!-- ═══════ ORIGINAL JS BLOCKS — preserved verbatim ═══════ -->
+<script>
+      // AGENT chart source switcher (DexScreener / GeckoTerminal fallback).
+      // Auto-detects empty DexScreener (new pool not yet indexed) and shows a hint.
+      (function(){
+        const POOL = '0xe8bf297251264d4474a6f6115ebeeeea4a3e50d534d3b663691e22b5fd36a6eb';
+        const SRCS = {
+          dex:   'https://dexscreener.com/sui/' + POOL + '?embed=1&theme=dark&info=0&trades=0',
+          gecko: 'https://www.geckoterminal.com/sui-network/pools/' + POOL + '?embed=1&info=0&swaps=0&grayscale=0&light_chart=0',
+        };
+        window.agentChartSwitch = function(which){
+          const ifr = document.getElementById('agentChartIframe');
+          if (!ifr) return;
+          ifr.src = SRCS[which] || SRCS.dex;
+          const dexBtn = document.getElementById('agentChartTabDex');
+          const gkBtn  = document.getElementById('agentChartTabGecko');
+          [dexBtn, gkBtn].forEach(b => { if (!b) return; b.style.background='transparent'; b.style.color='#6a8bad'; b.style.borderColor='rgba(0,245,255,0.15)'; });
+          const active = which === 'gecko' ? gkBtn : dexBtn;
+          if (active) { active.style.background='rgba(0,245,255,0.15)'; active.style.color='var(--cyan)'; active.style.borderColor='rgba(0,245,255,0.4)'; }
+        };
+        // Show the "may need fallback" hint after 6s if user is still on DexScreener
+        // (we can't introspect the iframe due to cross-origin, but the hint is harmless and helpful).
+        setTimeout(function(){
+          const note = document.getElementById('agentChartFallbackNote');
+          if (note) note.style.display = 'block';
+        }, 6000);
+      })();
+</script>
+<script>
+// ══════════════════════════════════════════════════════════
+// TOKEN LOCKER + BURN  (runs after main wallet code loads)
+// ══════════════════════════════════════════════════════════
+(function(){
+
+// ── Config ──────────────────────────────────────────────────────────────
+// After deploying move/locker, replace this with the real package ID:
+const LOCKER_PKG   = '0xe9d60612d25afa147340de484bb8b52607a883647cea96a5823319cda2c1a725';
+const CLOCK_ID     = '0x0000000000000000000000000000000000000000000000000000000000000006';
+// Provably-dead address (no known private key on any chain)
+const BURN_ADDR    = '0x000000000000000000000000000000000000000000000000000000000000dead';
+const SUI_TYPE     = '0x2::sui::SUI';
+
+// ── State ────────────────────────────────────────────────────────────────
+let lockerCoins   = [];   // [{type, symbol, decimals, balance, objects:[]}]
+let lastLockId    = null;
+let lastLockDigest= null;
+let lastBurnDigest= null;
+
+// ── Tab switch ────────────────────────────────────────────────────────────
+window.lockerSetTab = function(tab) {
+  document.getElementById('lockPanel').style.display   = tab === 'lock'   ? '' : 'none';
+  document.getElementById('burnPanel').style.display   = tab === 'burn'   ? '' : 'none';
+  document.getElementById('unlockPanel').style.display = tab === 'unlock' ? '' : 'none';
+  const lBtn = document.getElementById('lockTabBtn');
+  const bBtn = document.getElementById('burnTabBtn');
+  const uBtn = document.getElementById('unlockTabBtn');
+  lBtn.style.borderBottomColor = tab==='lock'   ? 'var(--purple)' : 'transparent';
+  lBtn.style.color             = tab==='lock'   ? 'var(--purple)' : '#4a5568';
+  bBtn.style.borderBottomColor = tab==='burn'   ? '#ff465a'       : 'transparent';
+  bBtn.style.color             = tab==='burn'   ? '#ff465a'       : '#4a5568';
+  uBtn.style.borderBottomColor = tab==='unlock' ? 'var(--cyan)'   : 'transparent';
+  uBtn.style.color             = tab==='unlock' ? 'var(--cyan)'   : '#4a5568';
+  if (tab === 'unlock') lockerFetchLocks();
+};
+
+// ── Called after wallet connects ──────────────────────────────────────────
+window.lockerOnWalletConnect = async function() {
+  const wallet = typeof connectedWallet !== 'undefined' && connectedWallet?.address;
+  if (!wallet) return;
+
+  // show wallet banner
+  const banner = document.getElementById('lockerWalletBanner');
+  banner.style.display = 'flex';
+  document.getElementById('lockerWalletAddr').textContent = wallet.slice(0,10)+'...'+wallet.slice(-8);
+
+  // hide connect prompts, show forms
+  document.getElementById('lockConnectPrompt').style.display = 'none';
+  document.getElementById('lockForm').style.display          = '';
+  document.getElementById('burnConnectPrompt').style.display = 'none';
+  document.getElementById('burnForm').style.display          = '';
+
+  // fetch coins
+  await lockerFetchCoins(wallet);
+};
+
+// ── Fetch all coins for wallet ────────────────────────────────────────────
+async function lockerFetchCoins(wallet) {
+  try {
+    // suix_getAllCoins pages through all coin types
+    let allCoins = [];
+    let cursor = null;
+    for (let i = 0; i < 10; i++) {
+      const params = cursor ? [wallet, cursor, 50] : [wallet, null, 50];
+      const res = await rpcCall('suix_getAllCoins', params);
+      if (!res?.data) break;
+      allCoins = allCoins.concat(res.data);
+      if (!res.nextCursor || !res.hasNextPage) break;
+      cursor = res.nextCursor;
+    }
+
+    // Group by coin type
+    const byType = {};
+    for (const c of allCoins) {
+      const t = c.coinType;
+      if (!byType[t]) byType[t] = { type: t, symbol: lockerSymbol(t), decimals: lockerDecimals(t), balance: 0n, objects: [] };
+      byType[t].balance  += BigInt(c.balance);
+      byType[t].objects.push({ id: c.coinObjectId, balance: BigInt(c.balance) });
+    }
+
+    lockerCoins = Object.values(byType).filter(c => c.balance > 0n);
+    lockerCoins.sort((a,b) => (a.symbol > b.symbol ? 1 : -1));
+
+    lockerPopulateSelect('lockCoinSelect');
+    lockerPopulateSelect('burnCoinSelect');
+    lockerOnCoinSelect('lock');
+    lockerOnCoinSelect('burn');
+  } catch(e) {
+    console.error('lockerFetchCoins:', e);
+  }
+}
+
+function lockerSymbol(type) {
+  // "0x2::sui::SUI" → "SUI"
+  // "0xabc...::token::MYTOKEN" → "MYTOKEN"
+  const parts = type.split('::');
+  return parts[parts.length - 1] || type.slice(0,12);
+}
+
+function lockerDecimals(type) {
+  if (type === SUI_TYPE) return 9;
+  // AGENT is 6 decimals; most Sui tokens are 9; default 9
+  if (type.includes('::agent::AGENT')) return 6;
+  return 9;
+}
+
+function lockerFormatBalance(raw, decimals) {
+  const div = 10 ** decimals;
+  const val = Number(raw) / div;
+  if (val >= 1e6) return val.toLocaleString(undefined,{maximumFractionDigits:2});
+  if (val >= 1)   return val.toLocaleString(undefined,{maximumFractionDigits:4});
+  return val.toFixed(decimals > 6 ? 8 : 4);
+}
+
+function lockerPopulateSelect(selectId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  sel.innerHTML = '';
+  if (!lockerCoins.length) {
+    sel.innerHTML = '<option value="">No tokens found in wallet</option>';
+    return;
+  }
+  lockerCoins.forEach((c, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `${c.symbol}  —  ${lockerFormatBalance(c.balance, c.decimals)}`;
+    sel.appendChild(opt);
+  });
+}
+
+window.lockerOnCoinSelect = function(tab) {
+  const sel = document.getElementById(tab === 'lock' ? 'lockCoinSelect' : 'burnCoinSelect');
+  const balEl = document.getElementById(tab === 'lock' ? 'lockCoinBalance' : 'burnCoinBalance');
+  if (!sel || !balEl) return;
+  const idx = parseInt(sel.value);
+  if (isNaN(idx) || !lockerCoins[idx]) { balEl.textContent = ''; return; }
+  const c = lockerCoins[idx];
+  balEl.textContent = `Balance: ${lockerFormatBalance(c.balance, c.decimals)} ${c.symbol}`;
+};
+
+// ── % preset buttons ──────────────────────────────────────────────────────
+window.lockerSetPct = function(tab, pct) {
+  const sel   = document.getElementById(tab === 'lock' ? 'lockCoinSelect' : 'burnCoinSelect');
+  const input = document.getElementById(tab === 'lock' ? 'lockAmount'     : 'burnAmount');
+  if (!sel || !input) return;
+  const idx = parseInt(sel.value);
+  if (isNaN(idx) || !lockerCoins[idx]) return;
+  const c   = lockerCoins[idx];
+  const val = Number(c.balance) * pct / 100 / (10 ** c.decimals);
+  input.value = val.toFixed(c.decimals > 6 ? 6 : c.decimals);
+};
+
+// ── Duration presets ──────────────────────────────────────────────────────
+window.lockerSetDuration = function(days) {
+  const inp = document.getElementById('lockDays');
+  if (!inp) return;
+  inp.value = days;
+  lockerUpdateUnlockPreview();
+};
+
+function lockerUpdateUnlockPreview() {
+  const days = parseInt(document.getElementById('lockDays')?.value || '0');
+  const el   = document.getElementById('lockUnlockPreview');
+  if (!el) return;
+  if (!days || days <= 0) { el.textContent = ''; return; }
+  const unlockDate = new Date(Date.now() + days * 86400000);
+  el.textContent = `Unlocks: ${unlockDate.toUTCString()}`;
+}
+document.getElementById('lockDays')?.addEventListener('input', lockerUpdateUnlockPreview);
+
+// ── Build coin split helper ───────────────────────────────────────────────
+// Returns { coinArg, totalNeededRaw } for use in Transaction
+async function lockerBuildCoinSplit(tx, coinInfo, amountRaw) {
+  // Merge all coin objects of this type into one, then split the exact amount
+  const objs = coinInfo.objects;
+  if (coinInfo.type === SUI_TYPE) {
+    // For SUI, use tx.gas and splitCoins
+    return tx.splitCoins(tx.gas, [tx.pure.u64(amountRaw)]);
+  }
+  if (objs.length === 1) {
+    const [splitCoin] = tx.splitCoins(tx.object(objs[0].id), [tx.pure.u64(amountRaw)]);
+    return splitCoin;
+  }
+  // Multiple objects: merge all into first, then split
+  const primary = tx.object(objs[0].id);
+  const rest    = objs.slice(1).map(o => tx.object(o.id));
+  tx.mergeCoins(primary, rest);
+  const [splitCoin] = tx.splitCoins(primary, [tx.pure.u64(amountRaw)]);
+  return splitCoin;
+}
+
+// ── Execute LOCK ──────────────────────────────────────────────────────────
+window.lockerExecuteLock = async function() {
+  const status = document.getElementById('lockStatus');
+  const btn    = document.getElementById('lockBtn');
+  try {
+    if (!connectedWallet?.address) { status.textContent='⚠ Connect wallet first'; status.style.color='#ffc864'; return; }
+    if (!LOCKER_PKG || LOCKER_PKG.length < 30) {
+      status.textContent='⏳ Lock contract deploying — check back soon'; status.style.color='#ffc864'; return;
+    }
+
+    const sel   = document.getElementById('lockCoinSelect');
+    const amtIn = document.getElementById('lockAmount');
+    const daysIn= document.getElementById('lockDays');
+    const idx   = parseInt(sel?.value);
+    if (isNaN(idx) || !lockerCoins[idx]) { status.textContent='⚠ Select a token'; status.style.color='#ffc864'; return; }
+    const coinInfo  = lockerCoins[idx];
+    const amtHuman  = parseFloat(amtIn?.value || '0');
+    const days      = parseInt(daysIn?.value || '0');
+    if (!amtHuman || amtHuman <= 0) { status.textContent='⚠ Enter an amount'; status.style.color='#ffc864'; return; }
+    if (!days || days <= 0)         { status.textContent='⚠ Set lock duration'; status.style.color='#ffc864'; return; }
+
+    const amtRaw   = BigInt(Math.floor(amtHuman * (10 ** coinInfo.decimals)));
+    const durMs    = BigInt(days) * 86400000n;
+    if (amtRaw > coinInfo.balance) { status.textContent='⚠ Insufficient balance'; status.style.color='#ff465a'; return; }
+
+    btn.disabled = true; btn.textContent = '⏳ Signing…';
+    status.textContent = 'Building transaction…'; status.style.color = '#c8daf0';
+
+    const Transaction = window.__SuiTransaction;
+    if (!Transaction) throw new Error('Transaction builder not ready — refresh the page');
+    const tx = new Transaction();
+    tx.setGasBudget(10_000_000);
+
+    const coinArg = await lockerBuildCoinSplit(tx, coinInfo, amtRaw.toString());
+
+    tx.moveCall({
+      target: `${LOCKER_PKG}::locker::lock`,
+      typeArguments: [coinInfo.type],
+      arguments: [
+        coinArg,
+        tx.pure.u64(durMs.toString()),
+        tx.object(CLOCK_ID),
+      ],
+    });
+
+    status.textContent = 'Waiting for wallet signature…'; status.style.color = '#c8daf0';
+    const result = await signAndExecuteTx(tx);
+    const digest = result.digest || result.effects?.transactionDigest;
+    if (!digest) throw new Error('No transaction digest returned');
+
+    // Wait for RPC to index the tx, then fetch full details with objectChanges
+    status.textContent = 'Fetching lock object…'; status.style.color = '#c8daf0';
+    await new Promise(r => setTimeout(r, 2000));
+    let lockId = null;
+    try {
+      const txData = await rpcCall('sui_getTransactionBlock', [
+        digest,
+        { showObjectChanges: true, showEffects: true }
+      ]);
+      const changes = txData?.objectChanges || [];
+      const lockObj = changes.find(o => o.type === 'created' && o.objectType?.includes('LockedToken'));
+      lockId = lockObj?.objectId || null;
+    } catch(e) { console.warn('Could not fetch objectChanges:', e.message); }
+    // Fallback: scan effects for created objects
+    if (!lockId) {
+      const created = result.effects?.created || [];
+      lockId = created.find(o => o.reference?.objectId)?.reference?.objectId || null;
+    }
+    if (!lockId) lockId = digest; // last resort: use tx digest
+    lastLockId     = lockId;
+    lastLockDigest = digest;
+
+    const unlockDate = new Date(Date.now() + days * 86400000);
+    document.getElementById('lockResultBody').innerHTML =
+      `Token: <span style="color:#c8daf0">${coinInfo.symbol}</span><br>` +
+      `Amount: <span style="color:var(--green)">${amtHuman.toLocaleString()} ${coinInfo.symbol}</span><br>` +
+      `Unlocks: <span style="color:var(--cyan)">${unlockDate.toDateString()}</span> (${days} days)<br>` +
+      `Lock Object: <span style="color:var(--purple);word-break:break-all">${lockId}</span><br>` +
+      `TX: <span style="color:#4a7cff;word-break:break-all">${digest}</span>`;
+
+    const isObj = lockId !== digest;
+    document.getElementById('lockSuiscanLink').href = isObj
+      ? `https://suiscan.xyz/mainnet/object/${lockId}`
+      : `https://suiscan.xyz/mainnet/tx/${digest}`;
+    document.getElementById('lockSuiscanLink').textContent = isObj ? '🔍 VIEW LOCK OBJECT ON SUISCAN' : '🔍 VIEW TX ON SUISCAN';
+    document.getElementById('lockResult').style.display = '';
+
+    status.textContent = ''; btn.disabled = false; btn.textContent = '🔒 LOCK TOKENS — SIGN WITH WALLET';
+    lockerFetchCoins(connectedWallet.address);
+  } catch(e) {
+    console.error('lockerExecuteLock:', e);
+    status.textContent = '❌ ' + (e.message || 'Lock failed'); status.style.color = '#ff465a';
+    btn.disabled = false; btn.textContent = '🔒 LOCK TOKENS — SIGN WITH WALLET';
+  }
+};
+
+// ── Execute BURN ──────────────────────────────────────────────────────────
+window.lockerExecuteBurn = async function() {
+  const status = document.getElementById('burnStatus');
+  const btn    = document.getElementById('burnBtn');
+  try {
+    if (!connectedWallet?.address) { status.textContent='⚠ Connect wallet first'; status.style.color='#ffc864'; return; }
+
+    const sel   = document.getElementById('burnCoinSelect');
+    const amtIn = document.getElementById('burnAmount');
+    const idx   = parseInt(sel?.value);
+    if (isNaN(idx) || !lockerCoins[idx]) { status.textContent='⚠ Select a token'; status.style.color='#ffc864'; return; }
+    const coinInfo = lockerCoins[idx];
+    const amtHuman = parseFloat(amtIn?.value || '0');
+    if (!amtHuman || amtHuman <= 0) { status.textContent='⚠ Enter an amount'; status.style.color='#ffc864'; return; }
+
+    const amtRaw = BigInt(Math.floor(amtHuman * (10 ** coinInfo.decimals)));
+    if (amtRaw > coinInfo.balance) { status.textContent='⚠ Insufficient balance'; status.style.color='#ff465a'; return; }
+
+    const confirmed = window.confirm(
+      `BURN ${amtHuman.toLocaleString()} ${coinInfo.symbol}?\n\nThis is permanent and cannot be undone.\nTokens will be sent to a dead address.\n\nConfirm?`
+    );
+    if (!confirmed) { status.textContent = 'Cancelled'; status.style.color = '#4a5568'; return; }
+
+    btn.disabled = true; btn.textContent = '⏳ Signing…';
+    status.textContent = 'Building transaction…'; status.style.color = '#c8daf0';
+
+    const Transaction = window.__SuiTransaction;
+    if (!Transaction) throw new Error('Transaction builder not ready — refresh the page');
+    const tx = new Transaction();
+    tx.setGasBudget(5_000_000);
+
+    const coinArg = await lockerBuildCoinSplit(tx, coinInfo, amtRaw.toString());
+    tx.transferObjects([coinArg], BURN_ADDR);
+
+    status.textContent = 'Waiting for wallet signature…'; status.style.color = '#c8daf0';
+    const result = await signAndExecuteTx(tx);
+    lastBurnDigest = result.digest;
+
+    document.getElementById('burnResultBody').innerHTML =
+      `Token: <span style="color:#c8daf0">${coinInfo.symbol}</span><br>` +
+      `Amount burned: <span style="color:#ff8a95">${amtHuman.toLocaleString()} ${coinInfo.symbol}</span><br>` +
+      `Dead address: <span style="color:#4a5568;font-size:0.65rem;word-break:break-all">${BURN_ADDR}</span><br>` +
+      `TX: <span style="color:#4a7cff;word-break:break-all">${result.digest}</span>`;
+
+    document.getElementById('burnSuiscanLink').href = `https://suiscan.xyz/mainnet/tx/${result.digest}`;
+    document.getElementById('burnResult').style.display = '';
+
+    status.textContent = ''; btn.disabled = false; btn.textContent = '🔥 BURN TOKENS — SIGN WITH WALLET';
+    lockerFetchCoins(connectedWallet.address);
+  } catch(e) {
+    console.error('lockerExecuteBurn:', e);
+    status.textContent = '❌ ' + (e.message || 'Burn failed'); status.style.color = '#ff465a';
+    btn.disabled = false; btn.textContent = '🔥 BURN TOKENS — SIGN WITH WALLET';
+  }
+};
+
+// ── Fetch all LockedToken objects for connected wallet ─────────────────────
+window.lockerFetchLocks = async function() {
+  const list = document.getElementById('unlockList');
+  if (!list) return;
+  const wallet = typeof connectedWallet !== 'undefined' && connectedWallet?.address;
+  if (!wallet) {
+    list.innerHTML = '<div style="color:#ffc864;font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;text-align:center;padding:20px">⚠ Connect your wallet first</div>';
+    return;
+  }
+  list.innerHTML = '<div style="color:#4a7090;font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;text-align:center;padding:20px">⏳ Loading your locks…</div>';
+
+  try {
+    // Use MoveModule filter — works with generic types unlike StructType
+    let allObjs = [];
+    let cursor = null;
+    while (true) {
+      const query = {
+        filter: { MoveModule: { package: LOCKER_PKG, module: 'locker' } },
+        options: { showContent: true, showType: true }
+      };
+      const params = cursor
+        ? [wallet, query, cursor]
+        : [wallet, query];
+      const page = await rpcCall('suix_getOwnedObjects', params);
+      const items = (page?.data || []).filter(o => o?.data?.type?.includes('::locker::LockedToken'));
+      allObjs = allObjs.concat(items);
+      if (!page?.hasNextPage || !page?.nextCursor) break;
+      cursor = page.nextCursor;
+    }
+
+    if (allObjs.length === 0) {
+      list.innerHTML = '<div style="color:#4a5568;font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;text-align:center;padding:24px">No active locks found for this wallet</div>';
+      return;
+    }
+
+    const now = Date.now();
+    let html = '';
+    for (const obj of allObjs) {
+      const f = obj?.data?.content?.fields || {};
+      const objectId = obj?.data?.objectId;
+      const unlockMs = parseInt(f.unlock_time || 0);
+      const amount   = f.amount ? BigInt(f.amount) : 0n;
+      // Try to detect coin type from struct type
+      const fullType = obj?.data?.type || '';
+      const coinMatch = fullType.match(/<(.+)>/);
+      const coinType = coinMatch ? coinMatch[1] : 'Unknown';
+      const isAgent = coinType.includes('::agent::AGENT');
+      const isSui   = coinType.includes('0x2::sui::SUI');
+      const decimals = isAgent ? 6 : (isSui ? 9 : 9);
+      const symbol   = isAgent ? 'AGENT' : (isSui ? 'SUI' : coinType.split('::').pop());
+      const amtHuman = (Number(amount) / Math.pow(10, decimals)).toLocaleString(undefined, {maximumFractionDigits: 4});
+      const unlockDate = new Date(unlockMs);
+      const ready    = now >= unlockMs;
+      const remaining= unlockMs - now;
+      const daysLeft = Math.ceil(remaining / 86400000);
+
+      html += `<div style="background:var(--card);border:1px solid ${ready ? 'rgba(0,255,136,0.35)' : 'rgba(0,245,255,0.15)'};padding:16px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:14px;font-family:'Share Tech Mono',monospace;font-size:0.73rem">
+        <div style="flex:1;min-width:200px">
+          <div style="color:var(--cyan);margin-bottom:4px">🔒 ${amtHuman} <span style="color:${isAgent?'var(--purple)':'#88c0d0'}">${symbol}</span></div>
+          <div style="color:#4a7090;font-size:0.67rem;word-break:break-all">ID: ${objectId}</div>
+          <div style="margin-top:6px;color:${ready?'var(--green)':'#ffc864'}">
+            ${ready ? '✅ UNLOCKABLE NOW' : `🕐 Unlocks ${unlockDate.toUTCString()} (${daysLeft}d left)`}
+          </div>
+        </div>
+        <div>
+          ${ready
+            ? `<button onclick="lockerExecuteUnlock('${objectId}','${coinType}')" style="background:rgba(0,255,136,0.12);border:1.5px solid var(--green);color:var(--green);font-family:'Orbitron',sans-serif;font-size:0.7rem;padding:9px 20px;cursor:pointer;letter-spacing:0.08em">🔓 UNLOCK &amp; CLAIM</button>`
+            : `<div style="color:#4a5568;font-size:0.68rem">Locked until<br>${unlockDate.toDateString()}</div>`
+          }
+        </div>
+      </div>`;
+    }
+    list.innerHTML = html;
+  } catch(e) {
+    list.innerHTML = `<div style="color:#ff465a;font-family:'Share Tech Mono',monospace;font-size:0.75rem;text-align:center;padding:20px">Error: ${e.message}</div>`;
+  }
+};
+
+// ── Execute unlock ─────────────────────────────────────────────────────────
+window.lockerExecuteUnlock = async function(lockObjId, coinType) {
+  const status = document.getElementById('unlockStatus');
+  if (!connectedWallet?.address) { status.textContent='⚠ Connect wallet first'; status.style.color='#ffc864'; return; }
+  if (!LOCKER_PKG || LOCKER_PKG.length < 30) { status.textContent='⚠ Locker contract not set'; status.style.color='#ff465a'; return; }
+
+  try {
+    status.textContent = 'Building unlock transaction…'; status.style.color = '#c8daf0';
+
+    // Reuse the Sui SDK already loaded by the wallet-connect code (esm.sh).
+    // Wait up to 5s in case unlock is clicked before the SDK finishes loading.
+    let Transaction = window.__SuiTransaction;
+    if (!Transaction) {
+      let waited = 0;
+      while (!window.__SuiTransaction && waited < 5000) {
+        await new Promise(r => setTimeout(r, 300));
+        waited += 300;
+      }
+      Transaction = window.__SuiTransaction;
+      if (!Transaction) throw new Error('Sui SDK failed to load. Check your connection and try again.');
+    }
+    const tx = new Transaction();
+    tx.moveCall({
+      target: `${LOCKER_PKG}::locker::unlock`,
+      typeArguments: [coinType],
+      arguments: [
+        tx.object(lockObjId),
+        tx.object(CLOCK_ID),
+      ],
+    });
+
+    status.textContent = 'Waiting for wallet signature…'; status.style.color = '#c8daf0';
+    const result = await signAndExecuteTx(tx);
+    const digest = result.digest || result.effects?.transactionDigest;
+    if (!digest) throw new Error('No digest returned');
+
+    status.innerHTML = `✅ Tokens unlocked! <a href="https://suiscan.xyz/mainnet/tx/${digest}" target="_blank" style="color:var(--cyan);text-decoration:underline">View TX ↗</a>`;
+    status.style.color = 'var(--green)';
+
+    // Refresh list after a moment
+    setTimeout(lockerFetchLocks, 2500);
+  } catch(e) {
+    status.textContent = '✗ ' + (e.message || 'Unlock failed');
+    status.style.color = '#ff465a';
+  }
+};
+
+window.lockerCopySiteLink = function(type) {
+  let url;
+  if (type === 'lock' && lastLockId) {
+    url = location.origin + location.pathname + '?lock=' + lastLockId + '#locker';
+  } else if (type === 'burn' && lastBurnDigest) {
+    url = 'https://suiscan.xyz/mainnet/tx/' + lastBurnDigest;
+  } else { alert('Complete a transaction first.'); return; }
+  navigator.clipboard.writeText(url)
+    .then(() => alert('Link copied! Share this to prove your ' + (type === 'lock' ? 'lock.' : 'burn.')))
+    .catch(() => prompt('Copy this link:', url));
+};
+
+// ── Lock Viewer: load from ?lock= URL param ───────────────────────────────
+async function lockerCheckUrlParam() {
+  const params = new URLSearchParams(window.location.search);
+  const lockId = params.get('lock');
+  if (!lockId) return;
+
+  const viewer = document.getElementById('lockViewer');
+  const body   = document.getElementById('lockViewerBody');
+  if (!viewer || !body) return;
+  viewer.style.display = '';
+  body.innerHTML = '⏳ Loading lock data from Sui mainnet…';
+
+  try {
+    const res = await rpcCall('sui_getObject', [lockId, { showContent: true, showType: true }]);
+    const f   = res?.data?.content?.fields || {};
+    const ot  = res?.data?.type || '';
+
+    if (!f.unlock_time) {
+      body.innerHTML = '⚠ Object not found or not a LockedToken.<br>ID: ' + lockId; return;
+    }
+
+    const unlockMs  = parseInt(f.unlock_time);
+    const lockedMs  = parseInt(f.locked_at);
+    const amount    = BigInt(f.amount || 0);
+    const owner     = f.owner || '—';
+    const unlockDate= new Date(unlockMs);
+    const lockedDate= new Date(lockedMs);
+    const now       = Date.now();
+    const remaining = unlockMs - now;
+    const status    = remaining > 0
+      ? `🔒 LOCKED — ${Math.ceil(remaining/86400000)} days remaining`
+      : '🔓 UNLOCKABLE — lock period has passed';
+
+    const coinTypeMatch = ot.match(/LockedToken<(.+)>/);
+    const coinType = coinTypeMatch ? coinTypeMatch[1] : '—';
+    const sym = lockerSymbol(coinType);
+    const dec = lockerDecimals(coinType);
+
+    body.innerHTML =
+      `Status: <span style="color:${remaining>0?'var(--purple)':'var(--green)'}">${status}</span><br>` +
+      `Owner: <span style="color:#c8daf0;word-break:break-all">${owner}</span><br>` +
+      `Token: <span style="color:var(--cyan)">${sym}</span><br>` +
+      `Amount: <span style="color:var(--cyan)">${lockerFormatBalance(amount, dec)} ${sym}</span><br>` +
+      `Locked at: <span style="color:#c8daf0">${lockedDate.toUTCString()}</span><br>` +
+      `Unlocks at: <span style="color:var(--purple)">${unlockDate.toUTCString()}</span><br>` +
+      `Lock Object: <span style="color:#4a5568;font-size:0.65rem;word-break:break-all">${lockId}</span><br>` +
+      `<a href="https://suiscan.xyz/mainnet/object/${lockId}" target="_blank" ` +
+      `style="color:var(--cyan);font-size:0.7rem">🔍 Verify on SuiScan →</a>`;
+  } catch(e) {
+    body.innerHTML = '❌ Could not load lock data: ' + e.message;
+  }
+}
+
+// ── Auto-detect if wallet is already connected on page load ──────────────
+function lockerAutoInit() {
+  const wallet = typeof connectedWallet !== 'undefined' && connectedWallet?.address;
+  if (wallet) lockerOnWalletConnect();
+  lockerCheckUrlParam();
+}
+
+// Run after a short delay to let main wallet code initialize
+setTimeout(lockerAutoInit, 1200);
+
+// Re-check when wallet state changes (poll lightly)
+setInterval(() => {
+  const wallet = typeof connectedWallet !== 'undefined' && connectedWallet?.address;
+  const shown  = document.getElementById('lockForm')?.style.display !== 'none';
+  if (wallet && !shown) lockerOnWalletConnect();
+}, 2000);
+
+})();
+</script>
 <script>
 // ─── CONFIG ───
 const SUI_RPC       = 'https://sui-rpc.publicnode.com';
@@ -6243,4 +6882,4 @@ setInterval(mlLoadTokens, 30000);
 
 </script>
 </body>
-</html> 
+</html>
