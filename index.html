@@ -2788,7 +2788,7 @@ setInterval(() => {
 <div id="tradeModal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
   <div style="background:#070d1a;border:1px solid rgba(0,245,255,0.2);max-width:520px;width:90%;padding:40px;position:relative;">
     <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent)"></div>
-    <button onclick="closeTradeModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#4a5568;font-size:1.2rem;cursor:pointer;font-family:monospace">✕</button>
+    <button onclick="closeTradeModal()" aria-label="Close" style="position:sticky;top:0;float:right;margin:-18px -18px 0 0;background:rgba(10,10,18,0.92);backdrop-filter:blur(8px);border:1px solid rgba(0,245,255,0.35);color:var(--cyan);font-size:1.05rem;line-height:1;cursor:pointer;width:34px;height:34px;border-radius:50%;z-index:100;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.6);transition:all 0.15s;font-family:monospace;" onmouseover="this.style.background='rgba(255,70,90,0.2)';this.style.borderColor='#ff465a';this.style.color='#ff465a'" onmouseout="this.style.background='rgba(10,10,18,0.92)';this.style.borderColor='rgba(0,245,255,0.35)';this.style.color='var(--cyan)'">✕</button>
     <div id="modalTitle" class="font-orbitron text-lg font-bold text-white mb-2">How to Trade $AGENT</div>
     <div class="font-mono text-xs mb-6" style="color:var(--cyan)">◈ AGENT-ONLY POOL — ON-CHAIN ENFORCED</div>
     <div style="background:#020609;border:1px solid rgba(255,180,0,0.2);padding:16px;margin-bottom:24px;">
@@ -2820,7 +2820,8 @@ setInterval(() => {
 <!-- ══════════════════════════════════════ MEMELAND: CREATE TOKEN MODAL ══════════════════════════════════════ -->
 <div id="mlCreateModal" class="ml-modal-bg" style="display:none;">
   <div class="ml-modal-box ml-animate-fade">
-    <button onclick="mlCloseCreateModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#4a5568;font-size:1.1rem;cursor:pointer;">✕</button>
+    <!-- Sticky close (X) — stays visible while user scrolls the long form. -->
+    <button onclick="mlCloseCreateModal()" aria-label="Close" style="position:sticky;top:0;float:right;margin:-18px -18px 0 0;background:rgba(10,10,18,0.92);backdrop-filter:blur(8px);border:1px solid rgba(0,245,255,0.35);color:var(--cyan);font-size:1.05rem;line-height:1;cursor:pointer;width:34px;height:34px;border-radius:50%;z-index:100;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.6);transition:all 0.15s;" onmouseover="this.style.background='rgba(255,70,90,0.2)';this.style.borderColor='#ff465a';this.style.color='#ff465a'" onmouseout="this.style.background='rgba(10,10,18,0.92)';this.style.borderColor='rgba(0,245,255,0.35)';this.style.color='var(--cyan)'">✕</button>
     <div class="font-orbitron text-lg font-bold text-white mb-1">🚀 LAUNCH A MEME</div>
     <div class="font-mono text-xs mb-6" style="color:var(--cyan)">Cetus CLMM pool · paired with $AGENT · LP locked forever · 4 wallet signatures (~30s)</div>
 
@@ -2905,6 +2906,30 @@ setInterval(() => {
       </div>
     </div>
 
+    <!-- LAUNCH COST SUMMARY — live, reads wallet balance vs (1M fee + LP seed) -->
+    <div id="mlLaunchCostPanel" style="margin-top:14px;padding:14px;background:rgba(0,0,0,0.4);border:1px solid rgba(0,245,255,0.25);">
+      <div class="font-mono text-xs tracking-widest" style="color:var(--cyan);margin-bottom:10px;">💸 LAUNCH COST</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-family:'Share Tech Mono',monospace;font-size:0.78rem;">
+        <div>
+          <div style="color:#94a3b8;font-size:0.68rem;">CREATION FEE</div>
+          <div id="mlCostFee" style="color:#ffc864;font-weight:600;">1,000,000 AGENT</div>
+        </div>
+        <div>
+          <div style="color:#94a3b8;font-size:0.68rem;">LP SEED (your input)</div>
+          <div id="mlCostLpSeed" style="color:#ffc864;font-weight:600;">— AGENT</div>
+        </div>
+        <div>
+          <div style="color:#94a3b8;font-size:0.68rem;">TOTAL REQUIRED</div>
+          <div id="mlCostTotal" style="color:var(--cyan);font-weight:700;font-size:0.92rem;">— AGENT</div>
+        </div>
+        <div>
+          <div style="color:#94a3b8;font-size:0.68rem;">YOUR WALLET</div>
+          <div id="mlCostWallet" style="color:#94a3b8;font-weight:600;">— AGENT</div>
+        </div>
+      </div>
+      <div id="mlCostStatus" style="margin-top:10px;padding:8px 10px;font-family:'Share Tech Mono',monospace;font-size:0.74rem;text-align:center;color:#94a3b8;background:rgba(255,255,255,0.02);">Connect wallet & enter LP seed to see status</div>
+    </div>
+
     <button onclick="mlSubmitCreate()" id="mlCreateBtn" class="btn-green" style="width:100%;margin-top:16px;padding:14px;font-size:0.8rem;">
       🚀 LAUNCH TOKEN — SIGN WITH WALLET
     </button>
@@ -2914,7 +2939,7 @@ setInterval(() => {
 <!-- ══════════════════════════════════════ MEMELAND: TOKEN DETAIL MODAL ══════════════════════════════════════ -->
 <div id="mlTokenModal" class="ml-modal-bg" style="display:none;">
   <div class="ml-modal-box ml-animate-fade" style="max-width:640px;">
-    <button onclick="mlCloseTokenModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#4a5568;font-size:1.1rem;cursor:pointer;">✕</button>
+    <button onclick="mlCloseTokenModal()" aria-label="Close" style="position:sticky;top:0;float:right;margin:-18px -18px 0 0;background:rgba(10,10,18,0.92);backdrop-filter:blur(8px);border:1px solid rgba(0,245,255,0.35);color:var(--cyan);font-size:1.05rem;line-height:1;cursor:pointer;width:34px;height:34px;border-radius:50%;z-index:100;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.6);transition:all 0.15s;" onmouseover="this.style.background='rgba(255,70,90,0.2)';this.style.borderColor='#ff465a';this.style.color='#ff465a'" onmouseout="this.style.background='rgba(10,10,18,0.92)';this.style.borderColor='rgba(0,245,255,0.35)';this.style.color='var(--cyan)'">✕</button>
 
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
       <div id="mlModalImg" style="width:52px;height:52px;border-radius:50%;border:2px solid var(--cyan);background:rgba(0,245,255,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">
@@ -5371,6 +5396,63 @@ window.mlPreviewInitialBuy = function(val) {
   if (typeof window.mlPreviewDevKeep === 'function') {
     window.mlPreviewDevKeep(document.getElementById('mlCreateDevKeepPct')?.value || '');
   }
+  // Refresh the launch cost panel (LP seed changed).
+  if (typeof window.mlUpdateLaunchCost === 'function') window.mlUpdateLaunchCost();
+};
+
+// ── LIVE LAUNCH COST PANEL ───────────────────────────────────────
+// Reads the LP seed input + the user's wallet AGENT balance and tells them
+// up-front whether they have enough AGENT to launch (1M creation fee +
+// LP seed). Disables the launch button if they're short — saves them from
+// filling the form then hitting a backend "insufficient AGENT" error.
+window.mlUpdateLaunchCost = function() {
+  const feeEl    = document.getElementById('mlCostFee');
+  const seedEl   = document.getElementById('mlCostLpSeed');
+  const totalEl  = document.getElementById('mlCostTotal');
+  const walEl    = document.getElementById('mlCostWallet');
+  const statusEl = document.getElementById('mlCostStatus');
+  const btn      = document.getElementById('mlCreateBtn');
+  if (!feeEl || !totalEl || !statusEl) return;
+  const CREATION_FEE = 1_000_000;                       // human AGENT (6 decimals)
+  const lpSeed = parseFloat(document.getElementById('mlCreateInitialBuy')?.value) || 0;
+  const total  = CREATION_FEE + lpSeed;
+  // mlBuyWalletAgentBalance is RAW (6 decimals) per existing convention.
+  const walletHuman = (typeof mlBuyWalletAgentBalance === 'number' && mlBuyWalletAgentBalance > 0)
+    ? mlBuyWalletAgentBalance / 1_000_000
+    : 0;
+  const fmt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  if (seedEl)  seedEl.textContent  = lpSeed > 0 ? fmt(lpSeed)      + ' AGENT' : '— AGENT';
+  if (totalEl) totalEl.textContent = lpSeed > 0 ? fmt(total)       + ' AGENT' : '—';
+  if (walEl)   walEl.textContent   = walletHuman > 0 ? fmt(walletHuman) + ' AGENT' : '— AGENT';
+  // Status logic
+  const noWallet = !connectedWallet?.address;
+  const noSeed   = !(lpSeed > 0);
+  const short    = walletHuman > 0 && walletHuman < total;
+  const ok       = walletHuman >= total && lpSeed > 0;
+  if (noWallet) {
+    statusEl.style.background = 'rgba(255,255,255,0.02)';
+    statusEl.style.color = '#94a3b8';
+    statusEl.innerHTML = 'Connect wallet to see if you have enough AGENT';
+  } else if (noSeed) {
+    statusEl.style.background = 'rgba(255,200,100,0.06)';
+    statusEl.style.color = '#ffc864';
+    statusEl.innerHTML = '⚠ Enter LP seed above (minimum 1,000,000 AGENT recommended)';
+  } else if (short) {
+    const need = total - walletHuman;
+    statusEl.style.background = 'rgba(255,70,90,0.10)';
+    statusEl.style.color = '#ff465a';
+    statusEl.innerHTML = '❌ Insufficient AGENT — need <b>' + fmt(need) + ' more</b> to launch';
+    if (btn && !btn.dataset.txInFlight) { btn.disabled = true; btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; }
+  } else if (ok) {
+    statusEl.style.background = 'rgba(0,255,136,0.08)';
+    statusEl.style.color = '#00ff88';
+    statusEl.innerHTML = '✅ Wallet has enough AGENT — ready to launch';
+    if (btn && !btn.dataset.txInFlight) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
+  } else {
+    statusEl.style.background = 'rgba(255,255,255,0.02)';
+    statusEl.style.color = '#94a3b8';
+    statusEl.innerHTML = 'Checking wallet balance…';
+  }
 };
 
 window.mlPreviewDevKeep = function(val) {
@@ -5393,6 +5475,9 @@ window.mlPreviewDevKeep = function(val) {
     `💰 You receive: <b>${keepTokens.toLocaleString()} $${sym}</b> directly to your wallet (${pct}% of supply)<br>` +
     `Pool gets: <b>${pooledTokens.toLocaleString()} $${sym}</b> + your AGENT seed<br>` +
     priceLine;
+  // Dev-keep doesn't change AGENT cost (it's a meme-supply split), but recompute
+  // so the panel stays in sync if the user toggles it after entering seed.
+  if (typeof window.mlUpdateLaunchCost === 'function') window.mlUpdateLaunchCost();
 };
 
 function mlRenderGrid() {
@@ -5527,6 +5612,20 @@ window.mlOpenCreateModal = async function() {
     if (btn) { btn.textContent = '🚀 LAUNCH TOKEN'; btn.disabled = false; }
     console.warn('Badge check failed:', e.message);
   }
+
+  // 6. Fetch wallet AGENT balance directly (mlFetchWalletBalance early-returns
+  //    if the swap page's #mlBuyWalletBal element isn't in the DOM yet, so we
+  //    inline the same /status call here to guarantee mlBuyWalletAgentBalance
+  //    is populated before painting the launch-cost panel).
+  try {
+    const r = await fetch(BACKEND + '/status/' + wallet);
+    const d = await r.json();
+    const agentHuman = parseFloat(d.balances?.agent || '0');
+    if (Number.isFinite(agentHuman) && agentHuman >= 0) {
+      mlBuyWalletAgentBalance = Math.floor(agentHuman * 1_000_000);
+    }
+  } catch (e) { console.warn('Wallet balance fetch failed:', e.message); }
+  if (typeof window.mlUpdateLaunchCost === 'function') window.mlUpdateLaunchCost();
 };
 window.mlCloseCreateModal = function() {
   const m = document.getElementById('mlCreateModal');
@@ -5719,6 +5818,21 @@ window.mlSubmitCreate = async function() {
   if (lpSeedHuman <= 0) return mlErr(errDiv, '❌ LP seed must be > 0 AGENT.');
   // Image must be http(s) URL (data: URLs from upload won't fit on-chain — ask user to host it)
   if (image && !/^https?:\/\//i.test(image)) return mlErr(errDiv, '❌ Image must be an http(s) URL. Upload to imgur/pinata/etc and paste the link.');
+
+  // ── Pre-flight wallet balance check ─────────────────────────────
+  // Backend rejects if wallet AGENT < creationFee (1M) + lpSeed. Catch it
+  // here so the user gets a clear message without having to wait for the
+  // build-launch-tx call to fail.
+  const _CREATION_FEE_HUMAN = 1_000_000;
+  const _required = _CREATION_FEE_HUMAN + lpSeedHuman;
+  const _walletHuman = (mlBuyWalletAgentBalance || 0) / 1_000_000;
+  if (_walletHuman > 0 && _walletHuman < _required) {
+    const _short = (_required - _walletHuman).toLocaleString(undefined,{maximumFractionDigits:2});
+    return mlErr(errDiv,
+      `❌ Insufficient AGENT — need ${_required.toLocaleString()} total ` +
+      `(1,000,000 fee + ${lpSeedHuman.toLocaleString()} LP seed). ` +
+      `You're short by ${_short} AGENT.`);
+  }
 
   const lpSeedAgentRaw = String(BigInt(Math.floor(lpSeedHuman * 1_000_000)));
 
