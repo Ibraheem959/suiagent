@@ -487,6 +487,430 @@
   ::-webkit-scrollbar-thumb { background: rgba(0,245,255,0.2); }
 
 </style>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     $AGENT SITE — MOBILE-FIX + POLISH PATCH v1.0
+     ─────────────────────────────────────────────────────────────────
+     INSTALL: Paste this ENTIRE block right before  </head>  in your
+     existing index.html (line ~489, just above </style></head>).
+     Do not remove your existing <style> block — this OVERRIDES it.
+
+     What this fixes:
+       1. Mobile nav broke (links hidden, no hamburger) → adds slide-in menu
+       2. Two/three-column grids overflow on phones → stack to 1col <768px
+       3. Price bar stats wrap awkwardly → horizontal scroll on mobile
+       4. Modals overflow viewport → full-screen on small phones
+       5. Buttons too small to tap → 44px min tap target
+       6. Hero text too big on phones → fluid clamp() sizing
+       7. Form 3-column grids cramped on phones → stack to 1col
+       8. Scanlines + grid overlay too noisy → toned down on mobile
+       9. Cards too "cyberpunk" → softer borders, cleaner radius (polish)
+      10. Better focus rings + tap highlight for accessibility
+
+     PRESERVES: every JS function, every backend call, every IDs/handlers
+     ════════════════════════════════════════════════════════════════════ -->
+
+<style id="mobile-polish-v1">
+  /* ─────────── 1. POLISH (applies on all screens) ─────────── */
+
+  /* Soften card corners + borders to feel more modern (matches reference) */
+  .card,
+  .token-tile,
+  .ml-modal-box,
+  .vs-card,
+  #tradeModal > div,
+  #priceBar {
+    border-radius: 8px !important;
+  }
+  .card,
+  .token-tile {
+    border-color: rgba(0,245,255,0.10) !important;
+    background: linear-gradient(180deg, rgba(10,21,37,0.95), rgba(7,13,26,0.95)) !important;
+    transition: border-color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease !important;
+  }
+  .card:hover,
+  .token-tile:hover {
+    border-color: rgba(0,245,255,0.30) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(0,245,255,0.06) !important;
+  }
+  /* Drop the cyberpunk top-line glow on cards (cleaner) */
+  .card::before,
+  .token-tile::before {
+    opacity: 0.25 !important;
+  }
+
+  /* Cleaner primary CTA: cyan→green gradient like the reference shots */
+  .btn-cyan,
+  .btn-green,
+  .btn-purple {
+    border-radius: 6px !important;
+    clip-path: none !important;          /* drop angled corners */
+    font-weight: 700 !important;
+    letter-spacing: 0.08em !important;
+    min-height: 44px !important;          /* tap target */
+    transition: all 0.2s ease !important;
+  }
+  .btn-cyan {
+    background: linear-gradient(90deg, #00f5ff 0%, #00ff88 100%) !important;
+    color: #04101a !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(0,245,255,0.18) !important;
+  }
+  .btn-cyan:hover {
+    box-shadow: 0 6px 22px rgba(0,245,255,0.40) !important;
+    transform: translateY(-1px) !important;
+  }
+  .btn-cyan::before { display:none !important; }
+  .btn-cyan span { color: #04101a !important; }
+
+  /* Inputs: cleaner */
+  .input-cyber {
+    border-radius: 6px !important;
+    padding: 12px 14px !important;
+    min-height: 44px !important;
+    font-size: 0.85rem !important;
+  }
+  .input-cyber:focus {
+    border-color: var(--cyan) !important;
+    box-shadow: 0 0 0 3px rgba(0,245,255,0.12) !important;
+  }
+
+  /* Scrollbar polish */
+  ::-webkit-scrollbar { width: 8px !important; height: 8px !important; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0,245,255,0.25) !important;
+    border-radius: 4px !important;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0,245,255,0.4) !important; }
+
+  /* Better focus + tap highlight for keyboard / mobile users */
+  *:focus-visible {
+    outline: 2px solid var(--cyan) !important;
+    outline-offset: 2px !important;
+  }
+  button, a, input, textarea, select {
+    -webkit-tap-highlight-color: rgba(0,245,255,0.15);
+  }
+
+  /* ─────────── 2. HAMBURGER MENU (always present, only shown on mobile) ─────────── */
+
+  #mpHamburger {
+    display: none;                        /* shown on <768px below */
+    background: none;
+    border: 1px solid rgba(0,245,255,0.25);
+    color: var(--cyan);
+    width: 44px; height: 44px;
+    border-radius: 6px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    z-index: 60;
+    transition: all 0.2s ease;
+  }
+  #mpHamburger:hover { background: rgba(0,245,255,0.08); }
+  #mpHamburger svg { width: 22px; height: 22px; stroke: currentColor; }
+
+  /* Slide-in panel */
+  #mpMobileMenu {
+    position: fixed;
+    inset: 0;
+    background: rgba(4,8,16,0.96);
+    backdrop-filter: blur(18px);
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    padding: 80px 24px 32px;
+    gap: 4px;
+    overflow-y: auto;
+  }
+  #mpMobileMenu.open { display: flex; }
+  #mpMobileMenu a {
+    display: block;
+    padding: 16px 12px;
+    color: #c8daf0;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.12em;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(0,245,255,0.06);
+    transition: color 0.15s, padding-left 0.2s;
+    text-transform: uppercase;
+  }
+  #mpMobileMenu a:hover,
+  #mpMobileMenu a:active {
+    color: var(--cyan);
+    padding-left: 18px;
+  }
+  #mpMobileMenu .mp-close {
+    position: absolute;
+    top: 18px; right: 20px;
+    background: none;
+    border: 1px solid rgba(0,245,255,0.25);
+    color: var(--cyan);
+    width: 40px; height: 40px;
+    border-radius: 6px;
+    font-size: 1.4rem;
+    cursor: pointer;
+  }
+  body.mp-no-scroll { overflow: hidden !important; }
+
+  /* ─────────── 3. TABLET (≤980px) ─────────── */
+  @media (max-width: 980px) {
+    /* Generic 2-col / 3-col / 4-col grids → reduce columns gracefully */
+    [style*="grid-template-columns:repeat(4,1fr)"],
+    [style*="grid-template-columns: repeat(4,1fr)"] {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    [style*="grid-template-columns:1fr 1fr 1fr"] {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+  }
+
+  /* ─────────── 4. MOBILE (≤768px) — main fixes ─────────── */
+  @media (max-width: 768px) {
+
+    /* --- Kill heavy visual noise on small screens (perf + readability) --- */
+    body::before { background-size: 80px 80px !important; opacity: 0.5 !important; }
+    body::after  { display: none !important; }   /* drop scanlines */
+    .glitch-wrap::before { display: none !important; }
+    .orb { filter: blur(60px) !important; opacity: 0.4 !important; }
+
+    /* --- NAV --- */
+    nav {
+      padding: 12px 16px !important;
+    }
+    nav .nav-links { display: none !important; }
+    #mpHamburger   { display: inline-flex !important; }
+    /* Hide the desktop "DEPLOY AGENT" CTA on phone (it's in hamburger menu) */
+    nav > a.btn-cyan { display: none !important; }
+
+    /* --- PRICE BAR: horizontal scroll instead of wrap-mess --- */
+    #priceBar {
+      padding: 8px 12px !important;
+      top: 60px !important;
+    }
+    #priceBar > div {
+      flex-wrap: nowrap !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      scrollbar-width: none;
+    }
+    #priceBar > div::-webkit-scrollbar { display: none; }
+    #priceBar > div > div {
+      flex-shrink: 0 !important;
+    }
+
+    /* --- HERO + ALL SECTION 2-COLUMN LAYOUTS → STACK --- */
+    /* Tailwind grid-cols-2 / lg:grid-cols-2 utility classes used throughout */
+    .grid.grid-cols-2,
+    .grid.md\:grid-cols-2,
+    .grid.lg\:grid-cols-2,
+    .grid.md\:grid-cols-3,
+    .grid.lg\:grid-cols-3,
+    .grid.md\:grid-cols-4,
+    .grid.lg\:grid-cols-4 {
+      grid-template-columns: 1fr !important;
+      gap: 16px !important;
+    }
+    /* Inline-styled grids → single column */
+    [style*="grid-template-columns:1fr 1fr"],
+    [style*="grid-template-columns: 1fr 1fr"],
+    [style*="grid-template-columns:1fr 1fr 1fr"],
+    [style*="grid-template-columns: 1fr 1fr 1fr"],
+    [style*="grid-template-columns:repeat(3"],
+    [style*="grid-template-columns:repeat(4"] {
+      grid-template-columns: 1fr !important;
+    }
+    /* But keep the 4-stat token modal as 2x2 (more compact) */
+    #mlTokenModal [style*="grid-template-columns:repeat(4,1fr)"] {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Section padding → tighter on phone */
+    section { padding-left: 16px !important; padding-right: 16px !important; }
+
+    /* --- TYPOGRAPHY: fluid scaling --- */
+    .hero-title,
+    h1.font-orbitron,
+    .font-orbitron.text-7xl,
+    .font-orbitron.text-6xl,
+    .font-orbitron.text-5xl {
+      font-size: clamp(2rem, 9vw, 3rem) !important;
+      line-height: 1.05 !important;
+      letter-spacing: -0.01em !important;
+    }
+    .font-orbitron.text-4xl,
+    .font-orbitron.text-3xl {
+      font-size: clamp(1.5rem, 6.5vw, 2.2rem) !important;
+      line-height: 1.15 !important;
+    }
+    .font-orbitron.text-2xl,
+    .font-orbitron.text-xl {
+      font-size: 1.15rem !important;
+    }
+    /* Body text minimum 14px so it stays legible on phone */
+    .text-xs { font-size: 0.78rem !important; }
+    .text-\[10px\] { font-size: 0.7rem !important; }
+
+    /* --- FORMS: ensure full-width inputs --- */
+    .input-cyber { width: 100% !important; min-height: 48px !important; }
+    /* Two-column form rows force-stacked already by inline-style override above */
+
+    /* --- BUTTONS: larger tap targets, full-width on phone where appropriate --- */
+    .btn-cyan, .btn-green, .btn-purple {
+      min-height: 48px !important;
+      padding: 14px 22px !important;
+      font-size: 0.78rem !important;
+    }
+    /* Full-width primary CTAs in hero / forms */
+    .hero-ctas .btn-cyan,
+    .hero-ctas .btn-purple,
+    section button.btn-cyan[style*="width:100%"],
+    section button.btn-green[style*="width:100%"] {
+      width: 100% !important;
+      display: block !important;
+    }
+
+    /* --- MODALS: full-screen on phone --- */
+    .ml-modal-bg, #tradeModal {
+      padding: 0 !important;
+      align-items: stretch !important;
+    }
+    .ml-modal-box,
+    #tradeModal > div {
+      width: 100% !important;
+      max-width: 100% !important;
+      max-height: 100vh !important;
+      height: 100% !important;
+      border-radius: 0 !important;
+      padding: 24px 18px !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+    /* Modal close button: bigger tap target */
+    .ml-modal-box > button[onclick*="Close"],
+    #tradeModal button[onclick*="closeTradeModal"] {
+      width: 44px !important; height: 44px !important;
+      font-size: 1.5rem !important;
+      top: 10px !important; right: 10px !important;
+    }
+
+    /* --- SECTION SPACING: tighter --- */
+    section { padding-top: 48px !important; padding-bottom: 48px !important; }
+
+    /* --- TICKER: smaller and slower (less distracting on phone) --- */
+    .ticker-content { animation-duration: 40s !important; font-size: 0.7rem !important; }
+
+    /* --- TABS / chips: scrollable horizontal row --- */
+    .ml-tab-btn, .ml-sort-btn, .tab-btn {
+      white-space: nowrap !important;
+      flex-shrink: 0 !important;
+    }
+    [style*="display:flex"][style*="border-bottom"] {
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+
+    /* --- TABLES & wide content: allow horizontal scroll --- */
+    table, pre, .code-block { overflow-x: auto !important; max-width: 100% !important; }
+
+    /* --- TRADE FEED / token tiles: smaller padding --- */
+    .trade-card { padding: 10px 12px !important; font-size: 0.7rem !important; gap: 8px !important; }
+    .token-tile { padding: 12px !important; }
+
+    /* --- VS cards: drop the rotated "RECOMMENDED" ribbon (overlaps) --- */
+    .vs-card-agent::before { display: none !important; }
+  }
+
+  /* ─────────── 5. SMALL PHONE (≤420px) — extra tightening ─────────── */
+  @media (max-width: 420px) {
+    nav { padding: 10px 12px !important; }
+    section { padding: 36px 14px !important; }
+    .font-orbitron.text-7xl,
+    .font-orbitron.text-6xl,
+    .font-orbitron.text-5xl,
+    .hero-title { font-size: clamp(1.75rem, 8.5vw, 2.4rem) !important; }
+    /* Hide secondary stats in price bar to fit the essentials */
+    #fdv, #statLiquidity { display: none !important; }
+    #fdv + div, #statLiquidity + div { display: none !important; }  /* divider */
+  }
+</style>
+
+<script>
+  // ─────────── HAMBURGER MENU + MOBILE NAV BUILDER ───────────
+  (function () {
+    if (document.getElementById('mpHamburger')) return; // idempotent
+
+    function build() {
+      var nav = document.querySelector('nav');
+      if (!nav) return;
+
+      // Hamburger button (injected next to logo for mobile)
+      var btn = document.createElement('button');
+      btn.id = 'mpHamburger';
+      btn.setAttribute('aria-label', 'Open menu');
+      btn.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<line x1="3" y1="6"  x2="21" y2="6"/>' +
+        '<line x1="3" y1="12" x2="21" y2="12"/>' +
+        '<line x1="3" y1="18" x2="21" y2="18"/>' +
+        '</svg>';
+      // Append to nav so it sits on the right side on mobile
+      nav.appendChild(btn);
+
+      // Build slide-in panel by cloning the existing nav-links
+      var src = nav.querySelector('.nav-links');
+      var menu = document.createElement('div');
+      menu.id = 'mpMobileMenu';
+      var close = document.createElement('button');
+      close.className = 'mp-close';
+      close.setAttribute('aria-label', 'Close menu');
+      close.innerHTML = '✕';
+      menu.appendChild(close);
+
+      if (src) {
+        // Copy each <a> into the panel so all hrefs/handlers carry over
+        src.querySelectorAll('a').forEach(function (a) {
+          var clone = a.cloneNode(true);
+          // Rewire any inline onclick smooth-scroll calls
+          clone.addEventListener('click', function () { closeMenu(); });
+          menu.appendChild(clone);
+        });
+      }
+
+      // Also include the DEPLOY AGENT CTA at the bottom of the panel
+      var deploy = nav.querySelector('a.btn-cyan');
+      if (deploy) {
+        var deployClone = deploy.cloneNode(true);
+        deployClone.style.marginTop = '20px';
+        deployClone.style.textAlign = 'center';
+        deployClone.addEventListener('click', closeMenu);
+        menu.appendChild(deployClone);
+      }
+
+      document.body.appendChild(menu);
+
+      function openMenu()  { menu.classList.add('open');  document.body.classList.add('mp-no-scroll'); }
+      function closeMenu() { menu.classList.remove('open'); document.body.classList.remove('mp-no-scroll'); }
+
+      btn.addEventListener('click', openMenu);
+      close.addEventListener('click', closeMenu);
+      menu.addEventListener('click', function (e) { if (e.target === menu) closeMenu(); });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && menu.classList.contains('open')) closeMenu();
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', build);
+    } else {
+      build();
+    }
+  })();
+</script>
+
 </head>
 <body>
 
