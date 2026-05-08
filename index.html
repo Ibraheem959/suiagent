@@ -7888,16 +7888,30 @@ async function _stRenderMyPoolPositions(addr) {
     if (!r.positions.length) { panel.style.display = 'none'; return; }
     panel.style.display = '';
     _stClaimAllCache = r.claimable || [];
-    // Headline + summary stats.
-    const fetchedAt = r.fetchedAtMs || Date.now();
+    // Headline + summary stats. Distinguish active vs ended pools so the
+    // copy doesn't say "earning 0 AGENT/day" when really every pool ended.
+    const fetchedAt   = r.fetchedAtMs || Date.now();
     const totalPending = BigInt(r.totalPendingAgentRaw || '0');
     const totalRate    = BigInt(r.totalAgentPerSecondRaw || '0');
     const dailyAgent   = Number(totalRate * 86400n) / 1e6;
+    const endedCount   = r.positions.filter(x => x.poolEnded).length;
+    const activeCount  = r.positionCount - endedCount;
+    const allEnded     = endedCount === r.positionCount && r.positionCount > 0;
     const headline = document.getElementById('stMyPoolHeadline');
     if (headline) {
       const claimableNow = _stFmt(totalPending.toString());
-      const dailyTxt = dailyAgent > 0 ? dailyAgent.toLocaleString(undefined,{maximumFractionDigits:2}) : '0';
-      headline.innerHTML = `Across <b style="color:#fff">${r.positionCount}</b> position${r.positionCount === 1 ? '' : 's'} you're earning <b style="color:#10b981">≈ ${dailyTxt} AGENT/day</b>, with <b class="cp-mypos-tick-agent" data-cp-tick="headline" data-pending-raw="${totalPending.toString()}" data-rate-raw="${totalRate.toString()}" data-fetched-at="${fetchedAt}" data-decimals="6">${claimableNow}</b> AGENT claimable now.`;
+      const claimableTick = `<b class="cp-mypos-tick-agent" data-cp-tick="headline" data-pending-raw="${totalPending.toString()}" data-rate-raw="${totalRate.toString()}" data-fetched-at="${fetchedAt}" data-decimals="6">${claimableNow}</b>`;
+      let html;
+      if (allEnded) {
+        html = `All <b style="color:#fff">${r.positionCount}</b> of your creator-pool position${r.positionCount === 1 ? ' has' : 's have'} ended — <b style="color:#ffc864">${claimableTick} AGENT</b> waiting to be claimed below.`;
+      } else if (activeCount === r.positionCount) {
+        const dailyTxt = dailyAgent > 0 ? dailyAgent.toLocaleString(undefined,{maximumFractionDigits:2}) : '< 0.01';
+        html = `Across <b style="color:#fff">${r.positionCount}</b> active position${r.positionCount === 1 ? '' : 's'} you're earning <b style="color:#10b981">≈ ${dailyTxt} AGENT/day</b>, with ${claimableTick} AGENT claimable now.`;
+      } else {
+        const dailyTxt = dailyAgent > 0 ? dailyAgent.toLocaleString(undefined,{maximumFractionDigits:2}) : '< 0.01';
+        html = `<b style="color:#fff">${activeCount}</b> active &middot; <b style="color:#ffc864">${endedCount} ended</b> &middot; earning <b style="color:#10b981">≈ ${dailyTxt} AGENT/day</b> from active &middot; ${claimableTick} AGENT claimable.`;
+      }
+      headline.innerHTML = html;
     }
     document.getElementById('stMyPoolCount').textContent = r.positionCount;
     const pendEl = document.getElementById('stMyPoolPendingAgent');
@@ -7909,8 +7923,24 @@ async function _stRenderMyPoolPositions(addr) {
       pendEl.setAttribute('data-decimals', '6');
       pendEl.textContent = _stFmt(totalPending.toString());
     }
-    document.getElementById('stMyPoolDailyAgent').textContent =
-      dailyAgent > 0 ? dailyAgent.toLocaleString(undefined,{maximumFractionDigits:2}) : '—';
+    // EARNING RATE: show actual rate when active, otherwise honest copy.
+    const dailyEl = document.getElementById('stMyPoolDailyAgent');
+    if (dailyEl) {
+      if (allEnded) {
+        dailyEl.textContent = '0';
+        dailyEl.style.color = '#ffc864';
+        dailyEl.title = 'All your creator pools have ended. Claim & unstake to recover your stake + final rewards.';
+      } else if (dailyAgent > 0) {
+        dailyEl.textContent = dailyAgent.toLocaleString(undefined,{maximumFractionDigits:2});
+        dailyEl.style.color = '#10b981';
+        dailyEl.title = '';
+      } else {
+        // Active pool but per-second rate floored to <1 atom/sec — drip is real but tiny.
+        dailyEl.textContent = '< 0.01';
+        dailyEl.style.color = '#10b981';
+        dailyEl.title = 'Your share is small enough that per-second drip rounds below 1 atom. Pending still accrues at exact pool rate.';
+      }
+    }
 
     // Enable Claim All if anything claimable.
     if (claimAllBtn) {
@@ -7926,9 +7956,15 @@ async function _stRenderMyPoolPositions(addr) {
       const ended = p.poolEnded;
       const remain = Math.max(0, (p.poolEndsAtMs || 0) - Date.now());
       const stakedHuman = (Number(p.stakedMemeRaw) / 1e6).toLocaleString(undefined,{maximumFractionDigits:2});
-      const sharePct = (Number(p.totalStakedMemeRaw) > 0)
-        ? (Number(p.stakedMemeRaw) / Number(p.totalStakedMemeRaw) * 100).toFixed(3) + '%'
-        : '—';
+      const _shareNum = (Number(p.totalStakedMemeRaw) > 0)
+        ? (Number(p.stakedMemeRaw) / Number(p.totalStakedMemeRaw) * 100)
+        : null;
+      const sharePct = (_shareNum === null) ? '—'
+        : (_shareNum >= 1)      ? _shareNum.toFixed(2) + '%'
+        : (_shareNum >= 0.01)   ? _shareNum.toFixed(3) + '%'
+        : (_shareNum >= 0.0001) ? _shareNum.toFixed(5) + '%'
+        : (_shareNum > 0)       ? '<0.0001%'
+        : '0%';
       const canClaim = BigInt(p.pendingAgentRaw) > 0n || BigInt(p.pendingMemeRaw) > 0n;
       return `
         <div class="cp-mypos-row${ended ? ' ended' : ''}">
@@ -7954,7 +7990,7 @@ async function _stRenderMyPoolPositions(addr) {
             <div class="cp-mypos-meta" style="font-size:0.7rem;color:#64748b;margin-top:4px">
               receipt ${_stShortAddr(p.receiptId)} &middot; pool ${_stShortAddr(p.poolId)}
             </div>
-            ${ended ? '<div class="cp-mypos-warn">⚠ Pool ended — claim &amp; unstake before creator sweeps unclaimed rewards.</div>' : ''}
+            ${ended ? '<div class="cp-mypos-warn">◈ Pool ended — claim &amp; unstake to collect your final rewards. (Rewards stay safely in the pool until you withdraw.)</div>' : ''}
           </div>
           <div class="cp-mypos-actions">
             <button onclick="stClaimPool(this,'${p.poolId}','${p.receiptId}','${p.memeType}')" ${canClaim ? '' : 'disabled'}>CLAIM</button>
@@ -8164,14 +8200,20 @@ async function _stRenderPools() {
             </div>
           </div>` : ''}
           ${(myByPool[p.poolId] || []).map((mp) => {
-            const sharePct = (Number(p.totalStakedMeme) > 0)
-              ? (Number(mp.stakedMemeRaw) / Number(p.totalStakedMeme) * 100).toFixed(3)
-              : '—';
+            const _shareNum = (Number(p.totalStakedMeme) > 0)
+              ? (Number(mp.stakedMemeRaw) / Number(p.totalStakedMeme) * 100)
+              : null;
+            const sharePct = (_shareNum === null) ? '—'
+              : (_shareNum >= 1)      ? _shareNum.toFixed(2) + '%'
+              : (_shareNum >= 0.01)   ? _shareNum.toFixed(3) + '%'
+              : (_shareNum >= 0.0001) ? _shareNum.toFixed(5) + '%'
+              : (_shareNum > 0)       ? '<0.0001%'
+              : '0%';
             const fetchedAt = myr?.fetchedAtMs || Date.now();
             return `
             <div class="cp-card-yourpos">
               <div class="cp-card-yourpos-title">◈ YOUR POSITION</div>
-              <div>Stake: <b>${fmtN(Number(mp.stakedMemeRaw)/1e6, 2)} ${symbol}</b> &middot; <b>${sharePct}%</b> of pool</div>
+              <div>Stake: <b>${fmtN(Number(mp.stakedMemeRaw)/1e6, 2)} ${symbol}</b> &middot; <b>${sharePct}</b> of pool</div>
               <div style="margin-top:4px">Claimable:
                 <b class="cp-mypos-tick-agent" data-cp-tick="card"
                    data-pending-raw="${mp.pendingAgentRaw}"
@@ -8184,7 +8226,7 @@ async function _stRenderPools() {
                    data-fetched-at="${fetchedAt}"
                    data-decimals="6">${_stFmt(mp.pendingMemeRaw)}</b> ${symbol}
               </div>
-              ${ended ? '<div class="cp-mypos-warn">⚠ Pool ended — claim &amp; unstake before creator sweeps unclaimed rewards.</div>' : ''}
+              ${ended ? '<div class="cp-mypos-warn">◈ Pool ended — claim &amp; unstake to collect your final rewards. (Rewards stay safely in the pool until you withdraw.)</div>' : ''}
               <div class="cp-card-yourpos-actions">
                 <button onclick="stClaimPool(this,'${p.poolId}','${mp.receiptId}','${mp.memeType}')"
                         ${BigInt(mp.pendingAgentRaw) > 0n || BigInt(mp.pendingMemeRaw) > 0n ? '' : 'disabled'}>CLAIM</button>
