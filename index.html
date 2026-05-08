@@ -894,6 +894,7 @@
       <a href="#/swap"     class="nav-tab" data-route="swap">Swap</a>
       <a href="#/arena"    class="nav-tab" data-route="arena">Arena</a>
       <a href="#/memeland" class="nav-tab" data-route="memeland">MemeLand</a>
+      <a href="#/staking"  class="nav-tab" data-route="staking">Staking</a>
       <a href="#/trust"    class="nav-tab" data-route="trust">Trust</a>
       <a href="#/locker"   class="nav-tab" data-route="locker">Locker</a>
     </div>
@@ -901,6 +902,11 @@
     <div class="nav-right">
       <a href="https://x.com/SUI__AGENT" target="_blank" rel="noopener" class="nav-iconlink" title="Twitter / X">X</a>
       <a href="https://t.me/+AHZzczUoOeYzMThk" target="_blank" rel="noopener" class="nav-iconlink" title="Telegram">TG</a>
+      <button
+        onclick="(typeof connectedWallet!=='undefined' && connectedWallet) ? disconnectWallet() : connectWallet()"
+        class="connect-wallet-btn"
+        title="Connect / disconnect Sui wallet"
+        style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;padding:8px 16px;border:1px solid rgba(0,245,255,0.3);color:var(--cyan);background:rgba(0,245,255,0.06);cursor:pointer;border-radius:6px;letter-spacing:0.08em;font-weight:600;text-transform:uppercase;transition:all 0.15s ease">CONNECT</button>
       <a href="#/setup" class="btn-primary">Deploy Agent</a>
       <button class="hamburger" id="navHamburger" aria-label="Open menu">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -922,11 +928,16 @@
   <a href="#/swap"     data-route="swap">Swap</a>
   <a href="#/arena"    data-route="arena">Arena</a>
   <a href="#/memeland" data-route="memeland">MemeLand</a>
+  <a href="#/staking"  data-route="staking">Staking</a>
   <a href="#/trust"    data-route="trust">Trust</a>
   <a href="#/locker"   data-route="locker">Locker</a>
   <a href="https://x.com/SUI__AGENT" target="_blank" rel="noopener">𝕏 Twitter</a>
   <a href="https://t.me/+AHZzczUoOeYzMThk" target="_blank" rel="noopener">Telegram</a>
-  <a href="#/setup" style="margin-top:20px;background:var(--grad);color:#04101a;text-align:center;border-radius:8px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border-bottom:none;">Deploy Agent</a>
+  <button
+    onclick="(typeof connectedWallet!=='undefined' && connectedWallet) ? disconnectWallet() : connectWallet()"
+    class="connect-wallet-btn"
+    style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;padding:14px 18px;border:1px solid rgba(0,245,255,0.35);color:var(--cyan);background:rgba(0,245,255,0.06);cursor:pointer;border-radius:8px;letter-spacing:0.08em;font-weight:700;text-transform:uppercase;width:100%">CONNECT WALLET</button>
+  <a href="#/setup" style="margin-top:14px;background:var(--grad);color:#04101a;text-align:center;border-radius:8px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border-bottom:none;">Deploy Agent</a>
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════════
@@ -1901,6 +1912,468 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
 
 
 </section>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     PAGE: STAKING — full v8.0.0 snippet (stake / mine / pools / board / feed / admin)
+     ════════════════════════════════════════════════════════════════════ -->
+<section class="page-tab" data-page="staking" style="padding:0;">
+<section id="staking" style="padding:100px 24px;background:linear-gradient(to bottom,var(--bg),var(--bg2));min-height:100vh">
+  <div style="max-width:1280px;margin:0 auto">
+
+    <!-- HEADER -->
+    <div class="text-center mb-12">
+      <div class="font-mono text-xs text-slate-500 mb-3 tracking-widest">◈ AGENT STAKING</div>
+      <h1 style="font-size:clamp(2rem,5vw,3.5rem);font-weight:200;letter-spacing:-0.02em;color:#fff;margin-bottom:16px">
+        Stake $AGENT. Earn from the entire ecosystem.
+      </h1>
+      <p style="color:#94a3b8;max-width:680px;margin:0 auto 8px;line-height:1.6">
+        Lock $AGENT for 30, 90, or 180 days. Heavier weights earn a larger share of every dev top-up
+        (launch fees, bot LP, arena fees), every creator pool's 2% slice, and weekly leaderboard
+        airdrops to the top 5.
+      </p>
+      <p style="color:#64748b;font-size:0.85rem;font-family:monospace">
+        100% transparent · every reward source labelled · claim anytime
+      </p>
+    </div>
+
+    <!-- INDEXER HEALTH BADGE — flips yellow/red when poll loop is wedged.
+         The same `data-st-indexer-badge` markup is repeated on every pane
+         that surfaces indexer-derived data (leaderboard, feed, pools,
+         my-stakes) so users on those tabs see the staleness signal even
+         if they scrolled past the page header. The JS in
+         `staking-tab-snippet.js` finds every instance via the data-attr
+         and updates them in lock-step from a single cached fetch. -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      <div id="stIndexerBadge" data-st-indexer-badge
+           title="Backend indexer health. Click to refresh."
+           onclick="stRefreshIndexerStatus()"
+           style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;
+                  border-radius:999px;font-family:monospace;font-size:0.72rem;
+                  letter-spacing:0.06em;cursor:pointer;user-select:none;
+                  background:rgba(100,116,139,0.12);border:1px solid rgba(100,116,139,0.35);
+                  color:#94a3b8;transition:background 0.2s,color 0.2s,border-color 0.2s">
+        <span id="stIndexerDot" data-st-indexer-dot style="width:8px;height:8px;border-radius:999px;background:#64748b;display:inline-block"></span>
+        <span id="stIndexerText" data-st-indexer-text>indexer: checking…</span>
+      </div>
+    </div>
+
+    <!-- TOP STATS BAR -->
+    <div id="stStatsBar" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:32px">
+      <div class="st-stat"><div class="st-stat-label">TOTAL STAKED</div><div class="st-stat-value" id="stTotalStaked">—</div><div class="st-stat-sub">AGENT</div></div>
+      <div class="st-stat"><div class="st-stat-label">REWARD POOL</div><div class="st-stat-value" id="stRewardPool">—</div><div class="st-stat-sub">AGENT unclaimed</div></div>
+      <div class="st-stat"><div class="st-stat-label">STAKERS</div><div class="st-stat-value" id="stStakerCount">—</div><div class="st-stat-sub">wallets</div></div>
+      <div class="st-stat"><div class="st-stat-label">30D APR (ACTUAL)</div><div class="st-stat-value" id="st30dApr">—</div><div class="st-stat-sub">trailing</div></div>
+      <div class="st-stat"><div class="st-stat-label">LIFETIME TOPPED UP</div><div class="st-stat-value" id="stLifetimeTopup">—</div><div class="st-stat-sub">AGENT</div></div>
+    </div>
+
+    <!-- SUB-TABS -->
+    <div style="display:flex;gap:0;border-bottom:1px solid rgba(0,245,255,0.15);margin-bottom:24px;overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <button class="ml-tab-btn st-tab-btn active" data-st-tab="stake"  onclick="stShowTab('stake')">STAKE</button>
+      <button class="ml-tab-btn st-tab-btn"        data-st-tab="mine"   onclick="stShowTab('mine')">MY STAKES</button>
+      <button class="ml-tab-btn st-tab-btn"        data-st-tab="pools"  onclick="stShowTab('pools')">CREATOR POOLS</button>
+      <button class="ml-tab-btn st-tab-btn"        data-st-tab="board"  onclick="stShowTab('board')">LEADERBOARD</button>
+      <button class="ml-tab-btn st-tab-btn"        data-st-tab="feed"   onclick="stShowTab('feed')">FEED</button>
+      <button class="ml-tab-btn st-tab-btn"        data-st-tab="admin"  onclick="stShowTab('admin')" id="stAdminTabBtn" style="display:none;color:#ffc864">ADMIN</button>
+    </div>
+
+    <!-- ────────────── PANE: STAKE ────────────── -->
+    <div class="st-pane" data-st-pane="stake">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:24px">
+        <div class="st-tier-card" data-tier="0" onclick="stPickTier(0)">
+          <div class="st-tier-name">30 DAYS</div>
+          <div class="st-tier-weight">×1 weight</div>
+          <div class="st-tier-apr">target ~12% APR</div>
+          <div class="st-tier-bonus">leaderboard bonus: ×1.000</div>
+        </div>
+        <div class="st-tier-card" data-tier="1" onclick="stPickTier(1)">
+          <div class="st-tier-name">90 DAYS</div>
+          <div class="st-tier-weight">×2 weight</div>
+          <div class="st-tier-apr">target ~25% APR</div>
+          <div class="st-tier-bonus">leaderboard bonus: ×1.025</div>
+        </div>
+        <div class="st-tier-card" data-tier="2" onclick="stPickTier(2)">
+          <div class="st-tier-name">180 DAYS</div>
+          <div class="st-tier-weight">×4 weight</div>
+          <div class="st-tier-apr">target ~50% APR</div>
+          <div class="st-tier-bonus">leaderboard bonus: ×1.050</div>
+        </div>
+      </div>
+
+      <div style="background:rgba(0,245,255,0.03);border:1px solid rgba(0,245,255,0.15);border-radius:8px;padding:24px;max-width:520px;margin:0 auto">
+        <div class="font-mono text-xs text-slate-500 mb-3 tracking-widest">◈ STAKE AMOUNT</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+          <input id="stStakeAmount" type="number" min="100" step="1" placeholder="amount in AGENT (min 100)"
+                 style="flex:1;background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.2);color:#fff;padding:12px;font-family:monospace;font-size:1rem">
+          <button onclick="stSetMax()" class="btn-cyan" style="padding:12px 16px;font-size:0.85rem">MAX</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:16px;font-size:0.85rem;color:#94a3b8;font-family:monospace">
+          <span>Selected tier: <span id="stSelectedTier" style="color:var(--cyan)">30 days</span></span>
+          <span>Wallet: <span id="stWalletBal">—</span> AGENT</span>
+        </div>
+        <button onclick="stDoStake()" class="btn-cyan" style="width:100%;padding:14px;font-size:1rem">STAKE</button>
+        <div id="stStakeStatus" class="font-mono text-xs mt-3" style="color:#64748b;min-height:20px"></div>
+      </div>
+    </div>
+
+    <!-- ────────────── PANE: MY STAKES ────────────── -->
+    <div class="st-pane" data-st-pane="mine" style="display:none">
+      <div id="stMyEmpty" style="text-align:center;padding:64px;color:#64748b;font-family:monospace">
+        Connect your wallet to view your stake positions.
+      </div>
+      <div id="stMyList" style="display:none">
+        <!-- Per-pane indexer badge: pending/claim totals here all come from
+             the indexer's STAKE_INDEX, so warn the user if it's stale. -->
+        <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+          <div data-st-indexer-badge
+               title="Backend indexer health. Click to refresh."
+               onclick="stRefreshIndexerStatus()"
+               style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;
+                      border-radius:999px;font-family:monospace;font-size:0.72rem;
+                      letter-spacing:0.06em;cursor:pointer;user-select:none;
+                      background:rgba(100,116,139,0.12);border:1px solid rgba(100,116,139,0.35);
+                      color:#94a3b8;transition:background 0.2s,color 0.2s,border-color 0.2s">
+            <span data-st-indexer-dot style="width:8px;height:8px;border-radius:999px;background:#64748b;display:inline-block"></span>
+            <span data-st-indexer-text>indexer: checking…</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">
+          <div class="st-stat"><div class="st-stat-label">YOUR TOTAL STAKED</div><div class="st-stat-value" id="stMineTotal">—</div><div class="st-stat-sub">AGENT</div></div>
+          <div class="st-stat"><div class="st-stat-label">PENDING REWARDS</div><div class="st-stat-value" id="stMinePending">—</div><div class="st-stat-sub">AGENT (claimable)</div></div>
+          <div class="st-stat"><div class="st-stat-label">POSITIONS</div><div class="st-stat-value" id="stMineCount">—</div><div class="st-stat-sub">stake receipts</div></div>
+        </div>
+        <div id="stMineRows"></div>
+
+        <!-- ── MY POOL POSITIONS (creator pools) ─────────────────── -->
+        <div id="stMyPoolPositions" style="margin-top:36px;display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:12px">
+            <div class="font-mono text-xs text-slate-500 tracking-widest">◈ YOUR CREATOR POOL POSITIONS</div>
+            <button id="stClaimAllBtn" class="st-claim-all-btn" onclick="stClaimAllPools()" disabled>CLAIM ALL</button>
+          </div>
+          <div id="stMyPoolHeadline" style="font-family:monospace;font-size:0.82rem;color:#94a3b8;margin-bottom:14px;padding:10px 14px;background:rgba(0,245,255,0.04);border-left:3px solid var(--cyan);border-radius:4px">—</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px">
+            <div class="st-stat"><div class="st-stat-label">POOLS JOINED</div><div class="st-stat-value" id="stMyPoolCount">—</div><div class="st-stat-sub">creator pools</div></div>
+            <div class="st-stat"><div class="st-stat-label">CLAIMABLE NOW</div><div class="st-stat-value cp-mypos-tick-agent" id="stMyPoolPendingAgent">—</div><div class="st-stat-sub">AGENT (live)</div></div>
+            <div class="st-stat"><div class="st-stat-label">EARNING RATE</div><div class="st-stat-value" id="stMyPoolDailyAgent" style="color:#10b981">—</div><div class="st-stat-sub">AGENT / day across all pools</div></div>
+          </div>
+          <div id="stMyPoolRows"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────── PANE: CREATOR POOLS ────────────── -->
+    <div class="st-pane" data-st-pane="pools" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+        <div class="font-mono text-xs text-slate-500 tracking-widest">◈ ACTIVE & PAST POOLS</div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div data-st-indexer-badge title="Backend indexer health. Click to refresh." onclick="stRefreshIndexerStatus()"
+               style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;font-family:monospace;font-size:0.72rem;letter-spacing:0.06em;cursor:pointer;user-select:none;background:rgba(100,116,139,0.12);border:1px solid rgba(100,116,139,0.35);color:#94a3b8;transition:background 0.2s,color 0.2s,border-color 0.2s">
+            <span data-st-indexer-dot style="width:8px;height:8px;border-radius:999px;background:#64748b;display:inline-block"></span>
+            <span data-st-indexer-text>indexer: checking…</span>
+          </div>
+          <button onclick="stOpenCreatePoolModal()" class="btn-green" style="padding:10px 20px;font-size:0.85rem">+ CREATE POOL</button>
+        </div>
+      </div>
+      <div class="cp-explainer">
+        <button class="cp-explainer-toggle" onclick="cpToggleExplainer(this)">
+          <span style="font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;font-family:monospace;color:var(--cyan)">◈ HOW CREATOR POOL REWARDS WORK</span>
+          <span class="cp-chevron">▼</span>
+        </button>
+        <div class="cp-explainer-body">
+          <div class="cp-explainer-grid">
+            <div class="cp-explainer-item"><div class="cp-explainer-icon">&#9201;</div><div><div class="cp-explainer-title">Linear Drip Over Duration</div><div class="cp-explainer-text">Rewards (AGENT + meme) drip continuously over the pool duration. Every second your stake is active, it earns.</div></div></div>
+            <div class="cp-explainer-item"><div class="cp-explainer-icon">&#9998;</div><div><div class="cp-explainer-title">Share = Your Stake &divide; Total Staked</div><div class="cp-explainer-text">Stake 100,000 into a pool with 1,000,000 meme staked and earn 10% of every drip. Join early for the biggest cut.</div></div></div>
+            <div class="cp-explainer-item"><div class="cp-explainer-icon">&#9679;</div><div><div class="cp-explainer-title">Dual-Token Reward (AGENT + Meme)</div><div class="cp-explainer-text">Creators fund with both $AGENT and their meme token. You earn both simultaneously.</div></div></div>
+            <div class="cp-explainer-item"><div class="cp-explainer-icon">&#8644;</div><div><div class="cp-explainer-title">2% Routes to Global Stakers</div><div class="cp-explainer-text">2% of AGENT auto-routes to <span style="color:var(--green);font-family:monospace">creator_pool_2pct</span>, rewarding all $AGENT stakers.</div></div></div>
+          </div>
+        </div>
+      </div>
+      <div id="stPoolsList" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-top:16px">
+        <div style="text-align:center;padding:48px;color:#64748b;font-family:monospace;grid-column:1/-1">Loading…</div>
+      </div>
+    </div>
+
+    <!-- ────────────── PANE: LEADERBOARD ────────────── -->
+    <div class="st-pane" data-st-pane="board" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;flex-wrap:wrap">
+        <div class="font-mono text-xs text-slate-500 tracking-widest">◈ TOP STAKERS BY raw_AGENT × tier_bonus</div>
+        <!-- Per-pane indexer badge: leaderboard is the surface most likely
+             to be embedded elsewhere (Discord widget, partner site), so
+             every leaderboard view shows the same staleness signal. -->
+        <div data-st-indexer-badge
+             title="Backend indexer health. Click to refresh."
+             onclick="stRefreshIndexerStatus()"
+             style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;
+                    border-radius:999px;font-family:monospace;font-size:0.72rem;
+                    letter-spacing:0.06em;cursor:pointer;user-select:none;
+                    background:rgba(100,116,139,0.12);border:1px solid rgba(100,116,139,0.35);
+                    color:#94a3b8;transition:background 0.2s,color 0.2s,border-color 0.2s">
+          <span data-st-indexer-dot style="width:8px;height:8px;border-radius:999px;background:#64748b;display:inline-block"></span>
+          <span data-st-indexer-text>indexer: checking…</span>
+        </div>
+      </div>
+      <p style="color:#64748b;font-size:0.85rem;margin-bottom:16px;font-family:monospace">
+        Top 5 receive a 30/25/20/15/10 split airdrop when admin runs the weekly distribution.
+      </p>
+      <div id="stBoardRows"></div>
+    </div>
+
+    <!-- ────────────── PANE: TRANSPARENCY FEED ────────────── -->
+    <div class="st-pane" data-st-pane="feed" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;flex-wrap:wrap">
+        <div class="font-mono text-xs text-slate-500 tracking-widest">◈ EVERY REWARD INTO THE STAKING POOL</div>
+        <!-- Per-pane indexer badge: every feed row comes from the indexer,
+             so a stale indexer = a stale feed. -->
+        <div data-st-indexer-badge
+             title="Backend indexer health. Click to refresh."
+             onclick="stRefreshIndexerStatus()"
+             style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;
+                    border-radius:999px;font-family:monospace;font-size:0.72rem;
+                    letter-spacing:0.06em;cursor:pointer;user-select:none;
+                    background:rgba(100,116,139,0.12);border:1px solid rgba(100,116,139,0.35);
+                    color:#94a3b8;transition:background 0.2s,color 0.2s,border-color 0.2s">
+          <span data-st-indexer-dot style="width:8px;height:8px;border-radius:999px;background:#64748b;display:inline-block"></span>
+          <span data-st-indexer-text>indexer: checking…</span>
+        </div>
+      </div>
+      <p style="color:#64748b;font-size:0.85rem;margin-bottom:16px;font-family:monospace">
+        Newest first. Source labels: launch_fee, bot_lp, arena_fee, airdrop_reserve, creator_pool_2pct, other.
+      </p>
+      <div id="stFeedRows"></div>
+    </div>
+
+    <!-- ────────────── PANE: ADMIN (only renders for STAKING_ADMIN wallet) ────────────── -->
+    <div class="st-pane" data-st-pane="admin" style="display:none">
+      <div style="background:rgba(255,200,100,0.05);border:1px solid rgba(255,200,100,0.3);border-radius:8px;padding:24px;margin-bottom:16px">
+        <div class="font-mono text-xs tracking-widest mb-3" style="color:#ffc864">◈ TOP UP REWARD ROUTER</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+          <input id="stAdminAmount" type="number" min="1" placeholder="amount AGENT" style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,200,100,0.2);color:#fff;padding:10px;font-family:monospace">
+          <select id="stAdminLabel" style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,200,100,0.2);color:#fff;padding:10px;font-family:monospace">
+            <option value="launch_fee">launch_fee</option>
+            <option value="bot_lp">bot_lp</option>
+            <option value="arena_fee">arena_fee</option>
+            <option value="airdrop_reserve">airdrop_reserve</option>
+            <option value="other">other</option>
+          </select>
+          <button onclick="stAdminTopup()" class="btn-cyan" style="padding:10px">FUND ROUTER</button>
+        </div>
+        <div id="stAdminTopupStatus" class="font-mono text-xs" style="color:#64748b;min-height:20px"></div>
+      </div>
+
+      <div style="background:rgba(255,200,100,0.05);border:1px solid rgba(255,200,100,0.3);border-radius:8px;padding:24px">
+        <div class="font-mono text-xs tracking-widest mb-3" style="color:#ffc864">◈ AIRDROP TOP 5 (30/25/20/15/10 split)</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <input id="stAdminAirdropAmount" type="number" min="1" placeholder="total AGENT for airdrop" style="flex:1;background:rgba(0,0,0,0.3);border:1px solid rgba(255,200,100,0.2);color:#fff;padding:10px;font-family:monospace">
+          <button onclick="stAdminLoadTop5()" class="btn-cyan" style="padding:10px 16px;font-size:0.85rem">LOAD TOP 5</button>
+        </div>
+        <div id="stAdminTop5Preview" style="background:rgba(0,0,0,0.3);padding:12px;border-radius:4px;font-family:monospace;font-size:0.8rem;color:#94a3b8;min-height:60px;margin-bottom:12px;white-space:pre-wrap"></div>
+        <button onclick="stAdminAirdrop()" class="btn-green" style="width:100%;padding:14px">EXECUTE TOP-5 AIRDROP</button>
+        <div id="stAdminAirdropStatus" class="font-mono text-xs mt-3" style="color:#64748b;min-height:20px"></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════
+<!-- ════════════════════════════════════════════════════════════════════
+     CREATE POOL MODAL
+     ════════════════════════════════════════════════════════════════════ -->
+<div id="stCreatePoolModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;padding:24px;overflow:auto">
+  <div style="max-width:640px;margin:40px auto;background:var(--bg2);border:1px solid rgba(0,245,255,0.25);border-radius:10px;padding:32px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div class="font-mono text-xs text-slate-500 tracking-widest">◈ CREATE CREATOR REWARD POOL</div>
+      <button onclick="stCloseCreatePoolModal()" style="background:none;border:none;color:#64748b;font-size:1.5rem;cursor:pointer">&times;</button>
+    </div>
+    <p style="color:#94a3b8;font-size:0.82rem;margin-bottom:24px;line-height:1.6;font-family:monospace">Boost staker yield for your meme token. Deposit AGENT + your meme; both drip to stakers over the duration. <span style="color:#ffc864">&#9888; 2% of AGENT auto-routes to the global staker pool (creator_pool_2pct).</span></p>
+    <div class="cp-form-section">
+      <div class="cp-section-label">1 / 4 — MEME TOKEN TYPE</div>
+      <div style="font-family:monospace;font-size:0.75rem;color:#64748b;margin-bottom:8px">Full on-chain type string, e.g. <span style="color:var(--cyan)">0xPKG::module::SYMBOL</span></div>
+      <input id="stCpMemeType" type="text" placeholder="0x...::my_meme::MY_MEME" oninput="cpUpdatePreview()" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(0,245,255,0.2);color:#fff;padding:12px;font-family:monospace;font-size:0.85rem;border-radius:4px;box-sizing:border-box">
+      <div id="cpReqMemeType" class="cp-req-badge cp-req-fail" style="margin-top:6px">required (0xPKG::module::SYMBOL)</div>
+    </div>
+    <div class="cp-form-section">
+      <div class="cp-section-label">2 / 4 — AGENT TO DEPOSIT</div>
+      <div id="cpReqAgent" class="cp-req-badge cp-req-fail" style="margin-bottom:8px">min 500,000 AGENT</div>
+      <input id="stCpAgent" type="number" min="500000" step="1000" placeholder="500000" oninput="cpUpdatePreview()" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(0,245,255,0.2);color:#fff;padding:12px;font-family:monospace;font-size:0.85rem;border-radius:4px;box-sizing:border-box">
+    </div>
+    <div class="cp-form-section">
+      <div class="cp-section-label">3 / 4 — MEME TO DEPOSIT</div>
+      <div id="cpReqMeme" class="cp-req-badge cp-req-fail" style="margin-bottom:8px">min max(1,000,000 meme, 3 &times; AGENT)</div>
+      <input id="stCpMeme" type="number" min="1000000" step="1000" placeholder="1000000" oninput="cpUpdatePreview()" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(0,245,255,0.2);color:#fff;padding:12px;font-family:monospace;font-size:0.85rem;border-radius:4px;box-sizing:border-box">
+    </div>
+    <div class="cp-form-section">
+      <div class="cp-section-label">4 / 4 — DURATION (DAYS)</div>
+      <div id="cpReqDays" class="cp-req-badge cp-req-fail" style="margin-bottom:8px">min 1 day</div>
+      <input id="stCpDays" type="number" min="1" step="1" value="7" oninput="cpUpdatePreview()" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(0,245,255,0.2);color:#fff;padding:12px;font-family:monospace;font-size:0.85rem;border-radius:4px;box-sizing:border-box">
+    </div>
+    <div class="cp-preview-panel">
+      <div class="cp-preview-title">◈ LIVE POOL PREVIEW</div>
+      <div class="cp-preview-grid">
+        <div class="cp-preview-stat"><div class="cp-preview-label">AGENT to pool (98%)</div><div class="cp-preview-value" id="cpPrevAgentPool">—</div></div>
+        <div class="cp-preview-stat"><div class="cp-preview-label">Global pool bonus (2%)</div><div class="cp-preview-value" id="cpPrevAgentGlobal">—</div></div>
+        <div class="cp-preview-stat"><div class="cp-preview-label">Per-day AGENT drip</div><div class="cp-preview-value" id="cpPrevAgentDay">—</div></div>
+        <div class="cp-preview-stat"><div class="cp-preview-label">Per-day Meme drip</div><div class="cp-preview-value" id="cpPrevMemeDay">—</div></div>
+        <div class="cp-preview-stat cp-preview-stat-wide"><div class="cp-preview-label">Est. AGENT yield at 1M meme staked</div><div class="cp-preview-value" id="cpPrevApr" style="color:var(--green)">—</div></div>
+      </div>
+    </div>
+    <button onclick="stDoCreatePool()" class="btn-green" style="width:100%;padding:14px;margin-top:20px;font-size:0.9rem">CREATE POOL</button>
+    <div id="stCpStatus" class="font-mono text-xs" style="color:#64748b;min-height:20px;margin-top:8px;text-align:center"></div>
+  </div>
+</div>
+
+<!-- ======================== JOIN POOL MODAL ======================== -->
+<div id="stJoinPoolModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;padding:24px;overflow:auto">
+  <div style="max-width:520px;margin:40px auto;background:var(--bg2);border:1px solid rgba(0,245,255,0.25);border-radius:10px;padding:32px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+      <div>
+        <div class="font-mono text-xs text-slate-500 tracking-widest">◈ JOIN CREATOR POOL</div>
+        <div id="jpPoolId" style="font-family:monospace;font-size:0.85rem;color:#94a3b8;margin-top:4px"></div>
+      </div>
+      <button onclick="stCloseJoinPoolModal()" style="background:none;border:none;color:#64748b;font-size:1.5rem;cursor:pointer">&times;</button>
+    </div>
+    <div class="cp-join-stats">
+      <div class="cp-join-stat"><div class="cp-join-stat-label">Meme Token</div><div class="cp-join-stat-val" id="jpMemeSymbol">—</div></div>
+      <div class="cp-join-stat"><div class="cp-join-stat-label">Total Staked</div><div class="cp-join-stat-val" id="jpTotalStaked">—</div></div>
+      <div class="cp-join-stat"><div class="cp-join-stat-label">Stakers</div><div class="cp-join-stat-val" id="jpStakers">—</div></div>
+      <div class="cp-join-stat"><div class="cp-join-stat-label">Time Left</div><div class="cp-join-stat-val" id="jpTimeLeft">—</div></div>
+    </div>
+    <div class="cp-join-rates">
+      <div style="font-family:monospace;font-size:0.7rem;color:#64748b;letter-spacing:0.1em;margin-bottom:8px">POOL REWARD RATES</div>
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <div><span style="color:#64748b;font-family:monospace;font-size:0.8rem">AGENT/day: </span><span id="jpAgentDay" style="color:#fff;font-family:monospace;font-size:0.9rem">—</span></div>
+        <div><span style="color:#64748b;font-family:monospace;font-size:0.8rem">Meme/day: </span><span id="jpMemeDay" style="color:#fff;font-family:monospace;font-size:0.9rem">—</span></div>
+      </div>
+    </div>
+    <div class="cp-form-section" style="margin-top:20px">
+      <div class="cp-section-label">STAKE AMOUNT (meme)</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="jpAmount" type="number" min="0" step="1" placeholder="0" oninput="jpUpdateProjection()" style="flex:1;background:rgba(0,0,0,0.4);border:1px solid rgba(0,245,255,0.2);color:#fff;padding:12px;font-family:monospace;font-size:0.9rem;border-radius:4px">
+        <button onclick="jpSetMax()" style="padding:10px 14px;font-family:monospace;font-size:0.8rem;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.3);color:var(--cyan);border-radius:4px;cursor:pointer;white-space:nowrap">MAX</button>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0 14px;font-family:monospace;font-size:0.78rem;color:#64748b"><span>Your balance: <span id="jpUserBalance" style="color:#94a3b8">—</span></span><span id="jpBalanceFetching" style="font-size:0.7rem;color:#475569"></span></div>
+    <div id="jpProjection" class="cp-preview-panel" style="margin-top:16px;display:none">
+      <div class="cp-preview-title">◈ PROJECTED EARNINGS</div>
+      <div class="cp-preview-grid">
+        <div class="cp-preview-stat"><div class="cp-preview-label">Daily AGENT</div><div class="cp-preview-value" id="jpProjAgentDay" style="color:var(--cyan)">—</div></div>
+        <div class="cp-preview-stat"><div class="cp-preview-label">Daily Meme</div><div class="cp-preview-value" id="jpProjMemeDay" style="color:var(--green)">—</div></div>
+        <div class="cp-preview-stat"><div class="cp-preview-label">Total AGENT (pool end)</div><div class="cp-preview-value" id="jpProjAgentTotal">—</div></div>
+        <div class="cp-preview-stat"><div class="cp-preview-label">Total Meme (pool end)</div><div class="cp-preview-value" id="jpProjMemeTotal">—</div></div>
+        <div class="cp-preview-stat cp-preview-stat-wide"><div class="cp-preview-label">Your share of pool</div><div class="cp-preview-value" id="jpProjShare" style="color:#ffc864">—</div></div>
+      </div>
+      <div style="font-family:monospace;font-size:0.7rem;color:#64748b;margin-top:10px">* Projections assume constant pool stake. Actual earnings vary with staker activity.</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button onclick="stCloseJoinPoolModal()" style="flex:1;padding:14px;font-family:monospace;font-size:0.85rem;background:rgba(100,116,139,0.1);border:1px solid rgba(100,116,139,0.3);color:#94a3b8;border-radius:4px;cursor:pointer">CANCEL</button>
+      <button onclick="stDoJoinPool()" class="btn-cyan" style="flex:2;padding:14px;font-size:0.9rem">CONFIRM STAKE</button>
+    </div>
+    <div id="stJpStatus" class="font-mono text-xs" style="color:#64748b;min-height:20px;margin-top:8px;text-align:center"></div>
+  </div>
+</div>
+
+<!-- Inline styles specific to the staking tab. Reuses --cyan etc. -->
+<style>
+  .st-stat { background:rgba(0,245,255,0.03);border:1px solid rgba(0,245,255,0.12);border-radius:6px;padding:14px 16px; }
+  .st-stat-label { font-family:monospace;font-size:0.7rem;color:#64748b;letter-spacing:0.1em;margin-bottom:6px; }
+  .st-stat-value { font-family:monospace;font-size:1.4rem;color:#fff;font-weight:300; }
+  .st-stat-sub { font-family:monospace;font-size:0.7rem;color:#64748b;margin-top:2px; }
+  .st-tab-btn { padding:14px 20px;font-size:0.85rem;letter-spacing:0.1em;font-family:monospace; }
+  .st-tier-card { background:rgba(0,245,255,0.03);border:1px solid rgba(0,245,255,0.15);border-radius:8px;padding:24px;cursor:pointer;transition:all 0.2s; }
+  .st-tier-card:hover { background:rgba(0,245,255,0.06);border-color:rgba(0,245,255,0.3); }
+  .st-tier-card.selected { background:rgba(0,245,255,0.1);border-color:var(--cyan);box-shadow:0 0 20px rgba(0,245,255,0.15); }
+  .st-tier-name { font-family:monospace;font-size:1.4rem;color:#fff;font-weight:300;margin-bottom:8px;letter-spacing:0.05em; }
+  .st-tier-weight { font-family:monospace;color:var(--cyan);font-size:1rem;margin-bottom:4px; }
+  .st-tier-apr { font-family:monospace;color:#10b981;font-size:0.85rem;margin-bottom:4px; }
+  .st-tier-bonus { font-family:monospace;color:#64748b;font-size:0.75rem; }
+  .st-row { background:rgba(0,245,255,0.02);border:1px solid rgba(0,245,255,0.1);border-radius:6px;padding:16px;margin-bottom:8px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center; }
+  .st-row-meta { font-family:monospace;font-size:0.85rem;color:#94a3b8; }
+  .st-row-meta b { color:#fff;font-weight:400; }
+  .st-row-actions { display:flex;gap:6px; }
+  .st-row-actions button { padding:8px 12px;font-size:0.75rem;font-family:monospace;cursor:pointer;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.3);color:var(--cyan); }
+  .st-row-actions button:disabled { opacity:0.3;cursor:not-allowed; }
+  .st-row-actions button.unlock-ready { background:rgba(16,185,129,0.1);border-color:#10b981;color:#10b981; }
+  .st-feed-row { background:rgba(0,245,255,0.02);border-left:2px solid rgba(0,245,255,0.3);padding:10px 14px;margin-bottom:6px;font-family:monospace;font-size:0.8rem;color:#94a3b8;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px; }
+  .st-feed-row.airdrop { border-left-color:#ffc864; }
+  .st-feed-row.creator_pool_2pct { border-left-color:#10b981; }
+  .st-feed-amt { color:#fff;font-weight:500; }
+  .st-feed-label { color:#64748b;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase; }
+  /* Creator Pool UI */
+  .cp-explainer { border:1px solid rgba(0,245,255,0.15);border-radius:8px;overflow:hidden;background:rgba(0,245,255,0.02); }
+  .cp-explainer-toggle { width:100%;display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:none;border:none;cursor:pointer; }
+  .cp-chevron { color:var(--cyan);font-size:0.8rem;transition:transform 0.2s; }
+  .cp-chevron.open { transform:rotate(180deg); }
+  .cp-explainer-body { padding:0 18px 18px;display:none; }
+  .cp-explainer-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:4px; }
+  .cp-explainer-item { display:flex;gap:12px;align-items:flex-start;padding:12px;background:rgba(0,0,0,0.2);border-radius:6px; }
+  .cp-explainer-icon { font-size:1.1rem;flex-shrink:0;margin-top:2px; }
+  .cp-explainer-title { font-family:monospace;font-size:0.8rem;color:#fff;margin-bottom:4px; }
+  .cp-explainer-text { font-family:monospace;font-size:0.75rem;color:#64748b;line-height:1.5; }
+  .cp-pool-card { background:rgba(0,245,255,0.02);border:1px solid rgba(0,245,255,0.15);border-radius:10px;padding:20px;display:flex;flex-direction:column;transition:border-color 0.2s,background 0.2s; }
+  .cp-pool-card:hover { border-color:rgba(0,245,255,0.3);background:rgba(0,245,255,0.04); }
+  .cp-pool-header { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px; }
+  .cp-pool-symbol { font-family:monospace;font-size:1.15rem;color:#fff;font-weight:400; }
+  .cp-pool-id { font-family:monospace;font-size:0.72rem;color:#64748b;margin-top:2px; }
+  .cp-pool-badge { font-family:monospace;font-size:0.7rem;padding:3px 9px;border-radius:999px; }
+  .cp-pool-badge.active { background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3); }
+  .cp-pool-badge.ended { background:rgba(100,116,139,0.15);color:#64748b;border:1px solid rgba(100,116,139,0.3); }
+  .cp-progress-bar { height:4px;background:rgba(0,245,255,0.1);border-radius:2px;overflow:hidden; }
+  .cp-progress-fill { height:100%;border-radius:2px;background:linear-gradient(90deg,var(--cyan),#10b981); }
+  .cp-stats-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px; }
+  .cp-stat-item { background:rgba(0,0,0,0.2);border-radius:6px;padding:10px 12px; }
+  .cp-stat-label { font-family:monospace;font-size:0.64rem;color:#64748b;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:3px; }
+  .cp-stat-val { font-family:monospace;font-size:0.88rem;color:#fff; }
+  .cp-stat-val.green { color:#10b981; } .cp-stat-val.cyan { color:var(--cyan); } .cp-stat-val.gold { color:#ffc864; }
+  .cp-earn-calc { background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.1);border-radius:6px;padding:12px;margin-bottom:12px; }
+  .cp-earn-calc-label { font-family:monospace;font-size:0.64rem;color:#64748b;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px; }
+  .cp-earn-calc-row { display:flex;align-items:center;gap:8px;flex-wrap:wrap; }
+  .cp-earn-calc-input { flex:1;min-width:80px;background:rgba(0,0,0,0.4);border:1px solid rgba(0,245,255,0.15);color:#fff;padding:7px 10px;font-family:monospace;font-size:0.82rem;border-radius:4px; }
+  .cp-earn-calc-result { font-family:monospace;font-size:0.8rem;color:#64748b; }
+  .cp-earn-calc-result b { color:#10b981; }
+  .cp-form-section { margin-bottom:18px; }
+  .cp-section-label { font-family:monospace;font-size:0.68rem;color:var(--cyan);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px; }
+  .cp-req-badge { font-family:monospace;font-size:0.7rem;padding:3px 10px;border-radius:4px;transition:all 0.2s;display:inline-block; }
+  .cp-req-fail { background:rgba(255,70,90,0.1);color:#ff465a;border:1px solid rgba(255,70,90,0.3); }
+  .cp-req-pass { background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.3); }
+  .cp-preview-panel { background:rgba(0,0,0,0.3);border:1px solid rgba(0,245,255,0.15);border-radius:8px;padding:16px; }
+  .cp-preview-title { font-family:monospace;font-size:0.68rem;color:var(--cyan);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:12px; }
+  .cp-preview-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+  .cp-preview-stat { background:rgba(0,0,0,0.3);border-radius:6px;padding:10px 12px; }
+  .cp-preview-stat-wide { grid-column:1/-1; }
+  .cp-preview-label { font-family:monospace;font-size:0.65rem;color:#64748b;letter-spacing:0.08em;margin-bottom:4px; }
+  .cp-preview-value { font-family:monospace;font-size:0.95rem;color:#fff; }
+  .cp-join-stats { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px; }
+  @media(max-width:480px) { .cp-join-stats { grid-template-columns:1fr 1fr; } }
+  .cp-join-stat { background:rgba(0,0,0,0.2);border-radius:6px;padding:10px 12px; }
+  .cp-join-stat-label { font-family:monospace;font-size:0.62rem;color:#64748b;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px; }
+  .cp-join-stat-val { font-family:monospace;font-size:0.85rem;color:#fff; }
+  .cp-join-rates { background:rgba(0,245,255,0.03);border:1px solid rgba(0,245,255,0.1);border-radius:6px;padding:12px; }
+  /* ── creator-pool "MY POSITIONS" UI (v8.1) ───────────────────── */
+  .cp-mypos-row { background:linear-gradient(90deg,rgba(0,245,255,0.04),rgba(16,185,129,0.04));border:1px solid rgba(0,245,255,0.18);border-radius:8px;padding:14px 16px;margin-bottom:8px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center; }
+  .cp-mypos-row.ended { background:linear-gradient(90deg,rgba(100,116,139,0.04),rgba(255,200,100,0.04));border-color:rgba(255,200,100,0.25); }
+  .cp-mypos-meta { font-family:monospace;font-size:0.85rem;color:#94a3b8;line-height:1.5; }
+  .cp-mypos-meta b { color:#fff;font-weight:400; }
+  .cp-mypos-sym { color:var(--cyan);font-weight:500;letter-spacing:0.04em; }
+  .cp-mypos-tick { color:#10b981;font-variant-numeric:tabular-nums; }
+  .cp-mypos-tick-agent { color:var(--cyan);font-variant-numeric:tabular-nums; }
+  .cp-mypos-warn { color:#ffc864;font-size:0.72rem;margin-top:4px; }
+  .cp-mypos-actions { display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end; }
+  .cp-mypos-actions button { padding:8px 12px;font-size:0.75rem;font-family:monospace;cursor:pointer;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.3);color:var(--cyan);border-radius:4px;letter-spacing:0.04em; }
+  .cp-mypos-actions button:disabled { opacity:0.3;cursor:not-allowed; }
+  .cp-mypos-actions button.unstake-ready { background:rgba(255,200,100,0.1);border-color:#ffc864;color:#ffc864; }
+  .cp-mypos-actions button.signing { opacity:0.6;cursor:wait;background:rgba(0,245,255,0.18); }
+  .cp-card-yourpos { margin-top:10px;padding:10px 12px;background:linear-gradient(90deg,rgba(0,245,255,0.06),rgba(16,185,129,0.06));border:1px solid rgba(0,245,255,0.22);border-radius:6px;font-family:monospace;font-size:0.78rem;color:#94a3b8; }
+  .cp-card-yourpos-title { font-size:0.62rem;letter-spacing:0.14em;color:var(--cyan);margin-bottom:6px;text-transform:uppercase; }
+  .cp-card-yourpos b { color:#fff;font-weight:400; }
+  .cp-card-yourpos-actions { display:flex;gap:6px;margin-top:8px; }
+  .cp-card-yourpos-actions button { flex:1;padding:7px;font-size:0.72rem;font-family:monospace;cursor:pointer;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.3);color:var(--cyan);border-radius:4px; }
+  .cp-card-yourpos-actions button:disabled { opacity:0.3;cursor:not-allowed; }
+  .cp-card-yourpos-actions button.signing { opacity:0.6;cursor:wait;background:rgba(0,245,255,0.18); }
+  .st-claim-all-btn { padding:8px 16px;font-family:monospace;font-size:0.78rem;letter-spacing:0.08em;background:linear-gradient(90deg,#00f5ff,#10b981);color:#04101a;border:none;border-radius:6px;cursor:pointer;font-weight:700; }
+  .st-claim-all-btn:disabled { opacity:0.35;cursor:not-allowed; }
+  .st-claim-all-btn.signing { opacity:0.6;cursor:wait; }
+</style>
+
 
 <!-- ════════════════════════════════════════════════════════════════════
      PAGE: TRUST — original v5 section preserved (all IDs intact)
@@ -3104,7 +3577,7 @@ setInterval(() => {
   (function () {
     'use strict';
 
-    var VALID_ROUTES = ['home','token','setup','swap','arena','memeland','trust','locker'];
+    var VALID_ROUTES = ['home','token','setup','swap','arena','memeland','staking','trust','locker'];
     var DEFAULT_ROUTE = 'home';
     // Pages that should hide the price bar (hero looks cleaner without it)
     var HIDE_PRICE_BAR = ['home'];
@@ -3151,6 +3624,7 @@ setInterval(() => {
         lp: 'LP — $AGENT',
         arena: 'Arena — $AGENT',
         memeland: 'MemeLand — $AGENT',
+        staking: 'Staking — $AGENT',
         trust: 'Trust — $AGENT',
         locker: 'Locker — $AGENT'
       };
@@ -3786,6 +4260,9 @@ const POOL_PACKAGE  = '0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48
 const REGISTRY_ID   = '0x63af8f92c3988601b889a543615b0984ebabbfa420d8b38b2461751f8c05194f';
 const POOL_ID       = '0xba79012088507127692c8c8ba97d4fdc4a83d2f9fff4e9a1ea61ebdc00ff460c';
 const API_URL       = 'https://backend-production-d4c4b.up.railway.app';
+// ── Staking tab globals (used by staking-tab-snippet.js) ──
+window.API_BASE = API_URL;
+window.AGENT_TYPE = '0x9437dbbdd902490c8b25859af0e14cb4badcd9aa7ff87f04aae8a693ba40390d::agent::AGENT';
 
 // ─── RPC HELPER ───
 async function rpc(method, params) {
@@ -4722,8 +5199,8 @@ function executeSwap() {
 const POOL_PKG_ID = '0x3599b83bfc78a1e13baa256b35c340b34111ac18dab3736732efb48ce3cd6952';
 const AGENT_COIN  = '0x5613a7e1f4f8fc7b896781aaba9b52944763e14421458d14c829223541d77c1c::agent::AGENT';
 
-let connectedWallet   = null;
-let connectedProvider = null;
+var connectedWallet   = null;
+var connectedProvider = null;
 
 // ─── INJECT WALLET MODAL ───
 (function() {
@@ -6993,6 +7470,1147 @@ if (mlTokenIdParam) {
 setInterval(mlLoadTokens, 30000);
 
 })(); // end IIFE
+
+
+// ════════════════════════════════════════════════════════════════
+// STAKING TAB — full v8.0.0 module (sub-tabs / admin / pools / feed)
+// Source: staking-deliverable/frontend/staking-tab-snippet.js
+// ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
+// staking-tab-snippet.js — Staking tab JS for index-v8.0.0
+// ════════════════════════════════════════════════════════════════
+// Hooks into existing globals from v7.0.2:
+//   connectedWallet           ({ address, provider, ... })
+//   pickWalletObj()           (re-resolves provider for uiOnly wallets)
+//   API_BASE                  (backend base URL)
+//
+// Adds globals:
+//   STAKING_API, STAKING_ADMIN_ADDR, AGENT_DECIMALS,
+//   stShowTab, stPickTier, stDoStake, stClaim, stUnstake,
+//   stAdminTopup, stAdminLoadTop5, stAdminAirdrop,
+//   stOpenCreatePoolModal, stCloseCreatePoolModal, stDoCreatePool,
+//   stRefreshAll, stRefreshIndexerStatus
+//
+// Auto-runs on hashchange to '#/staking' and on initial load.
+// ════════════════════════════════════════════════════════════════
+
+const STAKING_API = (window.API_BASE || '') + '/staking';
+const STAKING_ADMIN_ADDR = '0x47cee6fed8a44224350d0565a45dd97b320a9c3f54a8feb6036fb9b2d3a81a08';
+const AGENT_DECIMALS = 6;
+const AGENT_SCALE = 10n ** BigInt(AGENT_DECIMALS);
+const TIER_LABELS = { 0: '30 days', 1: '90 days', 2: '180 days' };
+
+let _stCurrentTier = 0;
+let _stCurrentTab = 'stake';
+let _stRefreshTimer = null;
+let _stTop5Cache = [];
+// Last indexer-status response. Cached so the per-second tick in the badge
+// can re-render "Xs ago" without hammering the backend — we only refetch on
+// the slower stRefreshAll cadence (or manual click on the badge).
+let _stIndexerStatus = null;
+let _stIndexerBadgeTimer = null;
+// Staleness thresholds. The task spec calls for yellow/red when the indexer
+// hasn't run in >2 minutes — we use 2 minutes as the warning threshold and
+// 5 minutes as the critical threshold so a single missed poll doesn't
+// immediately scream red.
+const ST_STALE_WARN_MS = 2 * 60 * 1000;
+const ST_STALE_CRIT_MS = 5 * 60 * 1000;
+
+// ─── helpers ─────────────────────────────────────────────────────
+function _stFmt(rawStr, decimals = AGENT_DECIMALS) {
+  if (rawStr == null) return '—';
+  try {
+    const raw = BigInt(rawStr);
+    const div = 10n ** BigInt(decimals);
+    const whole = raw / div;
+    const frac = raw % div;
+    const fracStr = frac.toString().padStart(decimals, '0').replace(/0+$/, '');
+    if (!fracStr) return Number(whole).toLocaleString();
+    return Number(whole).toLocaleString() + '.' + fracStr.slice(0, 4);
+  } catch { return String(rawStr); }
+}
+function _stShortAddr(a) { if (!a) return '—'; return a.slice(0, 6) + '…' + a.slice(-4); }
+function _stTimeLeft(ms) {
+  if (ms <= 0) return 'unlocked';
+  const d = Math.floor(ms / 86_400_000);
+  const h = Math.floor((ms % 86_400_000) / 3_600_000);
+  if (d > 0) return `${d}d ${h}h`;
+  const m = Math.floor((ms % 3_600_000) / 60_000);
+  return `${h}h ${m}m`;
+}
+function _stTimeAgo(ts) {
+  if (!ts) return '';
+  const dt = Date.now() - ts;
+  if (dt < 60_000) return 'just now';
+  if (dt < 3_600_000) return Math.floor(dt / 60_000) + 'm ago';
+  if (dt < 86_400_000) return Math.floor(dt / 3_600_000) + 'h ago';
+  return Math.floor(dt / 86_400_000) + 'd ago';
+}
+function _stStatus(elId, msg, color = '#64748b') {
+  const el = document.getElementById(elId);
+  if (el) { el.textContent = msg; el.style.color = color; }
+}
+// Compact "Xs ago / Xm ago / Xh ago" — distinct from _stTimeAgo (which
+// rounds up to "just now" below 60s); the indexer badge needs second-level
+// resolution so the user can see it ticking and know the page is live.
+function _stShortAgo(ms) {
+  if (!Number.isFinite(ms) || ms < 0) ms = 0;
+  if (ms < 1000) return '0s';
+  if (ms < 60_000) return Math.floor(ms / 1000) + 's';
+  if (ms < 3_600_000) return Math.floor(ms / 60_000) + 'm';
+  if (ms < 86_400_000) return Math.floor(ms / 3_600_000) + 'h';
+  return Math.floor(ms / 86_400_000) + 'd';
+}
+
+// ─── INDEXER HEALTH BADGE ────────────────────────────────────────
+// Dashboard signal so users can tell when leaderboard/feed/pool data has
+// gone stale (Sui RPC down, container starved, etc). Three states:
+//   ok    — last poll within ST_STALE_WARN_MS   (cyan/green dot)
+//   warn  — between WARN and CRIT thresholds    (amber)
+//   crit  — over CRIT threshold or hydrate-failed (red)
+//
+// MULTI-SURFACE: the same /staking/indexer-status response feeds every
+// dashboard that shows indexer-derived data (the staking dashboard panes,
+// any future creator-pool dashboard, embedded leaderboard widgets, …),
+// so the renderer iterates over EVERY element marked
+// `data-st-indexer-badge` on the page. Drop-in HTML for additional
+// surfaces:
+//   <span data-st-indexer-badge onclick="stRefreshIndexerStatus()" …>
+//     <span data-st-indexer-dot></span>
+//     <span data-st-indexer-text>indexer: checking…</span>
+//   </span>
+// The legacy `id="stIndexerBadge"` / `id="stIndexerDot"` / `id="stIndexerText"`
+// markup from the original single-surface version still works because we
+// also fall back to the IDs when the data-attrs are missing.
+async function _stFetchIndexerStatus() {
+  try {
+    const r = await fetch(STAKING_API + '/indexer-status').then(x => x.json());
+    if (r?.success) {
+      _stIndexerStatus = { ...r, fetchedAt: Date.now() };
+    } else {
+      _stIndexerStatus = { _err: r?.error || 'failed', fetchedAt: Date.now() };
+    }
+  } catch (e) {
+    _stIndexerStatus = { _err: e?.message || 'network', fetchedAt: Date.now() };
+  }
+  _stRenderIndexerBadge();
+}
+
+// Collect every badge container on the page. Supports both the new
+// `data-st-indexer-badge` attribute (multi-instance) and the legacy
+// `id="stIndexerBadge"` (back-compat with the original snippet).
+function _stCollectIndexerBadges() {
+  const out = [];
+  const seen = new Set();
+  const push = (box) => {
+    if (!box || seen.has(box)) return;
+    seen.add(box);
+    const dot = box.querySelector('[data-st-indexer-dot]')
+             || box.querySelector('#stIndexerDot');
+    const txt = box.querySelector('[data-st-indexer-text]')
+             || box.querySelector('#stIndexerText');
+    if (dot && txt) out.push({ box, dot, txt });
+  };
+  document.querySelectorAll('[data-st-indexer-badge]').forEach(push);
+  push(document.getElementById('stIndexerBadge'));
+  return out;
+}
+
+function _stRenderIndexerBadge() {
+  const targets = _stCollectIndexerBadges();
+  if (!targets.length) return;
+
+  // Palette deliberately uses inline styles (not CSS classes) so this
+  // snippet stays drop-in compatible with the existing CSS variables.
+  const PAL = {
+    ok:   { fg: '#10b981', bg: 'rgba(16,185,129,0.10)',  br: 'rgba(16,185,129,0.40)'  },
+    warn: { fg: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  br: 'rgba(251,191,36,0.45)'  },
+    crit: { fg: '#ff465a', bg: 'rgba(255,70,90,0.12)',   br: 'rgba(255,70,90,0.50)'   },
+    idle: { fg: '#94a3b8', bg: 'rgba(100,116,139,0.12)', br: 'rgba(100,116,139,0.35)' },
+  };
+  const apply = (state, label, title) => {
+    const p = PAL[state];
+    for (const { box, dot, txt } of targets) {
+      dot.style.background  = p.fg;
+      txt.textContent       = label;
+      box.style.color       = p.fg;
+      box.style.background  = p.bg;
+      box.style.borderColor = p.br;
+      if (title) box.title  = title;
+    }
+  };
+
+  const s = _stIndexerStatus;
+  if (!s) { apply('idle', 'indexer: checking…', 'Backend indexer health. Click to refresh.'); return; }
+  if (s._err) {
+    apply('crit', 'indexer: unreachable', 'Could not reach /staking/indexer-status: ' + s._err);
+    return;
+  }
+  if (!s.hydrated) {
+    apply('warn', 'indexer: starting…', 'Backend is still hydrating from the database. Data may be incomplete.');
+    return;
+  }
+  if (!s.lastSuccessMs) {
+    apply('warn', 'indexer: no polls yet', 'Backend has hydrated but the first poll has not completed yet.');
+    return;
+  }
+  // Use server clock from the snapshot, projected forward by local elapsed
+  // time since fetch. This avoids local-clock skew without re-fetching every
+  // tick.
+  const projectedNow = (s.nowMs || 0) + (Date.now() - s.fetchedAt);
+  const ageMs = Math.max(0, projectedNow - s.lastSuccessMs);
+  const ago = _stShortAgo(ageMs);
+  let state = 'ok';
+  if (ageMs >= ST_STALE_CRIT_MS) state = 'crit';
+  else if (ageMs >= ST_STALE_WARN_MS) state = 'warn';
+
+  let label;
+  if (state === 'ok')        label = `indexer: live · updated ${ago} ago`;
+  else if (state === 'warn') label = `indexer: stale · ${ago} since last poll`;
+  else                       label = `indexer: STALE · ${ago} since last poll`;
+
+  // Tooltip carries the deeper diagnostic (event time, counts, last error)
+  // for power users without cluttering the badge itself.
+  const eventAgo = s.lastEventMs
+    ? _stShortAgo(Math.max(0, projectedNow - s.lastEventMs)) + ' ago'
+    : 'never';
+  // Show the last error in the tooltip whenever it's at-or-after the last
+  // clean poll — otherwise it's just a stale historical hiccup that's
+  // already been recovered from.
+  const errBit = s.lastErrorMs && s.lastErrorMs >= s.lastSuccessMs
+    ? `\nlast error: ${s.lastErrorMsg || '(no message)'} (${_stShortAgo(Math.max(0, projectedNow - s.lastErrorMs))} ago)`
+    : '';
+  const title =
+    `Last successful poll: ${ago} ago` +
+    `\nLast indexed event:  ${eventAgo}` +
+    `\nPersistence: ${s.persistence} · poll cadence: ${Math.round((s.pollIntervalMs || 0) / 1000)}s` +
+    `\nIn-memory: ${s.counts?.stakers ?? '?'} stakers · ${s.counts?.feed ?? '?'} feed · ${s.counts?.seen ?? '?'} seen` +
+    errBit +
+    '\n(click to refresh)';
+  apply(state, label, title);
+}
+
+// Exposed for the badge's onclick — surfaces a manual refresh hook.
+window.stRefreshIndexerStatus = _stFetchIndexerStatus;
+
+// ─── tab switching ───────────────────────────────────────────────
+window.stShowTab = function (tab) {
+  _stCurrentTab = tab;
+  document.querySelectorAll('.st-tab-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.stTab === tab);
+  });
+  document.querySelectorAll('.st-pane').forEach((p) => {
+    p.style.display = p.dataset.stPane === tab ? '' : 'none';
+  });
+  // Refresh content for the new tab.
+  if (tab === 'mine')   _stRenderMyStakes();
+  if (tab === 'pools')  _stRenderPools();
+  if (tab === 'board')  _stRenderLeaderboard();
+  if (tab === 'feed')   _stRenderFeed();
+};
+
+// ─── tier card selection ─────────────────────────────────────────
+window.stPickTier = function (tier) {
+  _stCurrentTier = Number(tier);
+  document.querySelectorAll('.st-tier-card').forEach((c) => {
+    c.classList.toggle('selected', Number(c.dataset.tier) === _stCurrentTier);
+  });
+  const lbl = document.getElementById('stSelectedTier');
+  if (lbl) lbl.textContent = TIER_LABELS[_stCurrentTier];
+};
+
+// ─── header stats ────────────────────────────────────────────────
+async function _stRenderStats() {
+  try {
+    const r = await fetch(STAKING_API + '/stats').then(x => x.json());
+    if (!r?.success) return;
+    document.getElementById('stTotalStaked').textContent  = _stFmt(r.totalStakedRaw);
+    document.getElementById('stRewardPool').textContent   = _stFmt(r.rewardBalanceRaw);
+    document.getElementById('stStakerCount').textContent  = r.totalStakers;
+    document.getElementById('st30dApr').textContent       = (r.trailing30dAprBps / 100).toFixed(2) + '%';
+    document.getElementById('stLifetimeTopup').textContent = _stFmt(r.totalToppedUp);
+  } catch (e) { console.warn('[staking] stats failed', e); }
+}
+
+// ─── wallet balance for stake input ──────────────────────────────
+async function _stRenderWalletBal() {
+  const lbl = document.getElementById('stWalletBal');
+  const addr = window.connectedWallet?.address;
+  if (!addr || !lbl) { if (lbl) lbl.textContent = '—'; return; }
+  try {
+    // Reuse the existing helper if mlFetchWalletBalance exists; else direct fetch.
+    if (typeof window.mlFetchWalletBalance === 'function') {
+      // Already updates a global; we'll fall back to direct fetch.
+    }
+    const c = await fetch(`${window.API_BASE || ''}/balance/${addr}/${encodeURIComponent(window.AGENT_TYPE || '')}`)
+      .then(x => x.ok ? x.json() : null).catch(() => null);
+    if (c?.balance != null) lbl.textContent = _stFmt(c.balance);
+  } catch {}
+}
+
+window.stSetMax = function () {
+  const lbl = document.getElementById('stWalletBal').textContent;
+  if (lbl && lbl !== '—') document.getElementById('stStakeAmount').value = lbl.replace(/,/g, '');
+};
+
+// ─── STAKE ───────────────────────────────────────────────────────
+window.stDoStake = async function () {
+  if (!window.connectedWallet?.address) { _stStatus('stStakeStatus', '⚠ Connect wallet first', '#ffc864'); return; }
+  const amount = parseFloat(document.getElementById('stStakeAmount').value);
+  if (!(amount > 0)) { _stStatus('stStakeStatus', '⚠ Enter an amount > 0', '#ffc864'); return; }
+  if (amount < 100) { _stStatus('stStakeStatus', '⚠ Minimum stake is 100 AGENT', '#ffc864'); return; }
+  const amountRaw = (BigInt(Math.floor(amount * Number(AGENT_SCALE)))).toString();
+
+  _stStatus('stStakeStatus', '⏳ Building transaction…');
+  try {
+    const r = await fetch(STAKING_API + '/build-stake-tx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sender: window.connectedWallet.address, amountRaw, tier: _stCurrentTier }),
+    }).then(x => x.json());
+    if (!r?.success) throw new Error(r?.error || 'build failed');
+    _stStatus('stStakeStatus', '⏳ Waiting for wallet signature…');
+    const result = await _stSignAndExec(r.txBytes);
+    _stStatus('stStakeStatus', '✓ Staked! tx: ' + _stShortAddr(result.digest), '#10b981');
+    document.getElementById('stStakeAmount').value = '';
+    setTimeout(() => { _stRenderStats(); _stRenderWalletBal(); _stRenderMyStakes(); }, 2000);
+  } catch (e) {
+    console.error('[staking] stake failed', e);
+    _stStatus('stStakeStatus', '✗ ' + (e.message || 'failed'), '#ff465a');
+  }
+};
+
+// ─── CLAIM / UNSTAKE (per-receipt actions) ───────────────────────
+window.stClaim = async function (receiptId) {
+  if (!window.connectedWallet?.address) return;
+  try {
+    const r = await fetch(STAKING_API + '/build-claim-tx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sender: window.connectedWallet.address, receiptId }),
+    }).then(x => x.json());
+    if (!r?.success) throw new Error(r?.error || 'build failed');
+    await _stSignAndExec(r.txBytes);
+    setTimeout(() => { _stRenderStats(); _stRenderMyStakes(); }, 2000);
+  } catch (e) { alert('Claim failed: ' + e.message); }
+};
+
+window.stUnstake = async function (receiptId) {
+  if (!window.connectedWallet?.address) return;
+  if (!confirm('Unstake this position? Principal + final claim returned. Cannot undo.')) return;
+  try {
+    const r = await fetch(STAKING_API + '/build-unstake-tx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sender: window.connectedWallet.address, receiptId }),
+    }).then(x => x.json());
+    if (!r?.success) throw new Error(r?.error || 'build failed');
+    await _stSignAndExec(r.txBytes);
+    setTimeout(() => { _stRenderStats(); _stRenderWalletBal(); _stRenderMyStakes(); }, 2000);
+  } catch (e) { alert('Unstake failed: ' + e.message); }
+};
+
+// ════════════════════════════════════════════════════════════════
+// CREATOR POOL: per-position claim / unstake / claim-all + ticker
+// (v8.1 — closes the gap where pool stakers couldn't see accrual.)
+// ════════════════════════════════════════════════════════════════
+let _stCpTickTimer = null;
+let _stClaimAllCache = [];   // last claimable[] from /my-pool-positions
+
+// Format BigInt atoms with `decimals` precision (4-frac display).
+function _stFmtAtoms(rawBn, decimals) {
+  try {
+    const div = 10n ** BigInt(decimals);
+    const whole = rawBn / div;
+    const frac = rawBn % div;
+    const fracStr = frac.toString().padStart(decimals, '0').slice(0, 4).replace(/0+$/, '');
+    if (!fracStr) return Number(whole).toLocaleString();
+    return Number(whole).toLocaleString() + '.' + fracStr;
+  } catch { return '—'; }
+}
+
+// Live-tick: scan every [data-cp-tick] element and rewrite text from
+// (pendingRaw + ratePerSecRaw × elapsedSeconds). Single timer for the
+// whole page; cheap (a handful of DOM writes per second).
+function _stCpStartTickerIfNeeded() {
+  if (_stCpTickTimer) return;
+  _stCpTickTimer = setInterval(_stCpTickOnce, 1000);
+  _stCpTickOnce();
+}
+function _stCpStopTicker() {
+  if (_stCpTickTimer) { clearInterval(_stCpTickTimer); _stCpTickTimer = null; }
+}
+function _stCpClearTickRegistry(_scope) { /* registry lives in DOM, no action */ }
+function _stCpTickOnce() {
+  const els = document.querySelectorAll('[data-cp-tick]');
+  if (!els.length) return;
+  const now = Date.now();
+  for (const el of els) {
+    try {
+      const pending  = BigInt(el.getAttribute('data-pending-raw') || '0');
+      const rate     = BigInt(el.getAttribute('data-rate-raw') || '0');     // atoms / second
+      const fetched  = parseInt(el.getAttribute('data-fetched-at') || '0');
+      const decimals = parseInt(el.getAttribute('data-decimals') || '6');
+      const elapsedSec = Math.max(0, Math.floor((now - fetched) / 1000));
+      const live = pending + rate * BigInt(elapsedSec);
+      el.textContent = _stFmtAtoms(live, decimals);
+    } catch (_) { /* ignore */ }
+  }
+}
+
+// Disable a button while the user signs / waits for inclusion. Restores
+// state after the work resolves so the user never has to refresh.
+async function _stWithSigning(btn, label, work) {
+  if (!btn) return work();
+  const prevHtml = btn.innerHTML;
+  const prevDisabled = btn.disabled;
+  btn.disabled = true;
+  btn.classList.add('signing');
+  btn.innerHTML = label;
+  try { return await work(); }
+  finally {
+    btn.disabled = prevDisabled;
+    btn.classList.remove('signing');
+    btn.innerHTML = prevHtml;
+  }
+}
+
+// ─── MY POOL POSITIONS panel (inside MY STAKES pane) ─────────────
+async function _stRenderMyPoolPositions(addr) {
+  const panel = document.getElementById('stMyPoolPositions');
+  const rowsEl = document.getElementById('stMyPoolRows');
+  const claimAllBtn = document.getElementById('stClaimAllBtn');
+  if (!panel || !rowsEl) return;
+  if (!addr) { panel.style.display = 'none'; return; }
+  try {
+    const r = await fetch(STAKING_API + '/my-pool-positions/' + addr).then(x => x.json());
+    if (!r?.success) throw new Error(r?.error || 'failed');
+    if (!r.positions.length) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+    _stClaimAllCache = r.claimable || [];
+    // Headline + summary stats.
+    const fetchedAt = r.fetchedAtMs || Date.now();
+    const totalPending = BigInt(r.totalPendingAgentRaw || '0');
+    const totalRate    = BigInt(r.totalAgentPerSecondRaw || '0');
+    const dailyAgent   = Number(totalRate * 86400n) / 1e6;
+    const headline = document.getElementById('stMyPoolHeadline');
+    if (headline) {
+      const claimableNow = _stFmt(totalPending.toString());
+      const dailyTxt = dailyAgent > 0 ? dailyAgent.toLocaleString(undefined,{maximumFractionDigits:2}) : '0';
+      headline.innerHTML = `Across <b style="color:#fff">${r.positionCount}</b> position${r.positionCount === 1 ? '' : 's'} you're earning <b style="color:#10b981">≈ ${dailyTxt} AGENT/day</b>, with <b class="cp-mypos-tick-agent" data-cp-tick="headline" data-pending-raw="${totalPending.toString()}" data-rate-raw="${totalRate.toString()}" data-fetched-at="${fetchedAt}" data-decimals="6">${claimableNow}</b> AGENT claimable now.`;
+    }
+    document.getElementById('stMyPoolCount').textContent = r.positionCount;
+    const pendEl = document.getElementById('stMyPoolPendingAgent');
+    if (pendEl) {
+      pendEl.setAttribute('data-cp-tick', 'summary');
+      pendEl.setAttribute('data-pending-raw', totalPending.toString());
+      pendEl.setAttribute('data-rate-raw', totalRate.toString());
+      pendEl.setAttribute('data-fetched-at', fetchedAt);
+      pendEl.setAttribute('data-decimals', '6');
+      pendEl.textContent = _stFmt(totalPending.toString());
+    }
+    document.getElementById('stMyPoolDailyAgent').textContent =
+      dailyAgent > 0 ? dailyAgent.toLocaleString(undefined,{maximumFractionDigits:2}) : '—';
+
+    // Enable Claim All if anything claimable.
+    if (claimAllBtn) {
+      const any = _stClaimAllCache.length > 0;
+      claimAllBtn.disabled = !any;
+      claimAllBtn.title = any
+        ? `Bundle ${_stClaimAllCache.length} claim${_stClaimAllCache.length === 1 ? '' : 's'} into one signed tx`
+        : 'No pools have pending AGENT yet';
+    }
+
+    // Per-position rows.
+    rowsEl.innerHTML = r.positions.map((p) => {
+      const ended = p.poolEnded;
+      const remain = Math.max(0, (p.poolEndsAtMs || 0) - Date.now());
+      const stakedHuman = (Number(p.stakedMemeRaw) / 1e6).toLocaleString(undefined,{maximumFractionDigits:2});
+      const sharePct = (Number(p.totalStakedMemeRaw) > 0)
+        ? (Number(p.stakedMemeRaw) / Number(p.totalStakedMemeRaw) * 100).toFixed(3) + '%'
+        : '—';
+      const canClaim = BigInt(p.pendingAgentRaw) > 0n || BigInt(p.pendingMemeRaw) > 0n;
+      return `
+        <div class="cp-mypos-row${ended ? ' ended' : ''}">
+          <div>
+            <div class="cp-mypos-meta">
+              <span class="cp-mypos-sym">${p.symbol}</span> &middot;
+              staked <b>${stakedHuman}</b> ${p.symbol} (<b>${sharePct}</b> of pool) &middot;
+              ${ended ? '<span style="color:#ffc864">pool ended</span>' : _stTimeLeft(remain) + ' left'}
+            </div>
+            <div class="cp-mypos-meta" style="margin-top:4px">
+              Claimable:
+              <b class="cp-mypos-tick-agent" data-cp-tick="row"
+                 data-pending-raw="${p.pendingAgentRaw}"
+                 data-rate-raw="${p.agentPerSecondRaw}"
+                 data-fetched-at="${fetchedAt}"
+                 data-decimals="6">${_stFmt(p.pendingAgentRaw)}</b> AGENT
+              + <b class="cp-mypos-tick" data-cp-tick="row"
+                 data-pending-raw="${p.pendingMemeRaw}"
+                 data-rate-raw="${p.memePerSecondRaw}"
+                 data-fetched-at="${fetchedAt}"
+                 data-decimals="6">${_stFmt(p.pendingMemeRaw)}</b> ${p.symbol}
+            </div>
+            <div class="cp-mypos-meta" style="font-size:0.7rem;color:#64748b;margin-top:4px">
+              receipt ${_stShortAddr(p.receiptId)} &middot; pool ${_stShortAddr(p.poolId)}
+            </div>
+            ${ended ? '<div class="cp-mypos-warn">⚠ Pool ended — claim &amp; unstake before creator sweeps unclaimed rewards.</div>' : ''}
+          </div>
+          <div class="cp-mypos-actions">
+            <button onclick="stClaimPool(this,'${p.poolId}','${p.receiptId}','${p.memeType}')" ${canClaim ? '' : 'disabled'}>CLAIM</button>
+            <button onclick="stUnstakePool(this,'${p.poolId}','${p.receiptId}','${p.memeType}')" ${ended ? 'class="unstake-ready"' : 'disabled'}>UNSTAKE</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    _stCpStartTickerIfNeeded();
+  } catch (e) {
+    panel.style.display = '';
+    rowsEl.innerHTML = '<div style="color:#ff465a;font-family:monospace;padding:16px;text-align:center">Failed to load pool positions: ' + e.message + '</div>';
+  }
+}
+
+// ─── per-position actions ────────────────────────────────────────
+window.stClaimPool = async function (btn, poolId, receiptId, memeType) {
+  if (!window.connectedWallet?.address) { alert('Connect wallet first'); return; }
+  await _stWithSigning(btn, '⏳ SIGN…', async () => {
+    try {
+      const r = await fetch(STAKING_API + '/build-claim-pool-tx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sender: window.connectedWallet.address, poolId, receiptId, memeType }),
+      }).then(x => x.json());
+      if (!r?.success) throw new Error(r?.error || 'build failed');
+      await _stSignAndExec(r.txBytes);
+      // Optimistic refresh delay so post-tx state is reflected.
+      setTimeout(() => {
+        if (_stCurrentTab === 'mine')  _stRenderMyStakes();
+        if (_stCurrentTab === 'pools') _stRenderPools();
+      }, 2000);
+    } catch (e) { alert('Claim failed: ' + e.message); }
+  });
+};
+
+window.stUnstakePool = async function (btn, poolId, receiptId, memeType) {
+  if (!window.connectedWallet?.address) { alert('Connect wallet first'); return; }
+  if (!confirm('Unstake from this creator pool? Principal + final claim returned. Cannot undo.')) return;
+  await _stWithSigning(btn, '⏳ SIGN…', async () => {
+    try {
+      const r = await fetch(STAKING_API + '/build-unstake-pool-tx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sender: window.connectedWallet.address, poolId, receiptId, memeType }),
+      }).then(x => x.json());
+      if (!r?.success) throw new Error(r?.error || 'build failed');
+      await _stSignAndExec(r.txBytes);
+      setTimeout(() => {
+        if (_stCurrentTab === 'mine')  _stRenderMyStakes();
+        if (_stCurrentTab === 'pools') _stRenderPools();
+      }, 2000);
+    } catch (e) { alert('Unstake failed: ' + e.message); }
+  });
+};
+
+// One signed tx that bundles every pending claim across every pool.
+window.stClaimAllPools = async function () {
+  if (!window.connectedWallet?.address) { alert('Connect wallet first'); return; }
+  const claims = (_stClaimAllCache || []).slice();
+  if (!claims.length) return;
+  if (!confirm(`Claim from ${claims.length} pool${claims.length === 1 ? '' : 's'} in one transaction?`)) return;
+  const btn = document.getElementById('stClaimAllBtn');
+  await _stWithSigning(btn, `⏳ SIGNING ${claims.length}…`, async () => {
+    try {
+      // Batch in groups of 16 (server cap) — typical wallets have <16 pools.
+      const batches = [];
+      for (let i = 0; i < claims.length; i += 16) batches.push(claims.slice(i, i + 16));
+      for (const batch of batches) {
+        const r = await fetch(STAKING_API + '/build-claim-all-pools-tx', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sender: window.connectedWallet.address, claims: batch }),
+        }).then(x => x.json());
+        if (!r?.success) throw new Error(r?.error || 'build failed');
+        await _stSignAndExec(r.txBytes);
+      }
+      setTimeout(() => { _stRenderMyStakes(); }, 2000);
+    } catch (e) { alert('Claim All failed: ' + e.message); }
+  });
+};
+
+// ─── MY STAKES PANE ──────────────────────────────────────────────
+async function _stRenderMyStakes() {
+  const empty = document.getElementById('stMyEmpty');
+  const list  = document.getElementById('stMyList');
+  const rows  = document.getElementById('stMineRows');
+  const addr  = window.connectedWallet?.address;
+  if (!addr) { empty.style.display = ''; list.style.display = 'none'; return; }
+  empty.style.display = 'none'; list.style.display = '';
+  rows.innerHTML = '<div style="color:#64748b;font-family:monospace;padding:24px;text-align:center">Loading…</div>';
+  try {
+    const r = await fetch(STAKING_API + '/positions/' + addr).then(x => x.json());
+    if (!r?.success) throw new Error(r?.error || 'failed');
+    document.getElementById('stMineTotal').textContent   = _stFmt(r.totalStakedRaw);
+    document.getElementById('stMinePending').textContent = _stFmt(r.totalPendingRaw);
+    document.getElementById('stMineCount').textContent   = r.positions.length;
+    if (r.positions.length === 0) {
+      rows.innerHTML = '<div style="color:#64748b;font-family:monospace;padding:48px;text-align:center">No active AGENT stake positions. Go to STAKE tab to start, or scroll down for your creator-pool positions.</div>';
+    } else {
+      rows.innerHTML = r.positions.map((p) => {
+        const remain = p.unlockAtMs - Date.now();
+        const unlocked = remain <= 0;
+        return `
+          <div class="st-row">
+            <div>
+              <div class="st-row-meta">
+                <b>${_stFmt(p.amountRaw)}</b> AGENT · <b>${p.tierLabel}</b> tier (×${p.weight})
+                · pending <b>${_stFmt(p.pendingClaimRaw)}</b>
+              </div>
+              <div class="st-row-meta" style="font-size:0.75rem;color:#64748b;margin-top:4px">
+                receipt ${_stShortAddr(p.receiptId)} ·
+                ${unlocked ? '🔓 UNLOCKED' : '🔒 unlocks in ' + _stTimeLeft(remain)}
+              </div>
+            </div>
+            <div class="st-row-actions">
+              <button onclick="stClaim('${p.receiptId}')" ${BigInt(p.pendingClaimRaw) > 0n ? '' : 'disabled'}>CLAIM</button>
+              <button onclick="stUnstake('${p.receiptId}')" ${unlocked ? 'class="unlock-ready"' : 'disabled'}>UNSTAKE</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+  } catch (e) {
+    rows.innerHTML = '<div style="color:#ff465a;font-family:monospace;padding:24px;text-align:center">Failed to load: ' + e.message + '</div>';
+  }
+  // Render the creator-pool positions panel below the AGENT receipts.
+  _stRenderMyPoolPositions(addr).catch(() => {});
+}
+
+// ─── POOLS PANE ──────────────────────────────────────────────────
+async function _stRenderPools() {
+  const list = document.getElementById('stPoolsList');
+  list.innerHTML = '<div style="color:#64748b;font-family:monospace;padding:48px;text-align:center;grid-column:1/-1">Loading…</div>';
+  try {
+    const addr = window.connectedWallet?.address;
+    // Fetch pools + (if connected) user positions in parallel.
+    const [r, myr] = await Promise.all([
+      fetch(STAKING_API + '/pools').then(x => x.json()),
+      addr ? fetch(STAKING_API + '/my-pool-positions/' + addr).then(x => x.json()).catch(() => null) : Promise.resolve(null),
+    ]);
+    if (!r?.success) throw new Error(r?.error || 'failed');
+    // Build poolId -> [userPositions] map (a wallet can have multiple receipts in one pool).
+    const myByPool = {};
+    if (myr?.success && Array.isArray(myr.positions)) {
+      for (const pos of myr.positions) {
+        (myByPool[pos.poolId] = myByPool[pos.poolId] || []).push(pos);
+      }
+    }
+    // Stop any prior ticker — we'll rebuild registrations during render.
+    _stCpClearTickRegistry('card');
+    if (!r.pools.length) {
+      list.innerHTML = '<div style="color:#64748b;font-family:monospace;padding:48px;text-align:center;grid-column:1/-1">No creator pools yet. Be the first to launch one!</div>';
+      return;
+    }
+    list.innerHTML = r.pools.map((p) => {
+      const ended = p.ended;
+      const remain = Math.max(0, p.endsAtMs - Date.now());
+      const durationMs = p.durationMs || (p.endsAtMs - (p.startedAtMs || (p.endsAtMs - 86400000))) || 86400000;
+      const durationDays = Math.max(0.001, durationMs / 86_400_000);
+      const elapsed = Date.now() - (p.startedAtMs || (p.endsAtMs - durationMs));
+      const pct = Math.min(100, Math.max(0, Math.round(elapsed / durationMs * 100)));
+      const parts = (p.memeType || '').split('::');
+      const symbol = parts[2] || parts[0] || 'MEME';
+      const agentPool   = (p.agentRewardRaw / 1e6) * 0.98;
+      const agentPerDay = agentPool / durationDays;
+      const memePerDay  = (p.memeTotalRaw / 1e6) / durationDays;
+      const totalStaked = p.totalStakedMeme / 1e6;
+      const aprAgent = totalStaked > 0
+        ? ((agentPool / totalStaked) * (365 / durationDays) * 100).toFixed(1) + '% AGENT/yr'
+        : 'n/a (no stakers yet)';
+      const fmtN = (v, d=0) => v.toLocaleString(undefined, {maximumFractionDigits: d});
+      const uid = 'ecc_' + p.poolId.slice(-8);
+      return `
+        <div class="cp-pool-card">
+          <div class="cp-pool-header">
+            <div>
+              <div class="cp-pool-symbol">${symbol}</div>
+              <div class="cp-pool-id">${_stShortAddr(p.poolId)}</div>
+              <div style="font-family:monospace;font-size:0.7rem;color:#64748b">creator: ${_stShortAddr(p.creator)}</div>
+            </div>
+            <span class="cp-pool-badge ${ended ? 'ended' : 'active'}">${ended ? 'ENDED' : 'ACTIVE'}</span>
+          </div>
+          <div style="margin-bottom:4px;display:flex;justify-content:space-between">
+            <span style="font-family:monospace;font-size:0.68rem;color:#64748b">${ended ? 'pool ended' : _stTimeLeft(remain) + ' left'}</span>
+            <span style="font-family:monospace;font-size:0.68rem;color:#64748b">${pct}% elapsed</span>
+          </div>
+          <div class="cp-progress-bar" style="margin-bottom:14px"><div class="cp-progress-fill" style="width:${pct}%"></div></div>
+          <div class="cp-stats-grid">
+            <div class="cp-stat-item"><div class="cp-stat-label">AGENT reward left</div><div class="cp-stat-val cyan">${_stFmt(p.agentRewardLeft)}</div></div>
+            <div class="cp-stat-item"><div class="cp-stat-label">Meme reward left</div><div class="cp-stat-val green">${_stFmt(p.memeRewardLeft)}</div></div>
+            <div class="cp-stat-item"><div class="cp-stat-label">AGENT / day</div><div class="cp-stat-val">${agentPerDay > 0 ? fmtN(agentPerDay) : '—'}</div></div>
+            <div class="cp-stat-item"><div class="cp-stat-label">${symbol} / day</div><div class="cp-stat-val">${memePerDay > 0 ? fmtN(memePerDay) : '—'}</div></div>
+            <div class="cp-stat-item"><div class="cp-stat-label">Total staked</div><div class="cp-stat-val">${fmtN(totalStaked)} ${symbol}</div></div>
+            <div class="cp-stat-item"><div class="cp-stat-label">Stakers</div><div class="cp-stat-val">${p.totalStakers}</div></div>
+          </div>
+          <div style="font-family:monospace;font-size:0.75rem;color:#64748b;margin-bottom:12px">
+            Est. AGENT yield (current stake): <span style="color:#10b981">${aprAgent}</span>
+          </div>
+          ${!ended ? `
+          <div class="cp-earn-calc">
+            <div class="cp-earn-calc-label">◈ IF I STAKE &hellip;</div>
+            <div class="cp-earn-calc-row">
+              <input class="cp-earn-calc-input" type="number" min="0" placeholder="amount" id="${uid}"
+                     oninput="cpCalcEarn('${uid}',${p.totalStakedMeme},${p.agentRewardLeft},${p.memeRewardLeft},${Math.max(0.001,remain/86400000)},'${symbol}')">
+              <span style="font-family:monospace;font-size:0.78rem;color:#64748b">per day:</span>
+              <span class="cp-earn-calc-result" id="${uid}_res">type amount &rarr;</span>
+            </div>
+          </div>` : ''}
+          ${(myByPool[p.poolId] || []).map((mp) => {
+            const sharePct = (Number(p.totalStakedMeme) > 0)
+              ? (Number(mp.stakedMemeRaw) / Number(p.totalStakedMeme) * 100).toFixed(3)
+              : '—';
+            const fetchedAt = myr?.fetchedAtMs || Date.now();
+            return `
+            <div class="cp-card-yourpos">
+              <div class="cp-card-yourpos-title">◈ YOUR POSITION</div>
+              <div>Stake: <b>${fmtN(Number(mp.stakedMemeRaw)/1e6, 2)} ${symbol}</b> &middot; <b>${sharePct}%</b> of pool</div>
+              <div style="margin-top:4px">Claimable:
+                <b class="cp-mypos-tick-agent" data-cp-tick="card"
+                   data-pending-raw="${mp.pendingAgentRaw}"
+                   data-rate-raw="${mp.agentPerSecondRaw}"
+                   data-fetched-at="${fetchedAt}"
+                   data-decimals="6">${_stFmt(mp.pendingAgentRaw)}</b> AGENT
+                + <b class="cp-mypos-tick" data-cp-tick="card"
+                   data-pending-raw="${mp.pendingMemeRaw}"
+                   data-rate-raw="${mp.memePerSecondRaw}"
+                   data-fetched-at="${fetchedAt}"
+                   data-decimals="6">${_stFmt(mp.pendingMemeRaw)}</b> ${symbol}
+              </div>
+              ${ended ? '<div class="cp-mypos-warn">⚠ Pool ended — claim &amp; unstake before creator sweeps unclaimed rewards.</div>' : ''}
+              <div class="cp-card-yourpos-actions">
+                <button onclick="stClaimPool(this,'${p.poolId}','${mp.receiptId}','${mp.memeType}')"
+                        ${BigInt(mp.pendingAgentRaw) > 0n || BigInt(mp.pendingMemeRaw) > 0n ? '' : 'disabled'}>CLAIM</button>
+                <button onclick="stUnstakePool(this,'${p.poolId}','${mp.receiptId}','${mp.memeType}')"
+                        ${ended ? '' : 'disabled'}>UNSTAKE</button>
+              </div>
+            </div>`;
+          }).join('')}
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button onclick="stOpenJoinPool('${p.poolId}','${p.memeType}',${p.totalStakedMeme},${p.agentRewardLeft},${p.memeRewardLeft},${p.endsAtMs},${p.totalStakers})"
+                    ${ended ? 'disabled' : ''} class="btn-cyan" style="flex:1;padding:10px;font-size:0.82rem">${ended ? 'POOL ENDED' : (myByPool[p.poolId] ? 'ADD MORE' : 'JOIN POOL')}</button>
+          </div>
+        </div>`;
+    }).join('');
+    _stCpStartTickerIfNeeded();
+  } catch (e) {
+    list.innerHTML = '<div style="color:#ff465a;font-family:monospace;padding:24px;grid-column:1/-1">Failed to load: ' + e.message + '</div>';
+  }
+}
+
+// ─── LEADERBOARD ─────────────────────────────────────────────────
+async function _stRenderLeaderboard() {
+  const rows = document.getElementById('stBoardRows');
+  rows.innerHTML = '<div style="color:#64748b;font-family:monospace;padding:24px;text-align:center">Loading…</div>';
+  try {
+    const r = await fetch(STAKING_API + '/leaderboard?limit=20').then(x => x.json());
+    if (!r?.success) throw new Error(r?.error || 'failed');
+    if (!r.leaderboard.length) {
+      rows.innerHTML = '<div style="color:#64748b;font-family:monospace;padding:48px;text-align:center">No stakers yet.</div>';
+      return;
+    }
+    rows.innerHTML = r.leaderboard.map((s) => {
+      const top5 = s.rank <= 5;
+      const medal = ['🥇','🥈','🥉','4️⃣','5️⃣'][s.rank - 1] || '';
+      return `
+        <div class="st-row" style="${top5 ? 'border-color:rgba(255,200,100,0.3);background:rgba(255,200,100,0.04)' : ''}">
+          <div>
+            <div class="st-row-meta">
+              ${medal} #${s.rank} · <b>${_stShortAddr(s.wallet)}</b>
+              · staked <b>${_stFmt(s.totalStakedRaw)}</b> AGENT
+            </div>
+            <div class="st-row-meta" style="font-size:0.75rem;color:#64748b;margin-top:4px">
+              leaderboard score: ${_stFmt(s.weightedScore)} · ${s.receiptCount} receipt${s.receiptCount === 1 ? '' : 's'}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    rows.innerHTML = '<div style="color:#ff465a;font-family:monospace;padding:24px">Failed: ' + e.message + '</div>';
+  }
+}
+
+// ─── FEED ────────────────────────────────────────────────────────
+async function _stRenderFeed() {
+  const rows = document.getElementById('stFeedRows');
+  rows.innerHTML = '<div style="color:#64748b;font-family:monospace;padding:24px;text-align:center">Loading…</div>';
+  try {
+    const r = await fetch(STAKING_API + '/feed?limit=100').then(x => x.json());
+    if (!r?.success) throw new Error(r?.error || 'failed');
+    if (!r.events.length) {
+      rows.innerHTML = '<div style="color:#64748b;font-family:monospace;padding:48px;text-align:center">No events yet.</div>';
+      return;
+    }
+    rows.innerHTML = r.events.map((e) => {
+      if (e.kind === 'topup') {
+        const cls = e.label === 'creator_pool_2pct' ? 'creator_pool_2pct' : '';
+        return `
+          <div class="st-feed-row ${cls}">
+            <span><span class="st-feed-amt">+${_stFmt(e.amount)}</span> AGENT
+              · <span class="st-feed-label">${e.label}</span>
+              · from ${_stShortAddr(e.fundedBy)}</span>
+            <span style="color:#64748b;font-size:0.7rem">${_stTimeAgo(e.ts)}</span>
+          </div>`;
+      } else if (e.kind === 'airdrop_top5') {
+        return `
+          <div class="st-feed-row airdrop">
+            <span><span class="st-feed-amt">${_stFmt(e.total)}</span> AGENT
+              · <span class="st-feed-label">top-5 airdrop</span>
+              · ${e.recipients.length} recipients</span>
+            <span style="color:#64748b;font-size:0.7rem">${_stTimeAgo(e.ts)}</span>
+          </div>`;
+      }
+      return '';
+    }).join('');
+  } catch (e) {
+    rows.innerHTML = '<div style="color:#ff465a;font-family:monospace;padding:24px">Failed: ' + e.message + '</div>';
+  }
+}
+
+// ─── ADMIN: TOPUP ────────────────────────────────────────────────
+window.stAdminTopup = async function () {
+  const amount = parseFloat(document.getElementById('stAdminAmount').value);
+  const label = document.getElementById('stAdminLabel').value;
+  if (!(amount > 0)) { _stStatus('stAdminTopupStatus', '⚠ amount required', '#ffc864'); return; }
+  const amountRaw = (BigInt(Math.floor(amount * Number(AGENT_SCALE)))).toString();
+  _stStatus('stAdminTopupStatus', '⏳ Building tx…');
+  try {
+    const r = await fetch(STAKING_API + '/build-fund-router-tx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sender: window.connectedWallet?.address, amountRaw, label }),
+    }).then(x => x.json());
+    if (!r?.success) throw new Error(r?.error);
+    _stStatus('stAdminTopupStatus', '⏳ Sign in wallet…');
+    const result = await _stSignAndExec(r.txBytes);
+    _stStatus('stAdminTopupStatus', '✓ Topped up! tx: ' + _stShortAddr(result.digest), '#10b981');
+    document.getElementById('stAdminAmount').value = '';
+    setTimeout(() => { _stRenderStats(); _stRenderFeed(); }, 2000);
+  } catch (e) { _stStatus('stAdminTopupStatus', '✗ ' + e.message, '#ff465a'); }
+};
+
+window.stAdminLoadTop5 = async function () {
+  const preview = document.getElementById('stAdminTop5Preview');
+  preview.textContent = 'Loading top 5…';
+  try {
+    const r = await fetch(STAKING_API + '/leaderboard?limit=5').then(x => x.json());
+    if (!r?.success) throw new Error(r?.error);
+    if (r.leaderboard.length < 5) {
+      preview.textContent = `Only ${r.leaderboard.length} stakers indexed; need 5 to airdrop.`;
+      _stTop5Cache = [];
+      return;
+    }
+    _stTop5Cache = r.leaderboard.slice(0, 5).map((s) => s.wallet);
+    preview.textContent = r.leaderboard.slice(0, 5)
+      .map((s, i) => `${['🥇','🥈','🥉','4️⃣','5️⃣'][i]} ${s.wallet}  (${_stFmt(s.totalStakedRaw)} AGENT, score ${_stFmt(s.weightedScore)})`)
+      .join('\n');
+  } catch (e) { preview.textContent = 'Failed: ' + e.message; _stTop5Cache = []; }
+};
+
+window.stAdminAirdrop = async function () {
+  if (_stTop5Cache.length !== 5) { _stStatus('stAdminAirdropStatus', '⚠ Click LOAD TOP 5 first', '#ffc864'); return; }
+  const amount = parseFloat(document.getElementById('stAdminAirdropAmount').value);
+  if (!(amount > 0)) { _stStatus('stAdminAirdropStatus', '⚠ amount required', '#ffc864'); return; }
+  const amountRaw = (BigInt(Math.floor(amount * Number(AGENT_SCALE)))).toString();
+  if (!confirm(`Airdrop ${amount} AGENT split 30/25/20/15/10 to:\n${_stTop5Cache.join('\n')}\n\nProceed?`)) return;
+  _stStatus('stAdminAirdropStatus', '⏳ Building tx…');
+  try {
+    const r = await fetch(STAKING_API + '/build-airdrop-top5-tx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sender: window.connectedWallet?.address, amountRaw, recipients: _stTop5Cache }),
+    }).then(x => x.json());
+    if (!r?.success) throw new Error(r?.error);
+    _stStatus('stAdminAirdropStatus', '⏳ Sign in wallet…');
+    const result = await _stSignAndExec(r.txBytes);
+    _stStatus('stAdminAirdropStatus', '✓ Airdropped! tx: ' + _stShortAddr(result.digest), '#10b981');
+    document.getElementById('stAdminAirdropAmount').value = '';
+    setTimeout(() => { _stRenderStats(); _stRenderFeed(); }, 2000);
+  } catch (e) { _stStatus('stAdminAirdropStatus', '✗ ' + e.message, '#ff465a'); }
+};
+
+// ─── CREATE POOL MODAL ───────────────────────────────────────
+window.stOpenCreatePoolModal = function () {
+  if (!window.connectedWallet?.address) { alert('Connect wallet first'); return; }
+  document.getElementById('stCreatePoolModal').style.display = '';
+  cpUpdatePreview();
+};
+window.stCloseCreatePoolModal = function () {
+  document.getElementById('stCreatePoolModal').style.display = 'none';
+};
+
+window.cpUpdatePreview = function () {
+  const agent = parseFloat(document.getElementById('stCpAgent').value) || 0;
+  const meme  = parseFloat(document.getElementById('stCpMeme').value) || 0;
+  const days  = parseFloat(document.getElementById('stCpDays').value) || 0;
+  const memeType = (document.getElementById('stCpMemeType').value || '').trim();
+  const setReq = (id, ok, msg) => { const el = document.getElementById(id); if (!el) return; el.textContent = (ok ? '✓ ' : '✗ ') + msg; el.className = 'cp-req-badge ' + (ok ? 'cp-req-pass' : 'cp-req-fail'); };
+  setReq('cpReqMemeType', memeType.includes('::'), 'type required (0xPKG::module::SYMBOL)');
+  setReq('cpReqAgent', agent >= 500_000, 'min 500,000 AGENT');
+  const memeFloor = Math.max(1_000_000, agent * 3);
+  setReq('cpReqMeme', meme >= memeFloor, `min ${memeFloor.toLocaleString()} meme (max(1M, 3×AGENT))`);
+  setReq('cpReqDays', days >= 1, 'min 1 day');
+  const fmt = v => v <= 0 ? '—' : v.toLocaleString(undefined, {maximumFractionDigits:1});
+  const agentPool   = agent * 0.98;
+  const agentGlobal = agent * 0.02;
+  const agentDay    = days > 0 ? agentPool / days : 0;
+  const memeDay     = days > 0 ? meme / days : 0;
+  const annAgent    = days > 0 ? agentPool * (365 / days) : 0;
+  const apr1m       = annAgent > 0 ? (annAgent / 1_000_000 * 100).toFixed(2) + '% AGENT yield/yr' : '—';
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('cpPrevAgentPool',   fmt(agentPool)   + ' AGENT');
+  set('cpPrevAgentGlobal', fmt(agentGlobal) + ' AGENT');
+  set('cpPrevAgentDay',    fmt(agentDay)    + ' AGENT');
+  set('cpPrevMemeDay',     fmt(memeDay)     + ' meme');
+  set('cpPrevApr',         apr1m);
+};
+
+window.cpCalcEarn = function (uid, totalStakedRaw, agentLeftRaw, memeLeftRaw, durationDays, symbol) {
+  const el  = document.getElementById(uid);
+  const res = document.getElementById(uid + '_res');
+  if (!el || !res) return;
+  const stakeAmt = parseFloat(el.value) || 0;
+  if (stakeAmt <= 0) { res.innerHTML = 'type amount →'; return; }
+  const stakeRaw  = stakeAmt * 1e6;
+  const newTotal  = Number(totalStakedRaw) + stakeRaw;
+  const share     = stakeRaw / newTotal;
+  const agentDay  = (Number(agentLeftRaw) / 1e6) * share / durationDays;
+  const memeDay   = (Number(memeLeftRaw)  / 1e6) * share / durationDays;
+  const fmt = v => v.toLocaleString(undefined, {maximumFractionDigits:2});
+  res.innerHTML = `<b>${fmt(agentDay)} AGENT</b> + <b style="color:var(--cyan)">${fmt(memeDay)} ${symbol || 'meme'}</b>`;
+};
+
+window.cpToggleExplainer = function (btn) {
+  const body = btn.closest('.cp-explainer').querySelector('.cp-explainer-body');
+  const chev = btn.querySelector('.cp-chevron');
+  const open = getComputedStyle(body).display !== 'none';
+  body.style.display = open ? 'none' : '';
+  chev.classList.toggle('open', !open);
+};
+
+window.stDoCreatePool = async function () {
+  const memeType = document.getElementById('stCpMemeType').value.trim();
+  const agent = parseFloat(document.getElementById('stCpAgent').value);
+  const meme  = parseFloat(document.getElementById('stCpMeme').value);
+  const days  = parseFloat(document.getElementById('stCpDays').value);
+  if (!memeType || !memeType.includes('::')) { _stStatus('stCpStatus', '⚠ memeType required (0xPKG::mod::SYM)', '#ffc864'); return; }
+  if (!(agent >= 500_000)) { _stStatus('stCpStatus', '⚠ AGENT must be ≥ 500,000', '#ffc864'); return; }
+  if (!(meme >= 1_000_000)) { _stStatus('stCpStatus', '⚠ Meme must be ≥ 1,000,000', '#ffc864'); return; }
+  if (!(days >= 1)) { _stStatus('stCpStatus', '⚠ Duration must be ≥ 1 day', '#ffc864'); return; }
+  const memeFloor = Math.max(1_000_000, agent * 3);
+  if (meme < memeFloor) { _stStatus('stCpStatus', `⚠ Meme must be ≥ ${memeFloor.toLocaleString()} (max(1M, 3×AGENT))`, '#ffc864'); return; }
+  const agentRaw  = (BigInt(Math.floor(agent * Number(AGENT_SCALE)))).toString();
+  const memeRaw   = (BigInt(Math.floor(meme  * Number(AGENT_SCALE)))).toString();
+  const durationMs = Math.floor(days * 86_400_000);
+  _stStatus('stCpStatus', '⏳ Building tx…');
+  try {
+    const r = await fetch(STAKING_API + '/build-create-pool-tx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sender: window.connectedWallet.address, agentRaw, memeRaw, memeType, durationMs }),
+    }).then(x => x.json());
+    if (!r?.success) throw new Error(r?.error);
+    _stStatus('stCpStatus', '⏳ Sign in wallet…');
+    const result = await _stSignAndExec(r.txBytes);
+    _stStatus('stCpStatus', '✓ Pool created! tx: ' + _stShortAddr(result.digest), '#10b981');
+    setTimeout(() => { stCloseCreatePoolModal(); _stRenderPools(); _stRenderStats(); }, 2000);
+  } catch (e) { _stStatus('stCpStatus', '✗ ' + e.message, '#ff465a'); }
+};
+
+// ─── JOIN POOL MODAL ───────────────────────────────────────
+let _jpCurrentPool = null;
+
+window.stOpenJoinPool = async function (poolId, memeType, totalStakedRaw, agentLeftRaw, memeLeftRaw, endsAtMs, stakers) {
+  if (!window.connectedWallet?.address) { alert('Connect wallet first'); return; }
+  _jpCurrentPool = { poolId, memeType, totalStakedRaw, agentLeftRaw, memeLeftRaw, endsAtMs };
+  const parts      = (memeType || '').split('::');
+  const symbol     = parts[2] || parts[0] || 'MEME';
+  const durationMs   = Math.max(1, endsAtMs - Date.now());
+  const durationDays = durationMs / 86_400_000;
+  const agentPerDay  = (agentLeftRaw / 1e6) / durationDays;
+  const memePerDay   = (memeLeftRaw  / 1e6) / durationDays;
+  const fmt = (v, d=0) => v.toLocaleString(undefined, {maximumFractionDigits: d});
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('jpPoolId',      _stShortAddr(poolId));
+  set('jpMemeSymbol',  symbol);
+  set('jpTotalStaked', fmt(totalStakedRaw / 1e6) + ' ' + symbol);
+  set('jpStakers',     stakers);
+  set('jpTimeLeft',    _stTimeLeft(Math.max(0, endsAtMs - Date.now())));
+  set('jpAgentDay',    fmt(agentPerDay, 1) + ' AGENT');
+  set('jpMemeDay',     fmt(memePerDay,  1) + ' ' + symbol);
+  document.getElementById('jpAmount').value = '';
+  document.getElementById('jpProjection').style.display = 'none';
+  document.getElementById('stJpStatus').textContent = '';
+  // Async-fetch user meme balance for this pool
+  const _jpSymbol = symbol; const _jpMemeType = memeType;
+  const jpBal = document.getElementById('jpUserBalance');
+  const jpFetch = document.getElementById('jpBalanceFetching');
+  if (jpBal) jpBal.textContent = '…';
+  if (jpFetch) jpFetch.textContent = 'fetching…';
+  window._jpMaxMeme = null;
+  (async () => {
+    try {
+      let cli = window.suiClientInstance;
+      if (!cli) { let w=0; while (!window.suiClientInstance && w<4000){await new Promise(r=>setTimeout(r,200));w+=200;} cli=window.suiClientInstance; }
+      if (!cli) throw new Error('client unavailable');
+      const coins = await cli.getCoins({ owner: window.connectedWallet.address, coinType: _jpMemeType });
+      const total = (coins.data||[]).reduce((s,c) => s + BigInt(c.balance), 0n);
+      const fmt = v => v.toLocaleString(undefined,{maximumFractionDigits:2});
+      const human = fmt(Number(total) / 1e6);
+      window._jpMaxMeme = Number(total) / 1e6;
+      if (jpBal) jpBal.textContent = human + ' ' + _jpSymbol;
+      if (jpFetch) jpFetch.textContent = '';
+    } catch (e) {
+      if (jpBal) jpBal.textContent = 'unavailable';
+      if (jpFetch) jpFetch.textContent = '';
+    }
+  })();
+  document.getElementById('stJoinPoolModal').style.display = '';
+};
+
+window.stCloseJoinPoolModal = function () {
+  document.getElementById('stJoinPoolModal').style.display = 'none';
+};
+
+window.jpSetMax = function () {
+  const input = document.getElementById('jpAmount');
+  if (window._jpMaxMeme) { input.value = window._jpMaxMeme; jpUpdateProjection(); }
+  else { input.placeholder = 'enter your meme balance'; input.focus(); }
+};
+
+window.jpUpdateProjection = function () {
+  if (!_jpCurrentPool) return;
+  const { totalStakedRaw, agentLeftRaw, memeLeftRaw, endsAtMs, memeType } = _jpCurrentPool;
+  const parts  = (memeType || '').split('::');
+  const symbol = parts[2] || 'MEME';
+  const stakeAmt = parseFloat(document.getElementById('jpAmount').value) || 0;
+  const proj = document.getElementById('jpProjection');
+  if (stakeAmt <= 0) { proj.style.display = 'none'; return; }
+  proj.style.display = '';
+  const stakeRaw    = stakeAmt * 1e6;
+  const newTotal    = Number(totalStakedRaw) + stakeRaw;
+  const share       = stakeRaw / newTotal;
+  const durationDays = Math.max(0.001, (endsAtMs - Date.now()) / 86_400_000);
+  const agentDay    = (Number(agentLeftRaw) / 1e6) * share / durationDays;
+  const memeDay     = (Number(memeLeftRaw)  / 1e6) * share / durationDays;
+  const agentTotal  = (Number(agentLeftRaw) / 1e6) * share;
+  const memeTotal   = (Number(memeLeftRaw)  / 1e6) * share;
+  const fmt = (v, d=2) => v.toLocaleString(undefined, {maximumFractionDigits: d});
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('jpProjAgentDay',   fmt(agentDay)   + ' AGENT');
+  set('jpProjMemeDay',    fmt(memeDay)    + ' ' + symbol);
+  set('jpProjAgentTotal', fmt(agentTotal) + ' AGENT');
+  set('jpProjMemeTotal',  fmt(memeTotal)  + ' ' + symbol);
+  set('jpProjShare',      (share * 100).toFixed(4) + '%');
+};
+
+window.stDoJoinPool = async function () {
+  if (!_jpCurrentPool) return;
+  const { poolId, memeType } = _jpCurrentPool;
+  const amt = parseFloat(document.getElementById('jpAmount').value);
+  if (!(amt > 0)) { _stStatus('stJpStatus', '⚠ Amount must be > 0', '#ffc864'); return; }
+  const amountRaw = (BigInt(Math.floor(amt * Number(AGENT_SCALE)))).toString();
+  _stStatus('stJpStatus', '⏳ Building tx…');
+  try {
+    const r = await fetch(STAKING_API + '/build-join-pool-tx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sender: window.connectedWallet.address, poolId, memeType, amountRaw }),
+    }).then(x => x.json());
+    if (!r?.success) throw new Error(r?.error);
+    _stStatus('stJpStatus', '⏳ Sign in wallet…');
+    await _stSignAndExec(r.txBytes);
+    _stStatus('stJpStatus', '✓ Joined pool!', '#10b981');
+    setTimeout(() => { stCloseJoinPoolModal(); _stRenderPools(); }, 1800);
+  } catch (e) { _stStatus('stJpStatus', '✗ ' + e.message, '#ff465a'); }
+};
+
+// ─── sign + execute helper (uses the existing v7.0.0 wallet plumbing) ───────
+async function _stSignAndExec(txBytesB64) {
+  let Tx = window.__SuiTransaction;
+  let cli = window.suiClientInstance;
+  if (!Tx || !cli) {
+    let w = 0;
+    while ((!window.__SuiTransaction || !window.suiClientInstance) && w < 6000) {
+      await new Promise((r) => setTimeout(r, 300));
+      w += 300;
+    }
+    Tx = window.__SuiTransaction;
+    cli = window.suiClientInstance;
+  }
+  if (!Tx) throw new Error('Sui SDK not loaded — refresh the page.');
+  if (typeof window.signAndExecuteTx !== 'function') {
+    throw new Error('signAndExecuteTx helper missing — wallet plumbing not loaded.');
+  }
+  const bytes = Uint8Array.from(atob(txBytesB64), (c) => c.charCodeAt(0));
+  const tx = Tx.from(bytes);
+  const result = await window.signAndExecuteTx(tx);
+  if (result?.effects?.status?.status === 'failure') {
+    throw new Error(result.effects.status.error || 'on-chain failure');
+  }
+  if (cli && result?.digest) {
+    try { await cli.waitForTransaction({ digest: result.digest, timeout: 30000 }); } catch (_) {}
+  }
+  return result;
+}
+
+// ─── master refresh + admin gating ───────────────────────────────
+window.stRefreshAll = function () {
+  _stRenderStats();
+  _stRenderWalletBal();
+  _stFetchIndexerStatus();
+  if (_stCurrentTab === 'mine')  _stRenderMyStakes();
+  if (_stCurrentTab === 'pools') _stRenderPools();
+  if (_stCurrentTab === 'board') _stRenderLeaderboard();
+  if (_stCurrentTab === 'feed')  _stRenderFeed();
+  // Admin tab visibility.
+  const isAdmin = String(window.connectedWallet?.address || '').toLowerCase() === STAKING_ADMIN_ADDR.toLowerCase();
+  const adminBtn = document.getElementById('stAdminTabBtn');
+  if (adminBtn) adminBtn.style.display = isAdmin ? '' : 'none';
+};
+
+// Auto-refresh every 60s while staking tab is active.
+function _stMaybeStartTimer() {
+  const onStaking = location.hash.startsWith('#/staking');
+  if (onStaking && !_stRefreshTimer) {
+    _stRefreshTimer = setInterval(window.stRefreshAll, 60_000);
+    // Re-render the badge every 5s using the cached snapshot so the "Xs ago"
+    // text ticks visibly between full refreshes (and a stuck indexer turns
+    // yellow/red without waiting a full minute for the next stRefreshAll).
+    if (!_stIndexerBadgeTimer) {
+      _stIndexerBadgeTimer = setInterval(_stRenderIndexerBadge, 5_000);
+    }
+    window.stRefreshAll();
+    window.stPickTier(0);
+  } else if (!onStaking && _stRefreshTimer) {
+    clearInterval(_stRefreshTimer);
+    _stRefreshTimer = null;
+    if (_stIndexerBadgeTimer) {
+      clearInterval(_stIndexerBadgeTimer);
+      _stIndexerBadgeTimer = null;
+    }
+    _stCpStopTicker();
+  }
+}
+window.addEventListener('hashchange', _stMaybeStartTimer);
+window.addEventListener('load', () => setTimeout(_stMaybeStartTimer, 500));
+
+// Refresh on wallet connect/disconnect (hook into existing events if any).
+const _origConnect = window.connectWallet;
+if (typeof _origConnect === 'function') {
+  window.connectWallet = async function () {
+    const r = await _origConnect.apply(this, arguments);
+    setTimeout(window.stRefreshAll, 1000);
+    return r;
+  };
+}
 
 </script>
 </body>
