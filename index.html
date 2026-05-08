@@ -2047,13 +2047,24 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
         <div id="stMyPoolPositions" style="margin-top:36px;display:none">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:12px">
             <div class="font-mono text-xs text-slate-500 tracking-widest">◈ YOUR CREATOR POOL POSITIONS</div>
-            <button id="stClaimAllBtn" class="st-claim-all-btn" onclick="stClaimAllPools()" disabled>CLAIM ALL</button>
           </div>
-          <div id="stMyPoolHeadline" style="font-family:monospace;font-size:0.82rem;color:#94a3b8;margin-bottom:14px;padding:10px 14px;background:rgba(0,245,255,0.04);border-left:3px solid var(--cyan);border-radius:4px">—</div>
+          <!-- v8.5 hero strip: condensed headline + key stats + CLAIM ALL -->
+          <div class="cp-hero">
+            <div class="cp-hero-msg" id="stMyPoolHeadline">—</div>
+            <div class="cp-hero-stat">
+              <div class="cp-hero-stat-label" data-tip="How many separate creator-pool positions you currently hold">POSITIONS</div>
+              <div class="cp-hero-stat-val" id="stMyPoolCount">—</div>
+              <div class="cp-hero-stat-sub">pools joined</div>
+            </div>
+            <div class="cp-hero-stat">
+              <div class="cp-hero-stat-label" data-tip="Total AGENT you can claim right now across all creator pools">CLAIMABLE</div>
+              <div class="cp-hero-stat-val cyan cp-mypos-tick-agent" id="stMyPoolPendingAgent">—</div>
+              <div class="cp-hero-stat-sub">AGENT · live</div>
+            </div>
+            <button id="stClaimAllBtn" class="cp-hero-cta" onclick="stClaimAllPools()" disabled>CLAIM ALL</button>
+          </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px">
-            <div class="st-stat"><div class="st-stat-label">POOLS JOINED</div><div class="st-stat-value" id="stMyPoolCount">—</div><div class="st-stat-sub">creator pools</div></div>
-            <div class="st-stat"><div class="st-stat-label">CLAIMABLE NOW</div><div class="st-stat-value cp-mypos-tick-agent" id="stMyPoolPendingAgent">—</div><div class="st-stat-sub">AGENT (live)</div></div>
-            <div class="st-stat"><div class="st-stat-label">EARNING RATE</div><div class="st-stat-value" id="stMyPoolDailyAgent" style="color:#10b981">—</div><div class="st-stat-sub">AGENT / day across all pools</div></div>
+            <div class="st-stat"><div class="st-stat-label" data-tip="Sum of AGENT rewards earned per day across all your active positions, based on your share of each pool">EARNING RATE</div><div class="st-stat-value" id="stMyPoolDailyAgent" style="color:#10b981">—</div><div class="st-stat-sub">AGENT / day across all pools</div></div>
           </div>
           <div id="stMyPoolRows"></div>
         </div>
@@ -2087,8 +2098,28 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
           </div>
         </div>
       </div>
+      <div class="cp-controls">
+        <input id="stPoolsSearch" class="cp-search" type="text" placeholder="🔍 Search by symbol…" oninput="stPoolsApplyFilter()" />
+        <div class="cp-chip-row" id="stPoolsChips">
+          <span class="cp-chip active" data-st-chip="all"     onclick="stPoolsSetStatus('all',this)">ALL</span>
+          <span class="cp-chip"        data-st-chip="active"  onclick="stPoolsSetStatus('active',this)">ACTIVE</span>
+          <span class="cp-chip"        data-st-chip="ended"   onclick="stPoolsSetStatus('ended',this)">ENDED</span>
+          <span class="cp-chip"        data-st-chip="mine"    onclick="stPoolsSetStatus('mine',this)">JOINED BY ME</span>
+        </div>
+        <select id="stPoolsSort" class="cp-sort-select" onchange="stPoolsApplyFilter()">
+          <option value="newest">Newest first</option>
+          <option value="yield">Highest yield</option>
+          <option value="tvl">Most staked (TVL)</option>
+          <option value="ending">Ending soonest</option>
+        </select>
+        <span class="cp-result-count" id="stPoolsResultCount"></span>
+      </div>
       <div id="stPoolsList" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-top:16px">
-        <div style="text-align:center;padding:48px;color:#64748b;font-family:monospace;grid-column:1/-1">Loading…</div>
+        <div class="cp-skel-grid" style="grid-column:1/-1">
+          <div class="cp-skel-card"><div class="cp-skel-line" style="height:18px;width:40%"></div><div class="cp-skel-line" style="height:12px;width:60%"></div><div class="cp-skel-line" style="height:8px;width:100%;margin-top:18px"></div><div class="cp-skel-line" style="height:60px;width:100%;margin-top:14px"></div><div class="cp-skel-line" style="height:60px;width:100%;margin-top:8px"></div></div>
+          <div class="cp-skel-card"><div class="cp-skel-line" style="height:18px;width:40%"></div><div class="cp-skel-line" style="height:12px;width:60%"></div><div class="cp-skel-line" style="height:8px;width:100%;margin-top:18px"></div><div class="cp-skel-line" style="height:60px;width:100%;margin-top:14px"></div><div class="cp-skel-line" style="height:60px;width:100%;margin-top:8px"></div></div>
+          <div class="cp-skel-card"><div class="cp-skel-line" style="height:18px;width:40%"></div><div class="cp-skel-line" style="height:12px;width:60%"></div><div class="cp-skel-line" style="height:8px;width:100%;margin-top:18px"></div><div class="cp-skel-line" style="height:60px;width:100%;margin-top:14px"></div><div class="cp-skel-line" style="height:60px;width:100%;margin-top:8px"></div></div>
+        </div>
       </div>
     </div>
 
@@ -2372,6 +2403,105 @@ pnpm start <span class="str">--characters="characters/agent-trader.json"</span>
   .st-claim-all-btn { padding:8px 16px;font-family:monospace;font-size:0.78rem;letter-spacing:0.08em;background:linear-gradient(90deg,#00f5ff,#10b981);color:#04101a;border:none;border-radius:6px;cursor:pointer;font-weight:700; }
   .st-claim-all-btn:disabled { opacity:0.35;cursor:not-allowed; }
   .st-claim-all-btn.signing { opacity:0.6;cursor:wait; }
+  /* ── creator-pool LEADERBOARD (v8.4) ──────────────────────────── */
+  .cp-board-toggle { width:100%;margin-top:8px;padding:8px;font-family:monospace;font-size:0.74rem;letter-spacing:0.06em;background:rgba(100,116,139,0.08);border:1px solid rgba(100,116,139,0.2);color:#94a3b8;border-radius:4px;cursor:pointer; }
+  .cp-board-toggle:hover { background:rgba(0,245,255,0.06);border-color:rgba(0,245,255,0.25);color:var(--cyan); }
+  .cp-board { margin-top:8px;background:rgba(0,0,0,0.25);border:1px solid rgba(100,116,139,0.18);border-radius:6px;padding:10px;font-family:monospace;font-size:0.72rem;color:#94a3b8; }
+  .cp-board-emit { display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px; }
+  .cp-board-emit-cell { background:rgba(0,245,255,0.04);border-radius:4px;padding:6px 8px; }
+  .cp-board-emit-label { font-size:0.6rem;letter-spacing:0.1em;color:#64748b;text-transform:uppercase; }
+  .cp-board-emit-val { color:#fff;font-size:0.86rem;margin-top:2px; }
+  .cp-board-emit-val.cyan { color:var(--cyan); }
+  .cp-board-emit-val.green { color:#10b981; }
+  .cp-board-table { width:100%;border-collapse:collapse;font-size:0.7rem; }
+  .cp-board-table th { text-align:left;color:#64748b;font-weight:400;letter-spacing:0.06em;padding:5px 6px;border-bottom:1px solid rgba(100,116,139,0.2);text-transform:uppercase;font-size:0.6rem; }
+  .cp-board-table td { padding:5px 6px;border-bottom:1px solid rgba(100,116,139,0.08);color:#cbd5e1; }
+  .cp-board-table tr.me { background:rgba(0,245,255,0.08); }
+  .cp-board-table tr.me td { color:var(--cyan); }
+  .cp-board-table td.rank { color:#64748b;width:24px; }
+  .cp-board-table td.rank.gold { color:#ffc864; }
+  .cp-board-table td.rank.silver { color:#cbd5e1; }
+  .cp-board-table td.rank.bronze { color:#c08457; }
+  .cp-board-table td.share { color:#10b981;font-variant-numeric:tabular-nums; }
+  .cp-board-table td.amt { font-variant-numeric:tabular-nums; }
+  .cp-board-foot { color:#64748b;font-size:0.62rem;margin-top:6px;text-align:right; }
+
+  /* ── v8.5 POLISH PASS ─────────────────────────────────────────── */
+  /* card hover glow */
+  .cp-pool-card { position:relative;overflow:hidden;transition:border-color 0.25s,background 0.25s,transform 0.25s,box-shadow 0.25s; }
+  .cp-pool-card:hover { border-color:rgba(0,245,255,0.55);background:rgba(0,245,255,0.06);transform:translateY(-2px);box-shadow:0 8px 30px -8px rgba(0,245,255,0.35); }
+  .cp-pool-card.ended:hover { border-color:rgba(255,200,100,0.45);box-shadow:0 8px 30px -8px rgba(255,200,100,0.25); }
+  .cp-pool-card .cp-glow { pointer-events:none;position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(0,245,255,0.06) 50%,transparent 70%);transform:translateX(-100%);transition:transform 0.7s; }
+  .cp-pool-card:hover .cp-glow { transform:translateX(100%); }
+  /* yield badge — honest "per 1k staked" rate */
+  .cp-yield-badge { display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:linear-gradient(90deg,rgba(0,245,255,0.12),rgba(16,185,129,0.12));border:1px solid rgba(0,245,255,0.35);font-family:monospace;font-size:0.66rem;letter-spacing:0.04em;color:var(--cyan);font-weight:700; }
+  .cp-yield-badge.muted { background:rgba(100,116,139,0.1);border-color:rgba(100,116,139,0.3);color:#94a3b8; }
+  .cp-yield-badge .y-amt { color:#fff; }
+  .cp-yield-badge .y-ctx { color:#94a3b8;font-weight:400; }
+  /* progress bar refresh */
+  .cp-progress-bar { height:6px;background:rgba(100,116,139,0.15);border-radius:999px;overflow:hidden; }
+  .cp-progress-fill { height:100%;background:linear-gradient(90deg,var(--cyan),#10b981);border-radius:999px;transition:width 0.4s; }
+  .cp-progress-fill.urgent { background:linear-gradient(90deg,#ffc864,#ff8a3c); }
+  .cp-progress-fill.critical { background:linear-gradient(90deg,#ff6a6a,#ff3030);animation:cp-pulse 1.5s ease-in-out infinite; }
+  .cp-progress-fill.ended { background:rgba(100,116,139,0.5); }
+  @keyframes cp-pulse { 0%,100%{opacity:1;} 50%{opacity:0.55;} }
+  /* tooltip on labels */
+  [data-tip] { position:relative;cursor:help;border-bottom:1px dashed rgba(100,116,139,0.4); }
+  [data-tip]:hover::after { content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#04101a;color:#cbd5e1;padding:6px 10px;border:1px solid rgba(0,245,255,0.4);border-radius:4px;font-size:0.7rem;white-space:nowrap;font-family:monospace;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.4);pointer-events:none; }
+  /* pool list controls (search + filters + sort) */
+  .cp-controls { display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px;padding:12px 14px;background:rgba(0,245,255,0.03);border:1px solid rgba(0,245,255,0.12);border-radius:8px; }
+  .cp-search { flex:1;min-width:180px;padding:8px 12px;background:rgba(0,0,0,0.4);border:1px solid rgba(100,116,139,0.3);border-radius:6px;color:#fff;font-family:monospace;font-size:0.78rem; }
+  .cp-search:focus { outline:none;border-color:var(--cyan);background:rgba(0,0,0,0.6); }
+  .cp-search::placeholder { color:#64748b; }
+  .cp-chip-row { display:flex;flex-wrap:wrap;gap:6px; }
+  .cp-chip { padding:6px 12px;background:rgba(100,116,139,0.1);border:1px solid rgba(100,116,139,0.25);border-radius:999px;color:#94a3b8;font-family:monospace;font-size:0.7rem;letter-spacing:0.04em;cursor:pointer;transition:all 0.15s;user-select:none; }
+  .cp-chip:hover { color:var(--cyan);border-color:rgba(0,245,255,0.4); }
+  .cp-chip.active { background:linear-gradient(90deg,rgba(0,245,255,0.18),rgba(16,185,129,0.12));border-color:var(--cyan);color:#fff; }
+  .cp-sort-select { padding:7px 28px 7px 12px;background:rgba(0,0,0,0.4);border:1px solid rgba(100,116,139,0.3);border-radius:6px;color:#cbd5e1;font-family:monospace;font-size:0.74rem;cursor:pointer;appearance:none;background-image:linear-gradient(45deg,transparent 50%,#94a3b8 50%),linear-gradient(135deg,#94a3b8 50%,transparent 50%);background-position:calc(100% - 14px) 50%,calc(100% - 9px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat; }
+  .cp-result-count { font-family:monospace;font-size:0.7rem;color:#64748b;margin-left:auto; }
+  /* skeleton shimmer */
+  .cp-skel-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px; }
+  .cp-skel-card { background:rgba(0,245,255,0.02);border:1px solid rgba(100,116,139,0.18);border-radius:10px;padding:20px;height:340px;position:relative;overflow:hidden; }
+  .cp-skel-card::after { content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(0,245,255,0.05),transparent);transform:translateX(-100%);animation:cp-shimmer 1.4s infinite; }
+  .cp-skel-line { background:rgba(100,116,139,0.12);border-radius:4px;margin-bottom:10px; }
+  @keyframes cp-shimmer { 100%{transform:translateX(100%);} }
+  /* toasts */
+  .cp-toast-wrap { position:fixed;top:84px;right:24px;z-index:99999;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:380px; }
+  .cp-toast { background:#04101a;border:1px solid rgba(0,245,255,0.4);border-left:4px solid var(--cyan);border-radius:6px;padding:12px 14px;font-family:monospace;font-size:0.78rem;color:#cbd5e1;box-shadow:0 8px 32px rgba(0,0,0,0.5);pointer-events:auto;animation:cp-toast-in 0.25s ease-out;display:flex;align-items:flex-start;gap:10px;min-width:260px; }
+  .cp-toast.success { border-left-color:#10b981; }
+  .cp-toast.success .cp-toast-icon { color:#10b981; }
+  .cp-toast.error { border-left-color:#ff465a; }
+  .cp-toast.error .cp-toast-icon { color:#ff465a; }
+  .cp-toast.warn { border-left-color:#ffc864; }
+  .cp-toast.warn .cp-toast-icon { color:#ffc864; }
+  .cp-toast .cp-toast-icon { font-size:1.1rem;flex-shrink:0; }
+  .cp-toast .cp-toast-body { flex:1;line-height:1.4;word-break:break-word; }
+  .cp-toast .cp-toast-body a { color:var(--cyan);text-decoration:none;border-bottom:1px dotted; }
+  .cp-toast .cp-toast-close { color:#64748b;cursor:pointer;flex-shrink:0;font-size:1rem;line-height:1; }
+  .cp-toast .cp-toast-close:hover { color:#fff; }
+  .cp-toast.fading { animation:cp-toast-out 0.3s ease-in forwards; }
+  @keyframes cp-toast-in  { from{transform:translateX(120%);opacity:0;} to{transform:translateX(0);opacity:1;} }
+  @keyframes cp-toast-out { from{transform:translateX(0);opacity:1;} to{transform:translateX(120%);opacity:0;} }
+  /* hero strip */
+  .cp-hero { display:grid;grid-template-columns:1.6fr 1fr 1fr auto;gap:16px;align-items:center;padding:18px 22px;background:linear-gradient(135deg,rgba(0,245,255,0.08),rgba(16,185,129,0.05));border:1px solid rgba(0,245,255,0.3);border-radius:10px;margin-bottom:16px;position:relative;overflow:hidden; }
+  .cp-hero::before { content:'';position:absolute;inset:0;background:radial-gradient(circle at 20% 30%,rgba(0,245,255,0.15),transparent 50%);pointer-events:none; }
+  .cp-hero-msg { font-family:monospace;font-size:0.84rem;color:#cbd5e1;line-height:1.5;position:relative;z-index:1; }
+  .cp-hero-stat { text-align:center;position:relative;z-index:1; }
+  .cp-hero-stat-label { font-family:monospace;font-size:0.6rem;letter-spacing:0.14em;color:#64748b;text-transform:uppercase;margin-bottom:4px; }
+  .cp-hero-stat-val { font-family:monospace;font-size:1.4rem;font-weight:700;color:#fff; }
+  .cp-hero-stat-val.cyan { color:var(--cyan); }
+  .cp-hero-stat-val.green { color:#10b981; }
+  .cp-hero-stat-val.amber { color:#ffc864; }
+  .cp-hero-stat-sub { font-family:monospace;font-size:0.62rem;color:#64748b;margin-top:2px; }
+  .cp-hero-cta { padding:14px 24px;font-family:monospace;font-size:0.84rem;font-weight:700;letter-spacing:0.08em;background:linear-gradient(90deg,#00f5ff,#10b981);color:#04101a;border:none;border-radius:8px;cursor:pointer;position:relative;z-index:1;transition:transform 0.2s,box-shadow 0.2s; }
+  .cp-hero-cta:hover:not(:disabled) { transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,245,255,0.4); }
+  .cp-hero-cta:disabled { opacity:0.35;cursor:not-allowed;background:rgba(100,116,139,0.3);color:#64748b; }
+  @media (max-width:780px) { .cp-hero { grid-template-columns:1fr 1fr;gap:12px; } .cp-hero-msg { grid-column:1/-1; } .cp-hero-cta { grid-column:1/-1; } }
+  /* empty / no-results */
+  .cp-empty { grid-column:1/-1;padding:48px 24px;text-align:center;font-family:monospace;color:#64748b;background:rgba(0,245,255,0.02);border:1px dashed rgba(100,116,139,0.3);border-radius:10px; }
+  .cp-empty-icon { font-size:2.4rem;margin-bottom:12px;opacity:0.4; }
+  .cp-empty-title { color:#cbd5e1;font-size:0.92rem;margin-bottom:6px; }
+  .cp-empty-sub { font-size:0.74rem;line-height:1.5;max-width:340px;margin:0 auto; }
 </style>
 
 
@@ -7790,9 +7920,13 @@ window.stClaim = async function (receiptId) {
       body: JSON.stringify({ sender: window.connectedWallet.address, receiptId }),
     }).then(x => x.json());
     if (!r?.success) throw new Error(r?.error || 'build failed');
-    await _stSignAndExec(r.txBytes);
+    const res = await _stSignAndExec(r.txBytes);
+    if (typeof _stToast === 'function') _stToast('Rewards claimed', 'success', { txDigest: res?.digest });
     setTimeout(() => { _stRenderStats(); _stRenderMyStakes(); }, 2000);
-  } catch (e) { alert('Claim failed: ' + e.message); }
+  } catch (e) {
+    if (typeof _stToast === 'function') _stToast('Claim failed: ' + (e.message || e), 'error', { ttl: 8000 });
+    else alert('Claim failed: ' + e.message);
+  }
 };
 
 window.stUnstake = async function (receiptId) {
@@ -7805,9 +7939,13 @@ window.stUnstake = async function (receiptId) {
       body: JSON.stringify({ sender: window.connectedWallet.address, receiptId }),
     }).then(x => x.json());
     if (!r?.success) throw new Error(r?.error || 'build failed');
-    await _stSignAndExec(r.txBytes);
+    const res = await _stSignAndExec(r.txBytes);
+    if (typeof _stToast === 'function') _stToast('Unstaked — funds returned', 'success', { txDigest: res?.digest });
     setTimeout(() => { _stRenderStats(); _stRenderWalletBal(); _stRenderMyStakes(); }, 2000);
-  } catch (e) { alert('Unstake failed: ' + e.message); }
+  } catch (e) {
+    if (typeof _stToast === 'function') _stToast('Unstake failed: ' + (e.message || e), 'error', { ttl: 8000 });
+    else alert('Unstake failed: ' + e.message);
+  }
 };
 
 // ════════════════════════════════════════════════════════════════
@@ -7841,6 +7979,106 @@ function _stCpStopTicker() {
   if (_stCpTickTimer) { clearInterval(_stCpTickTimer); _stCpTickTimer = null; }
 }
 function _stCpClearTickRegistry(_scope) { /* registry lives in DOM, no action */ }
+
+// ─── creator-pool LEADERBOARD (v8.4) ─────────────────────────────
+// Toggles the inline leaderboard section under a pool card. First open
+// fetches /staking/pools/:id/leaderboard and renders ranked stakers +
+// daily AGENT/meme emissions to ALL stakers and per-row estimates.
+async function stCpToggleLeaderboard(btn, poolId) {
+  const box = document.querySelector(`[data-cp-board="${poolId}"]`);
+  if (!box) return;
+  if (box.style.display !== 'none') {
+    box.style.display = 'none';
+    btn.innerHTML = '📊 SHOW LEADERBOARD &amp; DAILY EMISSIONS';
+    return;
+  }
+  box.style.display = 'block';
+  btn.innerHTML = '▴ HIDE LEADERBOARD';
+  if (!box.dataset.loaded) {
+    box.innerHTML = '<div style="color:#64748b;text-align:center;padding:14px">Loading leaderboard…</div>';
+    try {
+      const r = await fetch(STAKING_API + '/pools/' + poolId + '/leaderboard?limit=50').then(x => x.json());
+      if (!r?.success) throw new Error(r?.error || 'failed');
+      box.innerHTML = _stCpRenderLeaderboard(r);
+      box.dataset.loaded = '1';
+    } catch (e) {
+      box.innerHTML = '<div style="color:#ff465a;text-align:center;padding:14px">Failed to load: ' + (e.message || e) + '</div>';
+    }
+  }
+}
+function _stCpRenderLeaderboard(r) {
+  const me = (window.connectedWallet?.address || '').toLowerCase();
+  const sym = r.symbol || 'MEME';
+  const fmtAtomsHuman = (raw) => {
+    try {
+      const n = Number(BigInt(raw)) / 1e6;
+      if (n === 0) return '0';
+      if (n < 0.0001) return '<0.0001';
+      if (n < 1) return n.toFixed(4);
+      if (n < 1000) return n.toFixed(2);
+      return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    } catch { return '0'; }
+  };
+  const fmtShare = (pct) => {
+    if (!pct || pct <= 0) return '0%';
+    if (pct >= 1)      return pct.toFixed(2) + '%';
+    if (pct >= 0.01)   return pct.toFixed(3) + '%';
+    if (pct >= 0.0001) return pct.toFixed(5) + '%';
+    return '<0.0001%';
+  };
+  const shortAddr = (typeof _stShortAddr === 'function')
+    ? _stShortAddr
+    : (a) => a.slice(0, 6) + '…' + a.slice(-4);
+
+  const agentDay = fmtAtomsHuman(r.agentPerDayTotalRaw);
+  const memeDay  = fmtAtomsHuman(r.memePerDayTotalRaw);
+  const endedNote = r.poolEnded
+    ? '<div style="color:#f59e0b;font-size:0.66rem;margin-bottom:8px;text-align:center">◈ Pool has ended — emissions below show what was paid per day while active.</div>'
+    : '';
+
+  const rows = (r.leaderboard || []).map((row) => {
+    const isMe = row.wallet === me;
+    const rankCls = row.rank === 1 ? 'rank gold'
+                  : row.rank === 2 ? 'rank silver'
+                  : row.rank === 3 ? 'rank bronze' : 'rank';
+    return `<tr class="${isMe ? 'me' : ''}">
+      <td class="${rankCls}">${row.rank}</td>
+      <td title="${row.wallet}">${shortAddr(row.wallet)}${isMe ? ' (you)' : ''}</td>
+      <td class="amt">${fmtAtomsHuman(row.stakedRaw)} ${sym}</td>
+      <td class="share">${fmtShare(row.sharePct)}</td>
+      <td class="amt">${fmtAtomsHuman(row.dailyAgentRaw)}</td>
+      <td class="amt">${fmtAtomsHuman(row.dailyMemeRaw)}</td>
+    </tr>`;
+  }).join('');
+
+  const empty = (!r.leaderboard || !r.leaderboard.length)
+    ? '<div style="color:#64748b;text-align:center;padding:18px">No active stakers yet — be the first to join!</div>'
+    : '';
+
+  return `
+    ${endedNote}
+    <div class="cp-board-emit">
+      <div class="cp-board-emit-cell">
+        <div class="cp-board-emit-label">Total AGENT / day</div>
+        <div class="cp-board-emit-val cyan">${agentDay}</div>
+      </div>
+      <div class="cp-board-emit-cell">
+        <div class="cp-board-emit-label">Total ${sym} / day</div>
+        <div class="cp-board-emit-val green">${memeDay}</div>
+      </div>
+    </div>
+    ${empty || `
+    <table class="cp-board-table">
+      <thead><tr>
+        <th>#</th><th>Wallet</th><th>Staked</th><th>Share</th><th>AGENT/day</th><th>${sym}/day</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="cp-board-foot">
+      ${r.stakerCount} active staker${r.stakerCount === 1 ? '' : 's'}${r.truncated ? ' · showing top ' + r.leaderboard.length : ''}${r.partial ? ' · ⚠ partial (event scan capped, ranks may be incomplete)' : ''} · cached ≤30s
+    </div>`}
+  `;
+}
 function _stCpTickOnce() {
   const els = document.querySelectorAll('[data-cp-tick]');
   if (!els.length) return;
@@ -8008,7 +8246,7 @@ async function _stRenderMyPoolPositions(addr) {
 
 // ─── per-position actions ────────────────────────────────────────
 window.stClaimPool = async function (btn, poolId, receiptId, memeType) {
-  if (!window.connectedWallet?.address) { alert('Connect wallet first'); return; }
+  if (!window.connectedWallet?.address) { _stToast('Connect your wallet first', 'warn'); return; }
   await _stWithSigning(btn, '⏳ SIGN…', async () => {
     try {
       const r = await fetch(STAKING_API + '/build-claim-pool-tx', {
@@ -8017,18 +8255,19 @@ window.stClaimPool = async function (btn, poolId, receiptId, memeType) {
         body: JSON.stringify({ sender: window.connectedWallet.address, poolId, receiptId, memeType }),
       }).then(x => x.json());
       if (!r?.success) throw new Error(r?.error || 'build failed');
-      await _stSignAndExec(r.txBytes);
+      const res = await _stSignAndExec(r.txBytes);
+      _stToast('Rewards claimed successfully', 'success', { txDigest: res?.digest });
       // Optimistic refresh delay so post-tx state is reflected.
       setTimeout(() => {
         if (_stCurrentTab === 'mine')  _stRenderMyStakes();
-        if (_stCurrentTab === 'pools') _stRenderPools();
+        if (_stCurrentTab === 'pools') { _stPoolsCache = null; _stRenderPools(); }
       }, 2000);
-    } catch (e) { alert('Claim failed: ' + e.message); }
+    } catch (e) { _stToast('Claim failed: ' + (e.message || e), 'error', { ttl: 8000 }); }
   });
 };
 
 window.stUnstakePool = async function (btn, poolId, receiptId, memeType) {
-  if (!window.connectedWallet?.address) { alert('Connect wallet first'); return; }
+  if (!window.connectedWallet?.address) { _stToast('Connect your wallet first', 'warn'); return; }
   if (!confirm('Unstake from this creator pool? Principal + final claim returned. Cannot undo.')) return;
   await _stWithSigning(btn, '⏳ SIGN…', async () => {
     try {
@@ -8038,27 +8277,28 @@ window.stUnstakePool = async function (btn, poolId, receiptId, memeType) {
         body: JSON.stringify({ sender: window.connectedWallet.address, poolId, receiptId, memeType }),
       }).then(x => x.json());
       if (!r?.success) throw new Error(r?.error || 'build failed');
-      await _stSignAndExec(r.txBytes);
+      const res = await _stSignAndExec(r.txBytes);
+      _stToast('Unstaked — principal &amp; final rewards returned to your wallet', 'success', { txDigest: res?.digest });
       setTimeout(() => {
         if (_stCurrentTab === 'mine')  _stRenderMyStakes();
-        if (_stCurrentTab === 'pools') _stRenderPools();
+        if (_stCurrentTab === 'pools') { _stPoolsCache = null; _stRenderPools(); }
       }, 2000);
-    } catch (e) { alert('Unstake failed: ' + e.message); }
+    } catch (e) { _stToast('Unstake failed: ' + (e.message || e), 'error', { ttl: 8000 }); }
   });
 };
 
 // One signed tx that bundles every pending claim across every pool.
 window.stClaimAllPools = async function () {
-  if (!window.connectedWallet?.address) { alert('Connect wallet first'); return; }
+  if (!window.connectedWallet?.address) { _stToast('Connect your wallet first', 'warn'); return; }
   const claims = (_stClaimAllCache || []).slice();
   if (!claims.length) return;
   if (!confirm(`Claim from ${claims.length} pool${claims.length === 1 ? '' : 's'} in one transaction?`)) return;
   const btn = document.getElementById('stClaimAllBtn');
   await _stWithSigning(btn, `⏳ SIGNING ${claims.length}…`, async () => {
     try {
-      // Batch in groups of 16 (server cap) — typical wallets have <16 pools.
       const batches = [];
       for (let i = 0; i < claims.length; i += 16) batches.push(claims.slice(i, i + 16));
+      let lastDigest = null;
       for (const batch of batches) {
         const r = await fetch(STAKING_API + '/build-claim-all-pools-tx', {
           method: 'POST',
@@ -8066,10 +8306,17 @@ window.stClaimAllPools = async function () {
           body: JSON.stringify({ sender: window.connectedWallet.address, claims: batch }),
         }).then(x => x.json());
         if (!r?.success) throw new Error(r?.error || 'build failed');
-        await _stSignAndExec(r.txBytes);
+        const res = await _stSignAndExec(r.txBytes);
+        if (res?.digest) lastDigest = res.digest;
       }
-      setTimeout(() => { _stRenderMyStakes(); }, 2000);
-    } catch (e) { alert('Claim All failed: ' + e.message); }
+      _stToast(`Claimed from ${claims.length} pool${claims.length === 1 ? '' : 's'} in ${batches.length} tx`, 'success', { txDigest: lastDigest });
+      // v8.5: bust pools cache so per-card "your claimable" reflects the claim.
+      _stPoolsCache = null;
+      setTimeout(() => {
+        _stRenderMyStakes();
+        if (_stCurrentTab === 'pools') _stRenderPools();
+      }, 2000);
+    } catch (e) { _stToast('Claim All failed: ' + (e.message || e), 'error', { ttl: 8000 }); }
   });
 };
 
@@ -8121,9 +8368,36 @@ async function _stRenderMyStakes() {
 }
 
 // ─── POOLS PANE ──────────────────────────────────────────────────
+// v8.5: cache + filter state survives between renders
+let _stPoolsCache = null;       // { pools, myByPool, fetchedAtMs }
+let _stPoolsFilter = { search: '', status: 'all', sort: 'newest' };
+function stPoolsSetStatus(s, el) {
+  _stPoolsFilter.status = s;
+  document.querySelectorAll('#stPoolsChips .cp-chip').forEach(c => c.classList.toggle('active', c === el));
+  stPoolsApplyFilter();
+}
+function stPoolsApplyFilter() {
+  const s = document.getElementById('stPoolsSearch');
+  const sort = document.getElementById('stPoolsSort');
+  if (s) _stPoolsFilter.search = (s.value || '').trim().toLowerCase();
+  if (sort) _stPoolsFilter.sort = sort.value || 'newest';
+  if (_stPoolsCache) _stRenderPoolsFromCache();
+}
 async function _stRenderPools() {
   const list = document.getElementById('stPoolsList');
-  list.innerHTML = '<div style="color:#64748b;font-family:monospace;padding:48px;text-align:center;grid-column:1/-1">Loading…</div>';
+  // Skeletons (v8.5 polish — no more bare "Loading…")
+  if (!_stPoolsCache) {
+    list.innerHTML = `<div class="cp-skel-grid" style="grid-column:1/-1">${
+      Array(3).fill(0).map(() => `
+        <div class="cp-skel-card">
+          <div class="cp-skel-line" style="height:18px;width:40%"></div>
+          <div class="cp-skel-line" style="height:12px;width:60%"></div>
+          <div class="cp-skel-line" style="height:8px;width:100%;margin-top:18px"></div>
+          <div class="cp-skel-line" style="height:60px;width:100%;margin-top:14px"></div>
+          <div class="cp-skel-line" style="height:60px;width:100%;margin-top:8px"></div>
+        </div>`).join('')
+    }</div>`;
+  }
   try {
     const addr = window.connectedWallet?.address;
     // Fetch pools + (if connected) user positions in parallel.
@@ -8139,13 +8413,65 @@ async function _stRenderPools() {
         (myByPool[pos.poolId] = myByPool[pos.poolId] || []).push(pos);
       }
     }
-    // Stop any prior ticker — we'll rebuild registrations during render.
-    _stCpClearTickRegistry('card');
-    if (!r.pools.length) {
-      list.innerHTML = '<div style="color:#64748b;font-family:monospace;padding:48px;text-align:center;grid-column:1/-1">No creator pools yet. Be the first to launch one!</div>';
-      return;
-    }
-    list.innerHTML = r.pools.map((p) => {
+    _stPoolsCache = { pools: r.pools, myByPool, fetchedAtMs: myr?.fetchedAtMs || Date.now() };
+    _stRenderPoolsFromCache();
+  } catch (e) {
+    list.innerHTML = '<div style="color:#ff465a;font-family:monospace;padding:24px;grid-column:1/-1">Failed to load: ' + e.message + '</div>';
+  }
+}
+function _stRenderPoolsFromCache() {
+  const list = document.getElementById('stPoolsList');
+  if (!_stPoolsCache) return;
+  const { pools, myByPool } = _stPoolsCache;
+  const myr = { fetchedAtMs: _stPoolsCache.fetchedAtMs };
+  // Stop any prior ticker — we'll rebuild registrations during render.
+  _stCpClearTickRegistry('card');
+  // Apply filters
+  let visible = pools.slice();
+  const f = _stPoolsFilter;
+  if (f.status === 'active') visible = visible.filter(p => !p.ended);
+  else if (f.status === 'ended') visible = visible.filter(p => p.ended);
+  else if (f.status === 'mine') visible = visible.filter(p => myByPool[p.poolId]);
+  if (f.search) {
+    visible = visible.filter(p => {
+      const sym = ((p.memeType || '').split('::')[2] || '').toLowerCase();
+      return sym.includes(f.search) || (p.poolId || '').toLowerCase().includes(f.search);
+    });
+  }
+  // Sort
+  if (f.sort === 'tvl') {
+    visible.sort((a,b) => Number(b.totalStakedMeme) - Number(a.totalStakedMeme));
+  } else if (f.sort === 'ending') {
+    visible.sort((a,b) => {
+      if (a.ended !== b.ended) return a.ended ? 1 : -1;
+      return a.endsAtMs - b.endsAtMs;
+    });
+  } else if (f.sort === 'yield') {
+    visible.sort((a,b) => {
+      const ya = a.totalStakedMeme > 0 ? (a.agentRewardRaw * 0.98 / a.totalStakedMeme) : 0;
+      const yb = b.totalStakedMeme > 0 ? (b.agentRewardRaw * 0.98 / b.totalStakedMeme) : 0;
+      return yb - ya;
+    });
+  }
+  const cnt = document.getElementById('stPoolsResultCount');
+  if (cnt) cnt.textContent = `${visible.length} of ${pools.length} pool${pools.length === 1 ? '' : 's'}`;
+  if (!pools.length) {
+    list.innerHTML = `<div class="cp-empty">
+      <div class="cp-empty-icon">◈</div>
+      <div class="cp-empty-title">No creator pools yet</div>
+      <div class="cp-empty-sub">Be the first to launch one — click <b style="color:var(--green)">+ CREATE POOL</b> above and earn a share of every reward drip.</div>
+    </div>`;
+    return;
+  }
+  if (!visible.length) {
+    list.innerHTML = `<div class="cp-empty">
+      <div class="cp-empty-icon">🔍</div>
+      <div class="cp-empty-title">No pools match your filters</div>
+      <div class="cp-empty-sub">Try clearing the search box or switching to <b>ALL</b>.</div>
+    </div>`;
+    return;
+  }
+  list.innerHTML = visible.map((p) => {
       const ended = p.ended;
       const remain = Math.max(0, p.endsAtMs - Date.now());
       const durationMs = p.durationMs || (p.endsAtMs - (p.startedAtMs || (p.endsAtMs - 86400000))) || 86400000;
@@ -8163,31 +8489,45 @@ async function _stRenderPools() {
         : 'n/a (no stakers yet)';
       const fmtN = (v, d=0) => v.toLocaleString(undefined, {maximumFractionDigits: d});
       const uid = 'ecc_' + p.poolId.slice(-8);
+      // v8.5: honest yield — "earn X AGENT/day per 1k staked" (no fake APR).
+      const emissionPer1k = totalStaked > 0 ? agentPerDay * 1000 / totalStaked : null;
+      const yieldBadge = ended
+        ? `<span class="cp-yield-badge muted">⏹ ENDED</span>`
+        : (emissionPer1k === null
+            ? `<span class="cp-yield-badge"><span class="y-amt">${agentPerDay > 0 ? fmtN(agentPerDay,1) : '—'}</span><span class="y-ctx">AGENT/day · be the first to stake</span></span>`
+            : `<span class="cp-yield-badge"><span class="y-amt">${emissionPer1k >= 1 ? fmtN(emissionPer1k,2) : emissionPer1k.toFixed(4)}</span><span class="y-ctx">AGENT/day · per 1,000 ${symbol}</span></span>`);
+      // Progress urgency tier
+      const remainPct = ended ? 100 : Math.min(100, Math.max(0, 100 - (remain / durationMs * 100)));
+      const remainHours = remain / 3_600_000;
+      const fillCls = ended ? 'ended'
+                    : remainHours < 24 ? 'critical'
+                    : remainHours < 72 ? 'urgent' : '';
       return `
-        <div class="cp-pool-card">
+        <div class="cp-pool-card${ended ? ' ended' : ''}">
+          <div class="cp-glow"></div>
           <div class="cp-pool-header">
             <div>
               <div class="cp-pool-symbol">${symbol}</div>
               <div class="cp-pool-id">${_stShortAddr(p.poolId)}</div>
               <div style="font-family:monospace;font-size:0.7rem;color:#64748b">creator: ${_stShortAddr(p.creator)}</div>
             </div>
-            <span class="cp-pool-badge ${ended ? 'ended' : 'active'}">${ended ? 'ENDED' : 'ACTIVE'}</span>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+              <span class="cp-pool-badge ${ended ? 'ended' : 'active'}">${ended ? 'ENDED' : 'LIVE'}</span>
+              ${yieldBadge}
+            </div>
           </div>
           <div style="margin-bottom:4px;display:flex;justify-content:space-between">
-            <span style="font-family:monospace;font-size:0.68rem;color:#64748b">${ended ? 'pool ended' : _stTimeLeft(remain) + ' left'}</span>
+            <span style="font-family:monospace;font-size:0.68rem;color:#64748b">${ended ? 'pool ended' : '⏱ ' + _stTimeLeft(remain) + ' left'}</span>
             <span style="font-family:monospace;font-size:0.68rem;color:#64748b">${pct}% elapsed</span>
           </div>
-          <div class="cp-progress-bar" style="margin-bottom:14px"><div class="cp-progress-fill" style="width:${pct}%"></div></div>
+          <div class="cp-progress-bar" style="margin-bottom:14px"><div class="cp-progress-fill ${fillCls}" style="width:${pct}%"></div></div>
           <div class="cp-stats-grid">
-            <div class="cp-stat-item"><div class="cp-stat-label">AGENT reward left</div><div class="cp-stat-val cyan">${_stFmt(p.agentRewardLeft)}</div></div>
-            <div class="cp-stat-item"><div class="cp-stat-label">Meme reward left</div><div class="cp-stat-val green">${_stFmt(p.memeRewardLeft)}</div></div>
-            <div class="cp-stat-item"><div class="cp-stat-label">AGENT / day</div><div class="cp-stat-val">${agentPerDay > 0 ? fmtN(agentPerDay) : '—'}</div></div>
-            <div class="cp-stat-item"><div class="cp-stat-label">${symbol} / day</div><div class="cp-stat-val">${memePerDay > 0 ? fmtN(memePerDay) : '—'}</div></div>
-            <div class="cp-stat-item"><div class="cp-stat-label">Total staked</div><div class="cp-stat-val">${fmtN(totalStaked)} ${symbol}</div></div>
-            <div class="cp-stat-item"><div class="cp-stat-label">Stakers</div><div class="cp-stat-val">${p.totalStakers}</div></div>
-          </div>
-          <div style="font-family:monospace;font-size:0.75rem;color:#64748b;margin-bottom:12px">
-            Est. AGENT yield (current stake): <span style="color:#10b981">${aprAgent}</span>
+            <div class="cp-stat-item"><div class="cp-stat-label" data-tip="AGENT rewards still in the pool, waiting to be dripped to stakers">AGENT reward left</div><div class="cp-stat-val cyan">${_stFmt(p.agentRewardLeft)}</div></div>
+            <div class="cp-stat-item"><div class="cp-stat-label" data-tip="${symbol} rewards still in the pool, waiting to be dripped">${symbol} reward left</div><div class="cp-stat-val green">${_stFmt(p.memeRewardLeft)}</div></div>
+            <div class="cp-stat-item"><div class="cp-stat-label" data-tip="Total AGENT this pool emits per day to ALL stakers combined">AGENT / day</div><div class="cp-stat-val">${agentPerDay > 0 ? fmtN(agentPerDay) : '—'}</div></div>
+            <div class="cp-stat-item"><div class="cp-stat-label" data-tip="Total ${symbol} this pool emits per day to ALL stakers combined">${symbol} / day</div><div class="cp-stat-val">${memePerDay > 0 ? fmtN(memePerDay) : '—'}</div></div>
+            <div class="cp-stat-item"><div class="cp-stat-label" data-tip="Total ${symbol} currently staked across all participants">Total staked</div><div class="cp-stat-val">${fmtN(totalStaked)} ${symbol}</div></div>
+            <div class="cp-stat-item"><div class="cp-stat-label" data-tip="Number of unique wallets currently staking in this pool">Stakers</div><div class="cp-stat-val">${p.totalStakers}</div></div>
           </div>
           ${!ended ? `
           <div class="cp-earn-calc">
@@ -8237,15 +8577,39 @@ async function _stRenderPools() {
           }).join('')}
           <div style="display:flex;gap:8px;margin-top:10px">
             <button onclick="stOpenJoinPool('${p.poolId}','${p.memeType}',${p.totalStakedMeme},${p.agentRewardLeft},${p.memeRewardLeft},${p.endsAtMs},${p.totalStakers})"
-                    ${ended ? 'disabled' : ''} class="btn-cyan" style="flex:1;padding:10px;font-size:0.82rem">${ended ? 'POOL ENDED' : (myByPool[p.poolId] ? 'ADD MORE' : 'JOIN POOL')}</button>
+                    ${ended ? 'disabled' : ''} class="btn-cyan" style="flex:1;padding:10px;font-size:0.82rem">${ended ? '⏹ POOL ENDED' : (myByPool[p.poolId] ? '＋ ADD STAKE' : '⚡ STAKE TO EARN')}</button>
           </div>
+          <button class="cp-board-toggle" onclick="stCpToggleLeaderboard(this,'${p.poolId}')">
+            📊 SHOW LEADERBOARD &amp; DAILY EMISSIONS
+          </button>
+          <div class="cp-board" data-cp-board="${p.poolId}" style="display:none"></div>
         </div>`;
-    }).join('');
-    _stCpStartTickerIfNeeded();
-  } catch (e) {
-    list.innerHTML = '<div style="color:#ff465a;font-family:monospace;padding:24px;grid-column:1/-1">Failed to load: ' + e.message + '</div>';
-  }
+  }).join('');
+  _stCpStartTickerIfNeeded();
 }
+
+// ─── v8.5 TOASTS ─────────────────────────────────────────────────
+function _stToast(msg, kind = 'info', { ttl = 5000, txDigest = null } = {}) {
+  const wrap = document.getElementById('cpToastWrap');
+  if (!wrap) { console.log('[toast]', kind, msg); return; }
+  const icon = kind === 'success' ? '✓' : kind === 'error' ? '✕' : kind === 'warn' ? '⚠' : 'ℹ';
+  const tx = txDigest
+    ? `<div style="margin-top:6px;font-size:0.7rem"><a href="https://suiscan.xyz/mainnet/tx/${txDigest}" target="_blank" rel="noopener">View on Suiscan ↗</a></div>`
+    : '';
+  const el = document.createElement('div');
+  el.className = 'cp-toast ' + kind;
+  el.innerHTML = `<span class="cp-toast-icon">${icon}</span><div class="cp-toast-body">${msg}${tx}</div><span class="cp-toast-close">×</span>`;
+  el.querySelector('.cp-toast-close').onclick = () => _stToastDismiss(el);
+  wrap.appendChild(el);
+  if (ttl > 0) setTimeout(() => _stToastDismiss(el), ttl);
+  return el;
+}
+function _stToastDismiss(el) {
+  if (!el || !el.parentNode) return;
+  el.classList.add('fading');
+  setTimeout(() => el.remove(), 280);
+}
+window._stToast = _stToast;
 
 // ─── LEADERBOARD ─────────────────────────────────────────────────
 async function _stRenderLeaderboard() {
@@ -8655,5 +9019,6 @@ if (typeof _origConnect === 'function') {
 }
 
 </script>
+<div class="cp-toast-wrap" id="cpToastWrap"></div>
 </body>
 </html>
