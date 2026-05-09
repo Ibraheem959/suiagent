@@ -9290,27 +9290,48 @@ if (typeof _origConnect === 'function') {
     });
   };
 
-  // ─── personal-message signing (uses wallet-standard) ─────────────
+  // chain config (override via window.__TOKENOMICS_CHAIN, defaults to testnet)
+  function _tknChain(){ return window.__TOKENOMICS_CHAIN || 'sui:testnet'; }
+
+  // personal-message signing (uses wallet-standard, configurable chain)
   async function signPersonalMessage(message){
     if (!window.connectedWallet) { await window.connectWallet(); }
     if (!window.connectedWallet) throw new Error('Connect a wallet first');
     const p = window.connectedProvider;
-    if (!p) throw new Error('Wallet provider unavailable — disconnect and reconnect.');
+    if (!p) throw new Error('Wallet provider unavailable - disconnect and reconnect.');
     const account = p.accounts?.[0] || { address: window.connectedWallet.address };
     const bytes = new TextEncoder().encode(message);
-    // Modern wallet-standard
+    const chain = _tknChain();
     const f1 = p.features?.['sui:signPersonalMessage'];
     if (f1?.signPersonalMessage) {
-      const r = await f1.signPersonalMessage({ message: bytes, account });
+      const r = await f1.signPersonalMessage({ message: bytes, account, chain });
       return r.signature;
     }
-    // Older wallet-standard
     const f2 = p.features?.['sui:signMessage'];
     if (f2?.signMessage) {
       const r = await f2.signMessage({ message: bytes, account });
       return r.signature;
     }
-    throw new Error('Wallet does not support signPersonalMessage — try Slush or update your wallet.');
+    throw new Error('Wallet does not support signPersonalMessage - try Slush or update your wallet.');
+  }
+
+  // tx sign+execute on the configured chain (testnet by default)
+  async function _tknSignAndExecute(tx){
+    if (!window.connectedWallet) { await window.connectWallet(); }
+    if (!window.connectedWallet) throw new Error('Connect a wallet first');
+    const p = window.connectedProvider;
+    if (!p) throw new Error('Wallet provider unavailable - disconnect and reconnect.');
+    const account = p.accounts?.[0] || { address: window.connectedWallet.address };
+    const chain = _tknChain();
+    const exec = p.features?.['sui:signAndExecuteTransaction'];
+    if (exec?.signAndExecuteTransaction) {
+      return exec.signAndExecuteTransaction({ transaction: tx, account, chain, options: { showEffects: true, showObjectChanges: true } });
+    }
+    const block = p.features?.['sui:signAndExecuteTransactionBlock'];
+    if (block?.signAndExecuteTransactionBlock) {
+      return block.signAndExecuteTransactionBlock({ transactionBlock: tx, account, chain, options: { showEffects: true, showObjectChanges: true } });
+    }
+    throw new Error('Wallet does not support signAndExecuteTransaction.');
   }
 
   // ────────────────────────────────────────────────────────────────
@@ -9494,7 +9515,7 @@ if (typeof _origConnect === 'function') {
       if (!Transaction) throw new Error('Sui SDK not loaded — refresh and try again');
       const tx = Transaction.from(_b64ToBytes(txBytes));
       setStatus('tknClaimExecStatus','Sign in your wallet…','#6a8bad');
-      const out = await window.signAndExecuteTx(tx);
+      const out = await _tknSignAndExecute(tx);
       const digest = out?.digest || out?.effects?.transactionDigest || '';
       setStatus('tknClaimExecStatus','✓ Claimed! tx='+digest,'var(--green)');
       // Refresh state
@@ -9609,7 +9630,7 @@ if (typeof _origConnect === 'function') {
       if (!Transaction) throw new Error('Sui SDK not loaded');
       const tx = Transaction.from(_b64ToBytes(r.txBytes));
       setStatus('tknStep2Status','Sign in your wallet…','#6a8bad');
-      const out = await window.signAndExecuteTx(tx);
+      const out = await _tknSignAndExecute(tx);
       const digest = out?.digest || out?.effects?.transactionDigest || '';
       // Find created VestingSchedule object
       let createdId = null;
@@ -9685,7 +9706,7 @@ if (typeof _origConnect === 'function') {
       const Transaction = window.__SuiTransaction;
       const tx = Transaction.from(_b64ToBytes(r.txBytes));
       setStatus('tknStep3Status','Sign in your wallet…','#6a8bad');
-      const out = await window.signAndExecuteTx(tx);
+      const out = await _tknSignAndExecute(tx);
       const digest = out?.digest || out?.effects?.transactionDigest || '';
       // capture created Lock object id (best-effort across wallet return shapes)
       let lockId = null;
@@ -9742,7 +9763,7 @@ if (typeof _origConnect === 'function') {
       const Transaction = window.__SuiTransaction;
       const tx = Transaction.from(_b64ToBytes(r.txBytes));
       setStatus('tknStep4Status','Sign in your wallet…','#6a8bad');
-      const out = await window.signAndExecuteTx(tx);
+      const out = await _tknSignAndExecute(tx);
       const digest = out?.digest || out?.effects?.transactionDigest || '';
       setStatus('tknStep4Status','✓ Finalized (immutable). tx='+digest,'var(--green)');
       setTimeout(() => tknDsgGoStep(5), 1200);
