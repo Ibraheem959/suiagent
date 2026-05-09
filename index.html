@@ -897,6 +897,7 @@
       <a href="#/staking"  class="nav-tab" data-route="staking">Staking</a>
       <a href="#/trust"    class="nav-tab" data-route="trust">Trust</a>
       <a href="#/locker"   class="nav-tab" data-route="locker">Locker</a>
+      <a href="#/tokenomics" class="nav-tab" data-route="tokenomics">Tokenomics</a>
     </div>
 
     <div class="nav-right">
@@ -931,6 +932,7 @@
   <a href="#/staking"  data-route="staking">Staking</a>
   <a href="#/trust"    data-route="trust">Trust</a>
   <a href="#/locker"   data-route="locker">Locker</a>
+  <a href="#/tokenomics" data-route="tokenomics">Tokenomics</a>
   <a href="https://x.com/SUI__AGENT" target="_blank" rel="noopener">𝕏 Twitter</a>
   <a href="https://t.me/+AHZzczUoOeYzMThk" target="_blank" rel="noopener">Telegram</a>
   <button
@@ -3333,6 +3335,226 @@ setInterval(() => {
 
 </section>
 
+<!-- ════════════════════════════════════════════════════════════════════
+     PAGE: TOKENOMICS — vesting schedules + dashboard (v1)
+     ════════════════════════════════════════════════════════════════════ -->
+<section class="page-tab" data-page="tokenomics" style="padding:0;">
+<section id="tokenomics" style="padding:100px 24px 60px;background:var(--bg)">
+  <div style="max-width:1100px;margin:0 auto">
+
+    <div class="reveal text-center mb-8">
+      <div class="section-label mb-3">◈ ON-CHAIN TOKENOMICS</div>
+      <h2 class="font-orbitron text-3xl font-bold text-white">Verifiable Vesting on Sui</h2>
+      <p style="color:#6a8bad;font-weight:300;margin-top:8px;max-width:680px;margin-left:auto;margin-right:auto">
+        Build, audit, and claim from immutable vesting schedules. Once finalized, no one — not even the creator — can change the rules.
+      </p>
+    </div>
+
+    <!-- sub-tabs -->
+    <div class="reveal" style="display:flex;gap:0;border-bottom:1px solid rgba(0,245,255,0.15);margin-bottom:30px;flex-wrap:wrap">
+      <button id="tknTabBtnBrowse"   class="font-mono text-xs" onclick="tknSetTab('browse')"   style="padding:14px 22px;background:transparent;border:none;border-bottom:2px solid var(--cyan);color:var(--cyan);cursor:pointer;letter-spacing:0.08em">BROWSE</button>
+      <button id="tknTabBtnClaim"    class="font-mono text-xs" onclick="tknSetTab('claim')"    style="padding:14px 22px;background:transparent;border:none;border-bottom:2px solid transparent;color:#4a5568;cursor:pointer;letter-spacing:0.08em">CLAIM</button>
+      <button id="tknTabBtnDesigner" class="font-mono text-xs" onclick="tknSetTab('designer')" style="padding:14px 22px;background:transparent;border:none;border-bottom:2px solid transparent;color:#4a5568;cursor:pointer;letter-spacing:0.08em">DESIGNER</button>
+      <button id="tknTabBtnVerify"   class="font-mono text-xs" onclick="tknSetTab('verify')"   style="padding:14px 22px;background:transparent;border:none;border-bottom:2px solid transparent;color:#4a5568;cursor:pointer;letter-spacing:0.08em">VERIFY</button>
+    </div>
+
+    <!-- ─── BROWSE PANEL ─── -->
+    <div id="tknPanelBrowse">
+      <div class="card p-6 rounded-none mb-6" style="border-color:rgba(0,245,255,0.25)">
+        <label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:8px">SCHEDULE OBJECT ID</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input id="tknBrowseSchedId" type="text" placeholder="0x..." class="font-mono text-xs"
+            style="flex:1;min-width:280px;background:#0a1422;border:1px solid rgba(0,245,255,0.2);color:#fff;padding:10px 12px;outline:none">
+          <button onclick="tknBrowseLoad()" class="btn-cyan text-xs"><span>LOAD</span></button>
+        </div>
+        <div id="tknBrowseStatus" class="font-mono text-xs" style="margin-top:8px;color:#6a8bad"></div>
+      </div>
+      <div id="tknBrowseResult"></div>
+    </div>
+
+    <!-- ─── CLAIM PANEL ─── -->
+    <div id="tknPanelClaim" style="display:none">
+      <div class="card p-6 rounded-none mb-6" style="border-color:rgba(0,255,136,0.25)">
+        <label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:8px">LOCK OBJECT ID (your bucket)</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input id="tknClaimLockId" type="text" placeholder="0x..." class="font-mono text-xs"
+            style="flex:1;min-width:280px;background:#0a1422;border:1px solid rgba(0,255,136,0.2);color:#fff;padding:10px 12px;outline:none">
+          <button onclick="tknClaimLoad()" class="btn-cyan text-xs"><span>LOAD</span></button>
+        </div>
+        <div id="tknClaimStatus" class="font-mono text-xs" style="margin-top:8px;color:#6a8bad"></div>
+      </div>
+      <div id="tknClaimResult"></div>
+    </div>
+
+    <!-- ─── DESIGNER PANEL ─── -->
+    <div id="tknPanelDesigner" style="display:none">
+      <div class="card p-4 rounded-none mb-4" style="border-color:rgba(180,79,255,0.25);background:rgba(180,79,255,0.04)">
+        <p class="font-mono text-xs" style="color:#cba8ff">⚠ Designer mode is gated. To save metadata you must hold the TreasuryCap of the coin OR be the on-chain creator of the schedule. Anyone can build a schedule on-chain, but only the verified creator owns the public mapping for that coin.</p>
+      </div>
+
+      <!-- step indicator -->
+      <div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap">
+        <div id="tknStepInd1" class="font-mono text-xs" style="flex:1;min-width:120px;padding:10px;border:1px solid var(--purple);background:rgba(180,79,255,0.1);color:var(--purple);text-align:center">1 · COIN</div>
+        <div id="tknStepInd2" class="font-mono text-xs" style="flex:1;min-width:120px;padding:10px;border:1px solid rgba(180,79,255,0.2);background:transparent;color:#4a5568;text-align:center">2 · SCHEDULE</div>
+        <div id="tknStepInd3" class="font-mono text-xs" style="flex:1;min-width:120px;padding:10px;border:1px solid rgba(180,79,255,0.2);background:transparent;color:#4a5568;text-align:center">3 · BUCKETS</div>
+        <div id="tknStepInd4" class="font-mono text-xs" style="flex:1;min-width:120px;padding:10px;border:1px solid rgba(180,79,255,0.2);background:transparent;color:#4a5568;text-align:center">4 · FINALIZE</div>
+        <div id="tknStepInd5" class="font-mono text-xs" style="flex:1;min-width:120px;padding:10px;border:1px solid rgba(180,79,255,0.2);background:transparent;color:#4a5568;text-align:center">5 · METADATA</div>
+      </div>
+
+      <!-- STEP 1: coin + project id -->
+      <div id="tknStep1" class="card p-6 rounded-none">
+        <h3 class="font-orbitron text-lg font-bold text-white mb-4">Step 1 — Identify your coin</h3>
+        <label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:6px">COIN TYPE (full type tag)</label>
+        <input id="tknDsgCoinType" type="text" placeholder="0xPACKAGE::module::SYMBOL" class="font-mono text-xs"
+          style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:10px 12px;outline:none;margin-bottom:14px">
+
+        <label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:6px">PROJECT ID (slug, &le;32 ascii chars, used as on-chain tag)</label>
+        <input id="tknDsgProjectId" type="text" placeholder="my-awesome-token" maxlength="32" class="font-mono text-xs"
+          style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:10px 12px;outline:none;margin-bottom:14px">
+
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <button onclick="tknDsgGoStep(2)" class="btn-cyan text-xs"><span>NEXT →</span></button>
+        </div>
+      </div>
+
+      <!-- STEP 2: create schedule TX -->
+      <div id="tknStep2" class="card p-6 rounded-none" style="display:none">
+        <h3 class="font-orbitron text-lg font-bold text-white mb-4">Step 2 — Create the on-chain schedule</h3>
+        <p class="font-mono text-xs text-slate-400 mb-4">Signs a single TX that creates an empty <code style="color:var(--cyan)">VestingSchedule&lt;T&gt;</code> object. You will be the on-chain creator. Buckets are added next.</p>
+        <div id="tknStep2Status" class="font-mono text-xs" style="color:#6a8bad;margin-bottom:10px;word-break:break-all"></div>
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <button onclick="tknDsgGoStep(1)" class="font-mono text-xs" style="padding:8px 16px;background:transparent;border:1px solid rgba(180,79,255,0.3);color:var(--purple);cursor:pointer">← BACK</button>
+          <div style="display:flex;gap:8px">
+            <input id="tknDsgExistingSchedId" type="text" placeholder="OR paste existing schedule 0x..." class="font-mono text-xs"
+              style="background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none;width:240px">
+            <button onclick="tknDsgUseExisting()" class="font-mono text-xs" style="padding:8px 16px;background:transparent;border:1px solid rgba(0,245,255,0.3);color:var(--cyan);cursor:pointer">USE EXISTING</button>
+            <button onclick="tknDsgCreateSchedule()" class="btn-cyan text-xs"><span>CREATE & SIGN</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: add buckets -->
+      <div id="tknStep3" class="card p-6 rounded-none" style="display:none">
+        <h3 class="font-orbitron text-lg font-bold text-white mb-4">Step 3 — Add vesting buckets</h3>
+        <div id="tknStep3Schedule" class="font-mono text-xs" style="color:var(--purple);margin-bottom:14px;word-break:break-all"></div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:14px">
+          <div>
+            <label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:4px">LABEL</label>
+            <input id="tknDsgBkLabel" type="text" placeholder="team / advisors / public" maxlength="64" class="font-mono text-xs"
+              style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none">
+          </div>
+          <div>
+            <label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:4px">BENEFICIARY (0x...)</label>
+            <input id="tknDsgBkBenef" type="text" placeholder="0x..." class="font-mono text-xs"
+              style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none">
+          </div>
+          <div>
+            <label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:4px">AMOUNT (raw, integer)</label>
+            <input id="tknDsgBkAmount" type="text" placeholder="1000000000000" class="font-mono text-xs"
+              style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none" oninput="tknDsgPreviewDebounced()">
+          </div>
+          <div>
+            <label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:4px">TGE %</label>
+            <input id="tknDsgBkTge" type="number" min="0" max="100" step="0.01" value="0" class="font-mono text-xs"
+              style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none" oninput="tknDsgPreviewDebounced()">
+          </div>
+          <div>
+            <label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:4px">START (date+time)</label>
+            <input id="tknDsgBkStart" type="datetime-local" class="font-mono text-xs"
+              style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none" oninput="tknDsgPreviewDebounced()">
+          </div>
+          <div>
+            <label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:4px">CLIFF (days)</label>
+            <input id="tknDsgBkCliff" type="number" min="0" step="1" value="0" class="font-mono text-xs"
+              style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none" oninput="tknDsgPreviewDebounced()">
+          </div>
+          <div>
+            <label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:4px">VESTING DURATION (days)</label>
+            <input id="tknDsgBkDuration" type="number" min="0" step="1" value="365" class="font-mono text-xs"
+              style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none" oninput="tknDsgPreviewDebounced()">
+          </div>
+        </div>
+
+        <!-- live curve -->
+        <div style="border:1px solid rgba(180,79,255,0.15);background:#0a1422;padding:10px;margin-bottom:14px">
+          <div class="font-mono text-xs text-slate-400" style="margin-bottom:6px">UNLOCK CURVE PREVIEW</div>
+          <svg id="tknDsgCurve" viewBox="0 0 600 180" style="width:100%;height:180px;display:block"></svg>
+          <div id="tknDsgMilestones" class="font-mono text-xs" style="color:#6a8bad;margin-top:6px"></div>
+        </div>
+
+        <div id="tknStep3Status" class="font-mono text-xs" style="color:#6a8bad;margin-bottom:10px;word-break:break-all"></div>
+
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <button onclick="tknDsgGoStep(2)" class="font-mono text-xs" style="padding:8px 16px;background:transparent;border:1px solid rgba(180,79,255,0.3);color:var(--purple);cursor:pointer">← BACK</button>
+          <div style="display:flex;gap:8px">
+            <button onclick="tknDsgAddBucket()" class="btn-purple text-xs"><span>ADD BUCKET (SIGN TX)</span></button>
+            <button onclick="tknDsgGoStep(4)" class="font-mono text-xs" style="padding:8px 16px;background:transparent;border:1px solid rgba(0,245,255,0.3);color:var(--cyan);cursor:pointer">DONE — FINALIZE →</button>
+          </div>
+        </div>
+
+        <!-- existing buckets list -->
+        <div id="tknDsgBucketsList" style="margin-top:18px"></div>
+      </div>
+
+      <!-- STEP 4: finalize -->
+      <div id="tknStep4" class="card p-6 rounded-none" style="display:none">
+        <h3 class="font-orbitron text-lg font-bold text-white mb-4">Step 4 — Finalize (immutable)</h3>
+        <p class="font-mono text-xs" style="color:#ffc864;margin-bottom:14px">⚠ This is permanent. After finalize, no buckets can be added or removed. The contract enforces this on-chain.</p>
+        <div id="tknStep4Status" class="font-mono text-xs" style="color:#6a8bad;margin-bottom:10px;word-break:break-all"></div>
+        <div style="display:flex;justify-content:space-between;gap:8px">
+          <button onclick="tknDsgGoStep(3)" class="font-mono text-xs" style="padding:8px 16px;background:transparent;border:1px solid rgba(180,79,255,0.3);color:var(--purple);cursor:pointer">← BACK</button>
+          <button onclick="tknDsgFinalize()" class="btn-cyan text-xs"><span>FINALIZE & SIGN</span></button>
+        </div>
+      </div>
+
+      <!-- STEP 5: save metadata -->
+      <div id="tknStep5" class="card p-6 rounded-none" style="display:none">
+        <h3 class="font-orbitron text-lg font-bold text-white mb-4">Step 5 — Save public metadata</h3>
+        <p class="font-mono text-xs text-slate-400 mb-4">Signs a personal message to prove you own the creator wallet, then writes display metadata to the dashboard. Optional but recommended.</p>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:14px">
+          <div><label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:4px">DISPLAY LABEL</label><input id="tknMetaLabel" type="text" class="font-mono text-xs" style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none"></div>
+          <div><label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:4px">WEBSITE</label><input id="tknMetaWebsite" type="text" placeholder="https://" class="font-mono text-xs" style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none"></div>
+          <div><label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:4px">TWITTER</label><input id="tknMetaTwitter" type="text" placeholder="@handle" class="font-mono text-xs" style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none"></div>
+          <div><label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:4px">TELEGRAM</label><input id="tknMetaTelegram" type="text" placeholder="https://t.me/..." class="font-mono text-xs" style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none"></div>
+          <div><label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:4px">GITHUB</label><input id="tknMetaGithub" type="text" placeholder="https://github.com/..." class="font-mono text-xs" style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none"></div>
+          <div><label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:4px">AUDIT URL</label><input id="tknMetaAudit" type="text" placeholder="https://" class="font-mono text-xs" style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none"></div>
+          <div><label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:4px">KYC URL</label><input id="tknMetaKyc" type="text" placeholder="https://" class="font-mono text-xs" style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none"></div>
+          <div><label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:4px">DECIMALS</label><input id="tknMetaDecimals" type="number" min="0" max="18" value="9" class="font-mono text-xs" style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none"></div>
+        </div>
+        <label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:4px">DESCRIPTION</label>
+        <textarea id="tknMetaDesc" rows="3" class="font-mono text-xs" style="width:100%;background:#0a1422;border:1px solid rgba(180,79,255,0.2);color:#fff;padding:8px 10px;outline:none;margin-bottom:14px;resize:vertical"></textarea>
+
+        <div id="tknStep5Status" class="font-mono text-xs" style="color:#6a8bad;margin-bottom:10px;word-break:break-all"></div>
+
+        <div style="display:flex;justify-content:space-between;gap:8px">
+          <button onclick="tknDsgGoStep(4)" class="font-mono text-xs" style="padding:8px 16px;background:transparent;border:1px solid rgba(180,79,255,0.3);color:var(--purple);cursor:pointer">← BACK</button>
+          <button onclick="tknDsgSaveMeta()" class="btn-cyan text-xs"><span>SIGN & SAVE METADATA</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── VERIFY PANEL ─── -->
+    <div id="tknPanelVerify" style="display:none">
+      <div class="card p-6 rounded-none mb-6" style="border-color:rgba(255,160,80,0.25)">
+        <label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:6px">COIN TYPE</label>
+        <input id="tknVerifyCoinType" type="text" placeholder="0xPACKAGE::module::SYMBOL" class="font-mono text-xs"
+          style="width:100%;background:#0a1422;border:1px solid rgba(255,160,80,0.2);color:#fff;padding:10px 12px;outline:none;margin-bottom:10px">
+        <label class="font-mono text-xs text-slate-400" style="display:block;margin-bottom:6px">WALLET</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input id="tknVerifyWallet" type="text" placeholder="0x..." class="font-mono text-xs"
+            style="flex:1;min-width:280px;background:#0a1422;border:1px solid rgba(255,160,80,0.2);color:#fff;padding:10px 12px;outline:none">
+          <button onclick="tknVerifyRun()" class="btn-cyan text-xs"><span>VERIFY</span></button>
+        </div>
+        <div id="tknVerifyStatus" class="font-mono text-xs" style="margin-top:10px;color:#6a8bad;word-break:break-all"></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</section>
+
 </main>
 
 <!-- ════════════════════════════════════════════════════════════════════
@@ -3707,7 +3929,7 @@ setInterval(() => {
   (function () {
     'use strict';
 
-    var VALID_ROUTES = ['home','token','setup','swap','arena','memeland','staking','trust','locker'];
+    var VALID_ROUTES = ['home','token','setup','swap','arena','memeland','staking','trust','locker','tokenomics'];
     var DEFAULT_ROUTE = 'home';
     // Pages that should hide the price bar (hero looks cleaner without it)
     var HIDE_PRICE_BAR = ['home'];
@@ -3756,7 +3978,8 @@ setInterval(() => {
         memeland: 'MemeLand — $AGENT',
         staking: 'Staking — $AGENT',
         trust: 'Trust — $AGENT',
-        locker: 'Locker — $AGENT'
+        locker: 'Locker — $AGENT',
+        tokenomics: 'Tokenomics — $AGENT'
       };
       document.title = titleMap[route] || titleMap.home;
     }
@@ -9020,5 +9243,581 @@ if (typeof _origConnect === 'function') {
 
 </script>
 <div class="cp-toast-wrap" id="cpToastWrap"></div>
+<!-- ════════════════════════════════════════════════════════════════════
+     TOKENOMICS — frontend module (vesting + dashboard)
+     ════════════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  'use strict';
+
+  const TOKENOMICS_API = (window.API_BASE || '') + '/tokenomics';
+  const DAY_MS = 86_400_000;
+
+  // ─── tiny helpers ────────────────────────────────────────────────
+  function $(id){ return document.getElementById(id); }
+  function setStatus(id, msg, color){ const el = $(id); if (!el) return; el.textContent = msg||''; if (color) el.style.color = color; }
+  function fmtAddr(a){ if (!a) return ''; return a.slice(0,8)+'…'+a.slice(-6); }
+  function fmtTs(ms){ try { return new Date(Number(ms)).toISOString().replace('T',' ').slice(0,16)+' UTC'; } catch(e){ return String(ms); } }
+  function fmtAmount(rawStr, decimals){
+    if (rawStr == null) return '0';
+    const d = Number(decimals || 0);
+    const s = String(rawStr);
+    if (d <= 0) return s;
+    const pad = s.padStart(d+1, '0');
+    const intp = pad.slice(0, pad.length-d);
+    const frac = pad.slice(pad.length-d).replace(/0+$/, '');
+    return frac ? intp+'.'+frac : intp;
+  }
+  function api(path, init){
+    return fetch(TOKENOMICS_API+path, init).then(async r => {
+      const j = await r.json().catch(()=>({error:'invalid json'}));
+      if (!r.ok) throw new Error(j.error || ('HTTP '+r.status));
+      return j;
+    });
+  }
+
+  // ─── sub-tab switcher ────────────────────────────────────────────
+  const TABS = ['browse','claim','designer','verify'];
+  window.tknSetTab = function(tab){
+    TABS.forEach(t => {
+      const panel = $('tknPanel'+t.charAt(0).toUpperCase()+t.slice(1));
+      const btn   = $('tknTabBtn'+t.charAt(0).toUpperCase()+t.slice(1));
+      if (panel) panel.style.display = (t === tab) ? '' : 'none';
+      if (btn) {
+        btn.style.borderBottomColor = (t === tab) ? 'var(--cyan)' : 'transparent';
+        btn.style.color             = (t === tab) ? 'var(--cyan)' : '#4a5568';
+      }
+    });
+  };
+
+  // ─── personal-message signing (uses wallet-standard) ─────────────
+  async function signPersonalMessage(message){
+    if (!window.connectedWallet) { await window.connectWallet(); }
+    if (!window.connectedWallet) throw new Error('Connect a wallet first');
+    const p = window.connectedProvider;
+    if (!p) throw new Error('Wallet provider unavailable — disconnect and reconnect.');
+    const account = p.accounts?.[0] || { address: window.connectedWallet.address };
+    const bytes = new TextEncoder().encode(message);
+    // Modern wallet-standard
+    const f1 = p.features?.['sui:signPersonalMessage'];
+    if (f1?.signPersonalMessage) {
+      const r = await f1.signPersonalMessage({ message: bytes, account });
+      return r.signature;
+    }
+    // Older wallet-standard
+    const f2 = p.features?.['sui:signMessage'];
+    if (f2?.signMessage) {
+      const r = await f2.signMessage({ message: bytes, account });
+      return r.signature;
+    }
+    throw new Error('Wallet does not support signPersonalMessage — try Slush or update your wallet.');
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // BROWSE
+  // ────────────────────────────────────────────────────────────────
+  window.tknBrowseLoad = async function(){
+    const id = $('tknBrowseSchedId').value.trim();
+    if (!/^0x[0-9a-fA-F]+$/.test(id)) { setStatus('tknBrowseStatus','Enter a valid 0x... id','#ff465a'); return; }
+    setStatus('tknBrowseStatus','Loading…','#6a8bad');
+    $('tknBrowseResult').innerHTML = '';
+    try {
+      const j = await api('/schedules/'+id);
+      let trust = null;
+      if (j.meta?.projectId) {
+        try { trust = await api('/projects/'+encodeURIComponent(j.meta.projectId)+'/trust-score'); } catch(_){}
+      }
+      $('tknBrowseResult').innerHTML = renderBrowse(j, trust);
+      setStatus('tknBrowseStatus','OK','var(--green)');
+    } catch(e){ setStatus('tknBrowseStatus','✗ '+e.message,'#ff465a'); }
+  };
+
+  function renderBrowse(j, trust){
+    const s = j.schedule || {};
+    const meta = j.meta || {};
+    const decimals = Number(meta.decimals ?? 0);
+    const verifiedBadge = j.verified
+      ? '<span class="font-mono text-xs" style="color:var(--green)">✓ VERIFIED</span>'
+      : '<span class="font-mono text-xs" style="color:#ffc864">UNVERIFIED</span>';
+    const finalizedBadge = s.finalized
+      ? '<span class="font-mono text-xs" style="color:var(--cyan)">● FINALIZED (immutable)</span>'
+      : '<span class="font-mono text-xs" style="color:#ffc864">○ DRAFT (mutable until finalize)</span>';
+    let html = '';
+    html += '<div class="card p-6 rounded-none mb-4">';
+    html += '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">';
+    html += '  <div class="font-orbitron text-lg font-bold text-white">'+escapeHtml(meta.label || meta.projectId || 'Schedule')+'</div>';
+    html += '  <div>'+verifiedBadge+' &nbsp; '+finalizedBadge+'</div>';
+    html += '</div>';
+    if (meta.description) html += '<p class="font-mono text-xs text-slate-400" style="margin-bottom:10px">'+escapeHtml(meta.description)+'</p>';
+    html += '<div class="font-mono text-xs" style="color:#6a8bad;line-height:1.8">';
+    html += 'Coin: <code style="color:var(--cyan)">'+escapeHtml(s.coinType||'')+'</code><br>';
+    html += 'Creator: '+fmtAddr(s.creator)+' &nbsp;·&nbsp; ';
+    html += '<a href="'+(j.suiscan||'#')+'" target="_blank" style="color:var(--cyan)">View on SuiScan ↗</a>';
+    html += '</div>';
+    if (trust) {
+      html += '<div style="margin-top:12px;padding:10px;border:1px solid rgba(0,245,255,0.15);background:rgba(0,245,255,0.04)">';
+      html += '<div class="font-mono text-xs" style="color:var(--cyan);font-weight:bold">TRUST SCORE: '+(trust.score||0)+' / 100</div>';
+      if (Array.isArray(trust.signals)) trust.signals.forEach(sig => {
+        const c = sig.pass ? 'var(--green)' : '#ffc864';
+        html += '<div class="font-mono text-xs" style="color:'+c+'">'+(sig.pass?'✓':'·')+' '+escapeHtml(sig.label||'')+'</div>';
+      });
+      html += '</div>';
+    }
+    if (Array.isArray(meta.allocations) && meta.allocations.length) {
+      html += '<div style="margin-top:12px"><div class="font-mono text-xs text-slate-400" style="margin-bottom:6px">DECLARED ALLOCATIONS</div>';
+      meta.allocations.forEach(a => {
+        html += '<div class="font-mono text-xs" style="color:#9ab">· '+escapeHtml(a.label||'')+' — '+escapeHtml(String(a.percent||a.amount||''))+'</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // Locks
+    const locks = j.locks || [];
+    html += '<div class="font-mono text-xs text-slate-400" style="margin:14px 0 8px">VESTING BUCKETS ('+locks.length+')</div>';
+    locks.forEach(L => {
+      const claimable = (L && j.locks) ? '' : '';
+      html += '<div class="card p-4 rounded-none mb-3" style="border-color:rgba(0,245,255,0.15)">';
+      html += '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px">';
+      html += '<div class="font-orbitron text-sm font-bold text-white">'+escapeHtml(L.label||'(unnamed)')+'</div>';
+      html += '<a href="https://suiscan.xyz/testnet/object/'+L.lockId+'" target="_blank" class="font-mono text-xs" style="color:var(--cyan)">'+fmtAddr(L.lockId)+' ↗</a>';
+      html += '</div>';
+      html += '<div class="font-mono text-xs" style="color:#9ab;margin-top:4px;line-height:1.7">';
+      html += 'Beneficiary: '+fmtAddr(L.beneficiary)+'<br>';
+      html += 'Amount: '+fmtAmount(L.totalAmount, decimals)+' &nbsp;·&nbsp; ';
+      html += 'TGE: '+(Number(L.tgeBps||0)/100).toFixed(2)+'%<br>';
+      html += 'Start: '+fmtTs(L.startMs)+' &nbsp;·&nbsp; ';
+      html += 'Cliff: '+(Number(L.cliffMs||0)/DAY_MS).toFixed(1)+'d &nbsp;·&nbsp; ';
+      html += 'Vesting: '+(Number(L.durationMs||0)/DAY_MS).toFixed(1)+'d';
+      html += '</div>';
+      html += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">';
+      html += '<button onclick="tknJumpToClaim(\''+L.lockId+'\')" class="font-mono text-xs" style="padding:5px 12px;background:transparent;border:1px solid rgba(0,255,136,0.3);color:var(--green);cursor:pointer">CLAIM →</button>';
+      html += '<a href="'+TOKENOMICS_API+'/locks/'+L.lockId+'/calendar.ics" class="font-mono text-xs" style="padding:5px 12px;background:transparent;border:1px solid rgba(180,79,255,0.3);color:var(--purple);cursor:pointer;text-decoration:none">📅 ICS</a>';
+      html += '</div>';
+      html += '</div>';
+    });
+    return html;
+  }
+
+  function escapeHtml(s){ return String(s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  window.tknJumpToClaim = function(lockId){
+    tknSetTab('claim');
+    $('tknClaimLockId').value = lockId;
+    tknClaimLoad();
+    window.scrollTo({ top: $('tokenomics').offsetTop, behavior: 'smooth' });
+  };
+
+  // ────────────────────────────────────────────────────────────────
+  // CLAIM
+  // ────────────────────────────────────────────────────────────────
+  let _tknClaimCurrent = null;
+  window.tknClaimLoad = async function(){
+    const id = $('tknClaimLockId').value.trim();
+    if (!/^0x[0-9a-fA-F]+$/.test(id)) { setStatus('tknClaimStatus','Enter a valid 0x... id','#ff465a'); return; }
+    setStatus('tknClaimStatus','Loading…','#6a8bad');
+    $('tknClaimResult').innerHTML = '';
+    try {
+      const j = await api('/locks/'+id);
+      _tknClaimCurrent = j;
+      // Try to get decimals from project metadata
+      let decimals = 0;
+      try {
+        const sched = await api('/schedules/'+j.lock.scheduleId);
+        decimals = Number(sched.meta?.decimals ?? 0);
+      } catch(_){}
+      $('tknClaimResult').innerHTML = renderClaim(j, decimals);
+      drawCurve('tknClaimCurve', j.curve, j.lock.startMs, j.lock.startMs + Number(j.lock.cliffMs) + Number(j.lock.durationMs));
+      setStatus('tknClaimStatus','OK','var(--green)');
+    } catch(e){ setStatus('tknClaimStatus','✗ '+e.message,'#ff465a'); }
+  };
+
+  function renderClaim(j, decimals){
+    const L = j.lock;
+    const claimableNow = j.claimableNow || '0';
+    const total = L.totalAmount || '0';
+    const claimed = L.claimed || '0';
+    let html = '';
+    html += '<div class="card p-6 rounded-none mb-4">';
+    html += '<div class="font-orbitron text-lg font-bold text-white" style="margin-bottom:6px">'+escapeHtml(L.label||'(unnamed)')+'</div>';
+    html += '<div class="font-mono text-xs" style="color:#6a8bad;line-height:1.8;margin-bottom:14px">';
+    html += 'Beneficiary: '+fmtAddr(L.beneficiary)+'<br>';
+    html += 'Coin: <code style="color:var(--cyan)">'+escapeHtml(L.coinType||'')+'</code><br>';
+    html += 'Total: '+fmtAmount(total, decimals)+' &nbsp;·&nbsp; ';
+    html += 'Claimed: '+fmtAmount(claimed, decimals)+' &nbsp;·&nbsp; ';
+    html += '<a href="'+(j.suiscan||'#')+'" target="_blank" style="color:var(--cyan)">SuiScan ↗</a>';
+    html += '</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px">';
+    html += '  <div style="padding:12px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.04)"><div class="font-mono text-xs text-slate-400">CLAIMABLE NOW</div><div class="font-orbitron text-lg font-bold" style="color:var(--green)">'+fmtAmount(claimableNow, decimals)+'</div></div>';
+    html += '  <div style="padding:12px;border:1px solid rgba(0,245,255,0.2)"><div class="font-mono text-xs text-slate-400">TGE %</div><div class="font-orbitron text-lg" style="color:var(--cyan)">'+(Number(L.tgeBps||0)/100).toFixed(2)+'%</div></div>';
+    html += '  <div style="padding:12px;border:1px solid rgba(180,79,255,0.2)"><div class="font-mono text-xs text-slate-400">VEST DURATION</div><div class="font-orbitron text-lg" style="color:var(--purple)">'+(Number(L.durationMs||0)/DAY_MS).toFixed(0)+' d</div></div>';
+    html += '</div>';
+
+    html += '<div style="border:1px solid rgba(0,245,255,0.15);background:#0a1422;padding:10px;margin-bottom:14px">';
+    html += '<div class="font-mono text-xs text-slate-400" style="margin-bottom:6px">UNLOCK CURVE</div>';
+    html += '<svg id="tknClaimCurve" viewBox="0 0 600 180" style="width:100%;height:180px;display:block"></svg>';
+    html += '</div>';
+
+    if (Array.isArray(j.milestones) && j.milestones.length) {
+      html += '<div class="font-mono text-xs text-slate-400" style="margin-bottom:4px">UPCOMING MILESTONES</div>';
+      j.milestones.slice(0,6).forEach(m => {
+        html += '<div class="font-mono text-xs" style="color:#9ab">· '+fmtTs(m.t)+' — '+escapeHtml(m.label||'')+(m.amount?(' ('+fmtAmount(m.amount, decimals)+')'):'')+'</div>';
+      });
+    }
+    html += '<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">';
+    html += '  <button onclick="tknDoClaim()" class="btn-cyan text-xs"'+(BigInt(claimableNow||'0')===0n?' disabled style="opacity:0.4"':'')+'><span>'+(BigInt(claimableNow||'0')===0n?'NOTHING TO CLAIM':'CLAIM '+fmtAmount(claimableNow, decimals))+'</span></button>';
+    html += '  <a href="'+TOKENOMICS_API+'/locks/'+L.lockId+'/calendar.ics" class="font-mono text-xs" style="padding:8px 16px;background:transparent;border:1px solid rgba(180,79,255,0.3);color:var(--purple);cursor:pointer;text-decoration:none">📅 ADD TO CALENDAR (.ics)</a>';
+    html += '</div>';
+    html += '<div id="tknClaimExecStatus" class="font-mono text-xs" style="margin-top:8px;color:#6a8bad;word-break:break-all"></div>';
+    html += '</div>';
+    return html;
+  }
+
+  window.tknDoClaim = async function(){
+    if (!_tknClaimCurrent) return;
+    const L = _tknClaimCurrent.lock;
+    const status = $('tknClaimExecStatus');
+    setStatus('tknClaimExecStatus','Connecting wallet…','#6a8bad');
+    try {
+      if (!window.connectedWallet) await window.connectWallet();
+      if (!window.connectedWallet) throw new Error('Wallet not connected');
+      setStatus('tknClaimExecStatus','Building TX…','#6a8bad');
+      const r = await api('/build-claim-tx', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ sender: window.connectedWallet.address, coinType: L.coinType, lockId: L.lockId }),
+      });
+      const txBytes = r.txBytes;
+      // Reconstruct Transaction from bytes — wallet expects either Transaction or base64 string
+      // Most wallets accept the base64 directly via signAndExecuteTransactionBlock; modern path expects Transaction obj.
+      // Easiest: import Transaction.from()
+      let Transaction = window.__SuiTransaction;
+      if (!Transaction) throw new Error('Sui SDK not loaded — refresh and try again');
+      const tx = Transaction.from(_b64ToBytes(txBytes));
+      setStatus('tknClaimExecStatus','Sign in your wallet…','#6a8bad');
+      const out = await window.signAndExecuteTx(tx);
+      const digest = out?.digest || out?.effects?.transactionDigest || '';
+      setStatus('tknClaimExecStatus','✓ Claimed! tx='+digest,'var(--green)');
+      // Refresh state
+      setTimeout(() => tknClaimLoad(), 2500);
+    } catch(e){ setStatus('tknClaimExecStatus','✗ '+e.message,'#ff465a'); }
+  };
+
+  function _b64ToBytes(b64){
+    const s = atob(b64);
+    const out = new Uint8Array(s.length);
+    for (let i=0; i<s.length; i++) out[i] = s.charCodeAt(i);
+    return out;
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // SVG curve renderer
+  // ────────────────────────────────────────────────────────────────
+  function drawCurve(svgId, curve, startMs, endMs){
+    const svg = $(svgId);
+    if (!svg || !Array.isArray(curve) || curve.length < 2) return;
+    const W = 600, H = 180, padL = 36, padR = 8, padT = 10, padB = 22;
+    const ts = curve.map(p => Number(p.t));
+    const us = curve.map(p => Number(BigInt(p.unlocked)));
+    const tMin = ts[0], tMax = ts[ts.length-1];
+    const uMax = Math.max(...us, 1);
+    const x = t => padL + ((W - padL - padR) * (t - tMin)) / Math.max(tMax - tMin, 1);
+    const y = u => H - padB - ((H - padT - padB) * u) / uMax;
+    const pts = curve.map(p => x(Number(p.t)) + ',' + y(Number(BigInt(p.unlocked)))).join(' ');
+    const now = Date.now();
+    const nowX = (now >= tMin && now <= tMax) ? x(now) : null;
+    let s = '';
+    s += '<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="transparent"/>';
+    // grid
+    for (let i=0;i<=4;i++) {
+      const yy = padT + i*((H-padT-padB)/4);
+      s += '<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="rgba(0,245,255,0.08)" stroke-width="1"/>';
+    }
+    // area under curve
+    s += '<polygon points="'+padL+','+(H-padB)+' '+pts+' '+(W-padR)+','+(H-padB)+'" fill="rgba(0,245,255,0.08)"/>';
+    s += '<polyline points="'+pts+'" fill="none" stroke="var(--cyan)" stroke-width="2"/>';
+    // axes
+    s += '<line x1="'+padL+'" y1="'+padT+'" x2="'+padL+'" y2="'+(H-padB)+'" stroke="rgba(255,255,255,0.2)"/>';
+    s += '<line x1="'+padL+'" y1="'+(H-padB)+'" x2="'+(W-padR)+'" y2="'+(H-padB)+'" stroke="rgba(255,255,255,0.2)"/>';
+    // now line
+    if (nowX !== null) {
+      s += '<line x1="'+nowX+'" y1="'+padT+'" x2="'+nowX+'" y2="'+(H-padB)+'" stroke="var(--green)" stroke-dasharray="4 3" stroke-width="1"/>';
+      s += '<text x="'+(nowX+4)+'" y="'+(padT+10)+'" fill="var(--green)" font-family="Share Tech Mono,monospace" font-size="10">NOW</text>';
+    }
+    // labels
+    s += '<text x="4" y="'+padT+'" fill="#6a8bad" font-family="Share Tech Mono,monospace" font-size="9">100%</text>';
+    s += '<text x="4" y="'+(H-padB)+'" fill="#6a8bad" font-family="Share Tech Mono,monospace" font-size="9">0%</text>';
+    s += '<text x="'+padL+'" y="'+(H-4)+'" fill="#6a8bad" font-family="Share Tech Mono,monospace" font-size="9">'+fmtTs(tMin).slice(0,10)+'</text>';
+    s += '<text x="'+(W-padR-72)+'" y="'+(H-4)+'" fill="#6a8bad" font-family="Share Tech Mono,monospace" font-size="9">'+fmtTs(tMax).slice(0,10)+'</text>';
+    svg.innerHTML = s;
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // DESIGNER
+  // ────────────────────────────────────────────────────────────────
+  const _dsg = {
+    coinType: '',
+    projectId: '',
+    scheduleId: '',
+    buckets: [],   // [{label, beneficiary, totalAmount, tgeBps, startMs, cliffMs, durationMs, lockId}]
+  };
+
+  window.tknDsgGoStep = function(n){
+    for (let i=1;i<=5;i++) {
+      const panel = $('tknStep'+i);
+      const ind   = $('tknStepInd'+i);
+      if (panel) panel.style.display = (i===n) ? '' : 'none';
+      if (ind) {
+        if (i===n) { ind.style.borderColor='var(--purple)'; ind.style.background='rgba(180,79,255,0.1)'; ind.style.color='var(--purple)'; }
+        else if (i<n) { ind.style.borderColor='rgba(0,255,136,0.4)'; ind.style.background='rgba(0,255,136,0.05)'; ind.style.color='var(--green)'; }
+        else { ind.style.borderColor='rgba(180,79,255,0.2)'; ind.style.background='transparent'; ind.style.color='#4a5568'; }
+      }
+    }
+    if (n===2) {
+      const ct = $('tknDsgCoinType').value.trim();
+      const pid = $('tknDsgProjectId').value.trim();
+      if (!ct || !pid) { alert('Fill coinType and projectId first'); tknDsgGoStep(1); return; }
+      if (!/^[a-zA-Z0-9_\-]{1,32}$/.test(pid)) { alert('projectId must be 1-32 chars [a-zA-Z0-9_-]'); tknDsgGoStep(1); return; }
+      _dsg.coinType = ct;
+      _dsg.projectId = pid;
+      setStatus('tknStep2Status', _dsg.scheduleId ? ('Schedule already set: '+_dsg.scheduleId) : '', '#6a8bad');
+    }
+    if (n===3) {
+      if (!_dsg.scheduleId) { alert('Create or paste a scheduleId first'); tknDsgGoStep(2); return; }
+      $('tknStep3Schedule').textContent = 'Schedule: '+_dsg.scheduleId;
+      tknDsgRenderBuckets();
+      tknDsgPreview();
+    }
+  };
+
+  window.tknDsgUseExisting = function(){
+    const v = $('tknDsgExistingSchedId').value.trim();
+    if (!/^0x[0-9a-fA-F]+$/.test(v)) { alert('Invalid 0x... id'); return; }
+    _dsg.scheduleId = v;
+    setStatus('tknStep2Status','Using existing schedule '+v,'var(--cyan)');
+  };
+
+  window.tknDsgCreateSchedule = async function(){
+    setStatus('tknStep2Status','Building TX…','#6a8bad');
+    try {
+      if (!window.connectedWallet) await window.connectWallet();
+      if (!window.connectedWallet) throw new Error('Wallet not connected');
+      const r = await api('/build-create-schedule-tx', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ sender: window.connectedWallet.address, coinType: _dsg.coinType, projectId: _dsg.projectId }),
+      });
+      const Transaction = window.__SuiTransaction;
+      if (!Transaction) throw new Error('Sui SDK not loaded');
+      const tx = Transaction.from(_b64ToBytes(r.txBytes));
+      setStatus('tknStep2Status','Sign in your wallet…','#6a8bad');
+      const out = await window.signAndExecuteTx(tx);
+      const digest = out?.digest || out?.effects?.transactionDigest || '';
+      // Find created VestingSchedule object
+      let createdId = null;
+      const created = out?.effects?.created || out?.objectChanges || [];
+      for (const c of created) {
+        const t = c.objectType || c.reference?.objectType || '';
+        if (t.includes('::vesting::VestingSchedule')) { createdId = c.objectId || c.reference?.objectId; break; }
+        if (!createdId && c.owner?.Shared) { createdId = c.reference?.objectId; }
+      }
+      if (createdId) _dsg.scheduleId = createdId;
+      setStatus('tknStep2Status','✓ Schedule created '+(createdId||'(check tx '+digest+')'),'var(--green)');
+      if (createdId) setTimeout(() => tknDsgGoStep(3), 1200);
+    } catch(e){ setStatus('tknStep2Status','✗ '+e.message,'#ff465a'); }
+  };
+
+  let _previewTimer = null;
+  window.tknDsgPreviewDebounced = function(){
+    clearTimeout(_previewTimer);
+    _previewTimer = setTimeout(tknDsgPreview, 250);
+  };
+
+  async function tknDsgPreview(){
+    const amount = $('tknDsgBkAmount').value.trim() || '0';
+    const tgePct = parseFloat($('tknDsgBkTge').value || '0');
+    const tgeBps = Math.round(Math.max(0, Math.min(100, tgePct)) * 100);
+    const startVal = $('tknDsgBkStart').value;
+    const startMs = startVal ? new Date(startVal).getTime() : Date.now();
+    const cliffMs = Math.max(0, parseInt($('tknDsgBkCliff').value || '0', 10)) * DAY_MS;
+    const durationMs = Math.max(0, parseInt($('tknDsgBkDuration').value || '0', 10)) * DAY_MS;
+    if (!/^\d+$/.test(amount) || amount === '0') {
+      $('tknDsgCurve').innerHTML = '';
+      $('tknDsgMilestones').textContent = 'Enter a positive integer amount to see the curve.';
+      return;
+    }
+    try {
+      const r = await api('/preview-curve', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ totalAmount: amount, tgeBps, startMs, cliffMs, durationMs, points: 60 }),
+      });
+      drawCurve('tknDsgCurve', r.curve, startMs, startMs + cliffMs + durationMs);
+      const ms = (r.milestones || []).slice(0,4).map(m => fmtTs(m.t).slice(0,16)+' '+(m.label||'')).join('  ·  ');
+      $('tknDsgMilestones').textContent = ms;
+    } catch(e){ $('tknDsgMilestones').textContent = '✗ '+e.message; }
+  }
+
+  window.tknDsgAddBucket = async function(){
+    const label = $('tknDsgBkLabel').value.trim();
+    const benef = $('tknDsgBkBenef').value.trim();
+    const amount = $('tknDsgBkAmount').value.trim();
+    const tgePct = parseFloat($('tknDsgBkTge').value || '0');
+    const tgeBps = Math.round(Math.max(0, Math.min(100, tgePct)) * 100);
+    const startVal = $('tknDsgBkStart').value;
+    const startMs = startVal ? new Date(startVal).getTime() : Date.now();
+    const cliffMs = Math.max(0, parseInt($('tknDsgBkCliff').value || '0', 10)) * DAY_MS;
+    const durationMs = Math.max(0, parseInt($('tknDsgBkDuration').value || '0', 10)) * DAY_MS;
+    if (!label || !benef || !amount) { setStatus('tknStep3Status','Fill label, beneficiary, amount','#ff465a'); return; }
+    if (!/^0x[0-9a-fA-F]+$/.test(benef)) { setStatus('tknStep3Status','Beneficiary must be 0x...','#ff465a'); return; }
+    if (!/^\d+$/.test(amount)) { setStatus('tknStep3Status','Amount must be a positive integer (raw, with decimals applied)','#ff465a'); return; }
+    setStatus('tknStep3Status','Building TX…','#6a8bad');
+    try {
+      if (!window.connectedWallet) await window.connectWallet();
+      const r = await api('/build-add-bucket-tx', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          sender: window.connectedWallet.address,
+          coinType: _dsg.coinType,
+          scheduleId: _dsg.scheduleId,
+          label, beneficiary: benef,
+          amountRaw: amount, tgeBps,
+          startMs, cliffMs, durationMs,
+        }),
+      });
+      const Transaction = window.__SuiTransaction;
+      const tx = Transaction.from(_b64ToBytes(r.txBytes));
+      setStatus('tknStep3Status','Sign in your wallet…','#6a8bad');
+      const out = await window.signAndExecuteTx(tx);
+      const digest = out?.digest || out?.effects?.transactionDigest || '';
+      // capture created Lock object id (best-effort across wallet return shapes)
+      let lockId = null;
+      const cands = [];
+      if (Array.isArray(out?.objectChanges)) cands.push(...out.objectChanges);
+      if (Array.isArray(out?.effects?.created)) cands.push(...out.effects.created);
+      for (const c of cands) {
+        const t = c.objectType || c.reference?.objectType || '';
+        if (t.includes('::vesting::Lock')) { lockId = c.objectId || c.reference?.objectId || null; if (lockId) break; }
+      }
+      // Fallback: re-fetch schedule and pick a lock not already known.
+      if (!lockId) {
+        try {
+          const sched = await api('/schedules/'+_dsg.scheduleId);
+          const known = new Set(_dsg.buckets.map(b => b.lockId).filter(Boolean));
+          const fresh = (sched.locks || []).filter(L => !known.has(L.lockId));
+          if (fresh.length === 1) lockId = fresh[0].lockId;
+          else if (fresh.length > 1) {
+            const match = fresh.find(L => (L.label||'') === label && Number(L.totalAmount) === Number(amount));
+            if (match) lockId = match.lockId;
+          }
+        } catch(_){}
+      }
+      _dsg.buckets.push({ label, beneficiary: benef, totalAmount: amount, tgeBps, startMs, cliffMs, durationMs, lockId, digest });
+      tknDsgRenderBuckets();
+      setStatus('tknStep3Status','✓ Bucket added (lock='+(lockId||'?')+')','var(--green)');
+      // clear amount/label for next entry
+      $('tknDsgBkLabel').value=''; $('tknDsgBkBenef').value=''; $('tknDsgBkAmount').value='';
+      tknDsgPreview();
+    } catch(e){ setStatus('tknStep3Status','✗ '+e.message,'#ff465a'); }
+  };
+
+  function tknDsgRenderBuckets(){
+    const wrap = $('tknDsgBucketsList');
+    if (!_dsg.buckets.length) { wrap.innerHTML = ''; return; }
+    let h = '<div class="font-mono text-xs text-slate-400" style="margin-bottom:6px">ADDED BUCKETS</div>';
+    _dsg.buckets.forEach((b,i) => {
+      h += '<div class="font-mono text-xs" style="padding:6px 10px;border-left:2px solid var(--green);background:rgba(0,255,136,0.04);margin-bottom:4px;color:#9ab">';
+      h += '#'+(i+1)+' · '+escapeHtml(b.label)+' → '+fmtAddr(b.beneficiary)+' · '+b.totalAmount+' raw · TGE '+(b.tgeBps/100).toFixed(2)+'% · cliff '+(b.cliffMs/DAY_MS)+'d · vest '+(b.durationMs/DAY_MS)+'d';
+      if (b.lockId) h += '<br>&nbsp;&nbsp;lock='+b.lockId;
+      h += '</div>';
+    });
+    wrap.innerHTML = h;
+  }
+
+  window.tknDsgFinalize = async function(){
+    setStatus('tknStep4Status','Building TX…','#6a8bad');
+    try {
+      if (!window.connectedWallet) await window.connectWallet();
+      const r = await api('/build-finalize-schedule-tx', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ sender: window.connectedWallet.address, coinType: _dsg.coinType, scheduleId: _dsg.scheduleId }),
+      });
+      const Transaction = window.__SuiTransaction;
+      const tx = Transaction.from(_b64ToBytes(r.txBytes));
+      setStatus('tknStep4Status','Sign in your wallet…','#6a8bad');
+      const out = await window.signAndExecuteTx(tx);
+      const digest = out?.digest || out?.effects?.transactionDigest || '';
+      setStatus('tknStep4Status','✓ Finalized (immutable). tx='+digest,'var(--green)');
+      setTimeout(() => tknDsgGoStep(5), 1200);
+    } catch(e){ setStatus('tknStep4Status','✗ '+e.message,'#ff465a'); }
+  };
+
+  window.tknDsgSaveMeta = async function(){
+    setStatus('tknStep5Status','Preparing signature…','#6a8bad');
+    try {
+      if (!window.connectedWallet) await window.connectWallet();
+      const wallet = window.connectedWallet.address;
+      const issuedAtMs = Date.now();
+      const challenge = 'tokenomics-claim-v1:'+_dsg.projectId+':'+_dsg.scheduleId+':'+issuedAtMs;
+      setStatus('tknStep5Status','Sign the message in your wallet…','#6a8bad');
+      const signature = await signPersonalMessage(challenge);
+      setStatus('tknStep5Status','Saving metadata…','#6a8bad');
+      const body = {
+        projectId: _dsg.projectId,
+        coinType: _dsg.coinType,
+        scheduleId: _dsg.scheduleId,
+        creatorWallet: wallet,
+        signature, issuedAtMs,
+        label:       $('tknMetaLabel').value.trim(),
+        description: $('tknMetaDesc').value.trim(),
+        website:     $('tknMetaWebsite').value.trim(),
+        twitter:     $('tknMetaTwitter').value.trim(),
+        telegram:    $('tknMetaTelegram').value.trim(),
+        github:      $('tknMetaGithub').value.trim(),
+        audit:       $('tknMetaAudit').value.trim(),
+        kyc:         $('tknMetaKyc').value.trim(),
+        decimals:    parseInt($('tknMetaDecimals').value || '0', 10),
+      };
+      const r = await api('/projects', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body),
+      });
+      setStatus('tknStep5Status','✓ Saved. verifyMethod='+(r.project?.verifyMethod||'?')+(r.claimedCoinMapping?' (you now own the public mapping for this coin)':''),'var(--green)');
+    } catch(e){ setStatus('tknStep5Status','✗ '+e.message,'#ff465a'); }
+  };
+
+  // ────────────────────────────────────────────────────────────────
+  // VERIFY
+  // ────────────────────────────────────────────────────────────────
+  window.tknVerifyRun = async function(){
+    const ct = $('tknVerifyCoinType').value.trim();
+    const w  = $('tknVerifyWallet').value.trim();
+    if (!ct || !w) { setStatus('tknVerifyStatus','Fill both fields','#ff465a'); return; }
+    setStatus('tknVerifyStatus','Checking…','#6a8bad');
+    try {
+      const r = await api('/verify-creator?coinType='+encodeURIComponent(ct)+'&wallet='+encodeURIComponent(w));
+      const ok = r.verified;
+      let msg = ok
+        ? ('✓ TreasuryCap holder. capId='+r.capId)
+        : '✗ Wallet does not hold TreasuryCap for this coin.';
+      msg += ' Method: '+(r.method||'-');
+      setStatus('tknVerifyStatus', msg, ok ? 'var(--green)' : '#ffc864');
+    } catch(e){ setStatus('tknVerifyStatus','✗ '+e.message,'#ff465a'); }
+  };
+
+  // ────────────────────────────────────────────────────────────────
+  // Init: default datetime-local to now, default sub-tab
+  // ────────────────────────────────────────────────────────────────
+  function initDefaults(){
+    const dt = $('tknDsgBkStart');
+    if (dt && !dt.value) {
+      const now = new Date(Date.now() - new Date().getTimezoneOffset()*60000);
+      dt.value = now.toISOString().slice(0,16);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDefaults);
+  } else { initDefaults(); }
+
+})();
+</script>
+
 </body>
 </html>
