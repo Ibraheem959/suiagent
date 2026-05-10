@@ -9615,9 +9615,8 @@ if (typeof _origConnect === 'function') {
     if (!/^0x[0-9a-fA-F]+$/.test(v)) { alert('Invalid 0x... id'); return; }
     _dsg.scheduleId = v;
     setStatus('tknStep2Status','Using existing schedule '+v,'var(--cyan)');
-  };
-
-  window.tknDsgCreateSchedule = async function(){
+    setTimeout(() => tknDsgGoStep(3), 400);
+  };  window.tknDsgCreateSchedule = async function(){
     setStatus('tknStep2Status','Building TX…','#6a8bad');
     try {
       if (!window.connectedWallet) await window.connectWallet();
@@ -9632,13 +9631,22 @@ if (typeof _origConnect === 'function') {
       setStatus('tknStep2Status','Sign in your wallet…','#6a8bad');
       const out = await _tknSignAndExecute(tx);
       const digest = out?.digest || out?.effects?.transactionDigest || '';
-      // Find created VestingSchedule object
+            // Find created VestingSchedule object.
+      // Prefer objectChanges (has full type strings) over effects.created (no type info).
       let createdId = null;
-      const created = out?.effects?.created || out?.objectChanges || [];
-      for (const c of created) {
-        const t = c.objectType || c.reference?.objectType || '';
-        if (t.includes('::vesting::VestingSchedule')) { createdId = c.objectId || c.reference?.objectId; break; }
-        if (!createdId && c.owner?.Shared) { createdId = c.reference?.objectId; }
+      if (out?.objectChanges?.length) {
+        for (const c of out.objectChanges) {
+          if ((c.objectType || '').includes('::vesting::VestingSchedule')) {
+            createdId = c.objectId; break;
+          }
+        }
+      }
+      if (!createdId && out?.effects?.created?.length) {
+        // Fallback: effects.created has no type info — VestingSchedule is the only
+        // non-gas shared object created in this tx, so take the first Shared owner.
+        for (const c of out.effects.created) {
+          if (c.owner?.Shared) { createdId = c.reference?.objectId; break; }
+        }
       }
       if (createdId) _dsg.scheduleId = createdId;
       setStatus('tknStep2Status','✓ Schedule created '+(createdId||'(check tx '+digest+')'),'var(--green)');
