@@ -1,5 +1,5 @@
 <!-- ════════════════════════════════════════════════════════════════════════════
-     SUI AGENT SITE — VERSION 7.0.0  (multi-page, mobile-first, screenshot-styled)
+     SUI AGENT SITE — VERSION 7.0.1  (multi-page, mobile-first, screenshot-styled)
      ──────────────────────────────────────────────────────────────────────────
      Tabs: #/home · #/token · #/setup · #/swap · #/lp · #/arena · #/memeland · #/trust · #/locker
      Architecture: SPA-style hash routing, 1 file deploy, zero JS regressions.
@@ -9611,11 +9611,12 @@ if (typeof _origConnect === 'function') {
   };
 
   window.tknDsgUseExisting = function(){
+    console.log('[v7.0.1] tknDsgUseExisting fired — if you see this, new code IS loaded');
     const v = $('tknDsgExistingSchedId').value.trim();
     if (!/^0x[0-9a-fA-F]+$/.test(v)) { alert('Invalid 0x... id'); return; }
     _dsg.scheduleId = v;
     setStatus('tknStep2Status','Using existing schedule '+v,'var(--cyan)');
-    setTimeout(() => tknDsgGoStep(3), 400);
+    setTimeout(() => { console.log('[v7.0.1] advancing to Step 3'); tknDsgGoStep(3); }, 400);
   };  window.tknDsgCreateSchedule = async function(){
     setStatus('tknStep2Status','Building TX…','#6a8bad');
     try {
