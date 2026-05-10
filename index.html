@@ -1,5 +1,5 @@
 <!-- ════════════════════════════════════════════════════════════════════════════
-     SUI AGENT SITE — VERSION 7.0.1  (multi-page, mobile-first, screenshot-styled)
+     SUI AGENT SITE — VERSION 7.0.2  (multi-page, mobile-first, screenshot-styled)
      ──────────────────────────────────────────────────────────────────────────
      Tabs: #/home · #/token · #/setup · #/swap · #/lp · #/arena · #/memeland · #/trust · #/locker
      Architecture: SPA-style hash routing, 1 file deploy, zero JS regressions.
@@ -3488,23 +3488,37 @@ setInterval(() => {
         <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
           <button onclick="tknDsgGoStep(2)" class="font-mono text-xs" style="padding:8px 16px;background:transparent;border:1px solid rgba(180,79,255,0.3);color:var(--purple);cursor:pointer">← BACK</button>
           <div style="display:flex;gap:8px">
-            <button onclick="tknDsgAddBucket()" class="btn-purple text-xs"><span>ADD BUCKET (SIGN TX)</span></button>
-            <button onclick="tknDsgGoStep(4)" class="font-mono text-xs" style="padding:8px 16px;background:transparent;border:1px solid rgba(0,245,255,0.3);color:var(--cyan);cursor:pointer">DONE — FINALIZE →</button>
+            <button onclick="tknDsgStageBucket()" class="btn-purple text-xs" title="Add this bucket to the list below. No transaction is signed yet."><span>+ ADD TO LIST</span></button>
           </div>
         </div>
 
-        <!-- existing buckets list -->
-        <div id="tknDsgBucketsList" style="margin-top:18px"></div>
+        <!-- WALLET GUARD BANNER -->
+        <div id="tknDsgWalletGuard3" class="font-mono text-xs" style="margin-top:14px"></div>
+
+        <!-- STAGED + ON-CHAIN BUCKETS LIST -->
+        <div id="tknDsgBucketsList" style="margin-top:14px"></div>
+
+        <!-- BATCH SIGN ROW -->
+        <div id="tknDsgBatchRow" style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+          <button id="tknDsgSignAllBtn" onclick="tknDsgSignAllBuckets()" class="btn-purple text-xs" style="display:none" title="Sign ONE transaction that adds all staged buckets at once."><span>✍ SIGN ALL & ADD ON-CHAIN (1 TX)</span></button>
+          <button onclick="tknDsgGoStep(4)" class="font-mono text-xs" style="padding:8px 16px;background:transparent;border:1px solid rgba(0,245,255,0.3);color:var(--cyan);cursor:pointer">DONE — FINALIZE →</button>
+        </div>
+
+        <!-- TX RECEIPT CARDS -->
+        <div id="tknDsgReceipts3" style="margin-top:14px"></div>
       </div>
 
       <!-- STEP 4: finalize -->
       <div id="tknStep4" class="card p-6 rounded-none" style="display:none">
         <h3 class="font-orbitron text-lg font-bold text-white mb-4">Step 4 — Finalize (immutable)</h3>
         <p class="font-mono text-xs" style="color:#ffc864;margin-bottom:14px">⚠ This is permanent. After finalize, no buckets can be added or removed. The contract enforces this on-chain.</p>
+        <div id="tknDsgWalletGuard4" class="font-mono text-xs" style="margin-bottom:10px"></div>
+        <div id="tknDsgFinalizeSummary" class="font-mono text-xs" style="margin-bottom:10px;color:#9ab"></div>
         <div id="tknStep4Status" class="font-mono text-xs" style="color:#6a8bad;margin-bottom:10px;word-break:break-all"></div>
+        <div id="tknDsgReceipts4" style="margin-bottom:10px"></div>
         <div style="display:flex;justify-content:space-between;gap:8px">
           <button onclick="tknDsgGoStep(3)" class="font-mono text-xs" style="padding:8px 16px;background:transparent;border:1px solid rgba(180,79,255,0.3);color:var(--purple);cursor:pointer">← BACK</button>
-          <button onclick="tknDsgFinalize()" class="btn-cyan text-xs"><span>FINALIZE & SIGN</span></button>
+          <button id="tknDsgFinalizeBtn" onclick="tknDsgFinalizeRequest()" class="btn-cyan text-xs"><span>FINALIZE & SIGN</span></button>
         </div>
       </div>
 
@@ -9605,8 +9619,13 @@ if (typeof _origConnect === 'function') {
     if (n===3) {
       if (!_dsg.scheduleId) { alert('Create or paste a scheduleId first'); tknDsgGoStep(2); return; }
       $('tknStep3Schedule').textContent = 'Schedule: '+_dsg.scheduleId;
+      tknDsgRenderWalletGuard('tknDsgWalletGuard3');
       tknDsgRenderBuckets();
       tknDsgPreview();
+    }
+    if (n===4) {
+      tknDsgRenderWalletGuard('tknDsgWalletGuard4');
+      tknDsgRenderFinalizeSummary();
     }
   };
 
@@ -9649,7 +9668,12 @@ if (typeof _origConnect === 'function') {
           if (c.owner?.Shared) { createdId = c.reference?.objectId; break; }
         }
       }
-      if (createdId) _dsg.scheduleId = createdId;
+      if (createdId) {
+        _dsg.scheduleId = createdId;
+        _dsg.creator = window.connectedWallet?.address || '';   // who must sign every later TX
+      }
+      // Render TX receipt card (A3)
+      tknDsgRenderTxReceipt('tknDsgReceipts3', { kind:'create_schedule', status:'success', digest, ids:[{label:'Schedule', id:createdId, kind:'VestingSchedule'}] });
       setStatus('tknStep2Status','✓ Schedule created '+(createdId||'(check tx '+digest+')'),'var(--green)');
       if (createdId) setTimeout(() => tknDsgGoStep(3), 1200);
     } catch(e){ setStatus('tknStep2Status','✗ '+e.message,'#ff465a'); }
@@ -9685,86 +9709,231 @@ if (typeof _origConnect === 'function') {
     } catch(e){ $('tknDsgMilestones').textContent = '✗ '+e.message; }
   }
 
-  window.tknDsgAddBucket = async function(){
-    const label = $('tknDsgBkLabel').value.trim();
-    const benef = $('tknDsgBkBenef').value.trim();
-    const amount = $('tknDsgBkAmount').value.trim();
+  console.log("[tknDsg v7.0.3] Phase 1 loaded: batch buckets + wallet guard + receipts + finalize safety");
+  // ─── v7.0.3 — Phase 1 batched bucket flow + wallet guard + receipts + finalize safety ───
+
+  // STAGE a bucket locally (no TX). Validates inputs, adds to _dsg.buckets with status='staged'.
+  window.tknDsgStageBucket = function(){
+    const label = ($('tknDsgBkLabel').value || '').trim();
+    const benef = ($('tknDsgBkBenef').value || '').trim();
+    const amount = ($('tknDsgBkAmount').value || '').trim();
     const tgePct = parseFloat($('tknDsgBkTge').value || '0');
-    const tgeBps = Math.round(Math.max(0, Math.min(100, tgePct)) * 100);
     const startVal = $('tknDsgBkStart').value;
+    const cliffDays = parseInt($('tknDsgBkCliff').value || '0', 10);
+    const durDays   = parseInt($('tknDsgBkDuration').value || '0', 10);
+    if (!label) return setStatus('tknStep3Status','✗ Label is required','#ff465a');
+    if (!/^0x[0-9a-fA-F]{1,64}$/.test(benef)) return setStatus('tknStep3Status','✗ Beneficiary must be a 0x-prefixed Sui address','#ff465a');
+    if (!/^\d+$/.test(amount) || amount === '0') return setStatus('tknStep3Status','✗ Amount must be a positive integer (raw, with decimals)','#ff465a');
+    if (!(tgePct >= 0 && tgePct <= 100)) return setStatus('tknStep3Status','✗ TGE % must be 0..100','#ff465a');
+    if (!(cliffDays >= 0)) return setStatus('tknStep3Status','✗ Cliff days must be >= 0','#ff465a');
+    if (!(durDays >= 0))   return setStatus('tknStep3Status','✗ Vesting duration must be >= 0','#ff465a');
     const startMs = startVal ? new Date(startVal).getTime() : Date.now();
-    const cliffMs = Math.max(0, parseInt($('tknDsgBkCliff').value || '0', 10)) * DAY_MS;
-    const durationMs = Math.max(0, parseInt($('tknDsgBkDuration').value || '0', 10)) * DAY_MS;
-    if (!label || !benef || !amount) { setStatus('tknStep3Status','Fill label, beneficiary, amount','#ff465a'); return; }
-    if (!/^0x[0-9a-fA-F]+$/.test(benef)) { setStatus('tknStep3Status','Beneficiary must be 0x...','#ff465a'); return; }
-    if (!/^\d+$/.test(amount)) { setStatus('tknStep3Status','Amount must be a positive integer (raw, with decimals applied)','#ff465a'); return; }
-    setStatus('tknStep3Status','Building TX…','#6a8bad');
+    _dsg.buckets.push({
+      label, beneficiary: benef, totalAmount: amount,
+      tgeBps: Math.round(tgePct * 100),
+      startMs, cliffMs: cliffDays * DAY_MS, durationMs: durDays * DAY_MS,
+      status: 'staged', lockId: null,
+    });
+    // Clear label + amount so user can type the next one quickly
+    $('tknDsgBkLabel').value = '';
+    $('tknDsgBkAmount').value = '';
+    setStatus('tknStep3Status','✓ Staged '+label+'. Add more or click SIGN ALL.','var(--cyan)');
+    tknDsgRenderBuckets();
+  };
+
+  // Remove a staged bucket (only allowed if status==='staged'; on-chain ones are locked).
+  window.tknDsgRemoveStaged = function(idx){
+    const b = _dsg.buckets[idx];
+    if (!b || b.status !== 'staged') return;
+    _dsg.buckets.splice(idx, 1);
+    tknDsgRenderBuckets();
+  };
+
+  // SIGN ALL — calls /build-add-buckets-batch-tx, signs once, parses lock IDs from objectChanges,
+  // assigns them to staged buckets in order. Atomic: all-or-nothing on chain.
+  window.tknDsgSignAllBuckets = async function(){
+    const staged = _dsg.buckets.map((b,i) => ({b,i})).filter(x => x.b.status === 'staged');
+    if (staged.length === 0) return setStatus('tknStep3Status','✗ No staged buckets to sign','#ff465a');
+    setStatus('tknStep3Status','Building batch TX for '+staged.length+' buckets…','#6a8bad');
     try {
       if (!window.connectedWallet) await window.connectWallet();
-      const r = await api('/build-add-bucket-tx', {
+      if (!window.connectedWallet) throw new Error('Wallet not connected');
+      // A2 wallet guard: refuse if connected wallet ≠ schedule creator
+      if (_dsg.creator && window.connectedWallet.address.toLowerCase() !== _dsg.creator.toLowerCase()) {
+        throw new Error('Wrong wallet. The schedule creator is '+fmtAddr(_dsg.creator)+' but you are connected as '+fmtAddr(window.connectedWallet.address)+'. Switch wallets in your extension.');
+      }
+      const r = await api('/build-add-buckets-batch-tx', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
           sender: window.connectedWallet.address,
           coinType: _dsg.coinType,
           scheduleId: _dsg.scheduleId,
-          label, beneficiary: benef,
-          amountRaw: amount, tgeBps,
-          startMs, cliffMs, durationMs,
+          buckets: staged.map(x => ({
+            label: x.b.label, beneficiary: x.b.beneficiary,
+            amountRaw: x.b.totalAmount, tgeBps: x.b.tgeBps,
+            startMs: x.b.startMs, cliffMs: x.b.cliffMs, durationMs: x.b.durationMs,
+          })),
         }),
       });
       const Transaction = window.__SuiTransaction;
+      if (!Transaction) throw new Error('Sui SDK not loaded');
       const tx = Transaction.from(_b64ToBytes(r.txBytes));
-      setStatus('tknStep3Status','Sign in your wallet…','#6a8bad');
+      setStatus('tknStep3Status','Sign in your wallet (1 signature for '+staged.length+' buckets)…','#6a8bad');
       const out = await _tknSignAndExecute(tx);
       const digest = out?.digest || out?.effects?.transactionDigest || '';
-      // capture created Lock object id (best-effort across wallet return shapes)
-      let lockId = null;
-      const cands = [];
-      if (Array.isArray(out?.objectChanges)) cands.push(...out.objectChanges);
-      if (Array.isArray(out?.effects?.created)) cands.push(...out.effects.created);
-      for (const c of cands) {
-        const t = c.objectType || c.reference?.objectType || '';
-        if (t.includes('::vesting::Lock')) { lockId = c.objectId || c.reference?.objectId || null; if (lockId) break; }
+      // Hard fail on Move abort
+      if (out?.effects?.status?.status === 'failure') {
+        throw new Error('Batch TX FAILED on-chain: '+(out.effects.status.error||'unknown')+' (digest '+digest+')');
       }
-      // Fallback: re-fetch schedule and pick a lock not already known.
-      if (!lockId) {
-        try {
-          const sched = await api('/schedules/'+_dsg.scheduleId);
-          const known = new Set(_dsg.buckets.map(b => b.lockId).filter(Boolean));
-          const fresh = (sched.locks || []).filter(L => !known.has(L.lockId));
-          if (fresh.length === 1) lockId = fresh[0].lockId;
-          else if (fresh.length > 1) {
-            const match = fresh.find(L => (L.label||'') === label && Number(L.totalAmount) === Number(amount));
-            if (match) lockId = match.lockId;
-          }
-        } catch(_){}
+      // Recover lock IDs from objectChanges in created order
+      const created = (out?.objectChanges || []).filter(c =>
+        c.type === 'created' && (c.objectType||'').includes('::vesting::Lock<')
+      );
+      if (created.length < staged.length) {
+        throw new Error('Batch TX returned but only '+created.length+'/'+staged.length+' Lock objects were created. The TX likely partially reverted. Digest: '+digest);
       }
-      _dsg.buckets.push({ label, beneficiary: benef, totalAmount: amount, tgeBps, startMs, cliffMs, durationMs, lockId, digest });
+      // Assign lock IDs to staged buckets in order
+      const lockIds = [];
+      for (let k = 0; k < staged.length; k++) {
+        const lockId = created[k].objectId;
+        _dsg.buckets[staged[k].i].lockId = lockId;
+        _dsg.buckets[staged[k].i].status = 'onchain';
+        lockIds.push({ label: staged[k].b.label, id: lockId, kind: 'Lock' });
+      }
+      // A3 receipt card
+      tknDsgRenderTxReceipt('tknDsgReceipts3', { kind:'add_buckets_batch', status:'success', digest, ids:lockIds });
+      setStatus('tknStep3Status','✓ '+staged.length+' buckets added on-chain in 1 TX','var(--green)');
       tknDsgRenderBuckets();
-      setStatus('tknStep3Status','✓ Bucket added (lock='+(lockId||'?')+')','var(--green)');
-      // clear amount/label for next entry
-      $('tknDsgBkLabel').value=''; $('tknDsgBkBenef').value=''; $('tknDsgBkAmount').value='';
-      tknDsgPreview();
-    } catch(e){ setStatus('tknStep3Status','✗ '+e.message,'#ff465a'); }
+    } catch(e){
+      tknDsgRenderTxReceipt('tknDsgReceipts3', { kind:'add_buckets_batch', status:'failed', error:e.message });
+      setStatus('tknStep3Status','✗ '+e.message,'#ff465a');
+    }
   };
 
+  // Status-aware bucket renderer. Shows STAGED (yellow, removable) vs ON-CHAIN (green, locked).
   function tknDsgRenderBuckets(){
-    const wrap = $('tknDsgBucketsList');
-    if (!_dsg.buckets.length) { wrap.innerHTML = ''; return; }
-    let h = '<div class="font-mono text-xs text-slate-400" style="margin-bottom:6px">ADDED BUCKETS</div>';
+    const wrap = $('tknDsgBucketsList'); if (!wrap) return;
+    const signBtn = $('tknDsgSignAllBtn');
+    if (!_dsg.buckets.length) {
+      wrap.innerHTML = '<div class="font-mono text-xs" style="color:#6a8bad;padding:8px 0">No buckets yet. Fill the form above and click + ADD TO LIST.</div>';
+      if (signBtn) signBtn.style.display = 'none';
+      return;
+    }
+    const stagedCount = _dsg.buckets.filter(b => b.status === 'staged').length;
+    if (signBtn) signBtn.style.display = stagedCount > 0 ? '' : 'none';
+    let h = '<div class="font-mono text-xs text-slate-400" style="margin-bottom:6px">BUCKETS ('+_dsg.buckets.length+' total · '+stagedCount+' awaiting signature)</div>';
     _dsg.buckets.forEach((b,i) => {
-      h += '<div class="font-mono text-xs" style="padding:6px 10px;border-left:2px solid var(--green);background:rgba(0,255,136,0.04);margin-bottom:4px;color:#9ab">';
-      h += '#'+(i+1)+' · '+escapeHtml(b.label)+' → '+fmtAddr(b.beneficiary)+' · '+b.totalAmount+' raw · TGE '+(b.tgeBps/100).toFixed(2)+'% · cliff '+(b.cliffMs/DAY_MS)+'d · vest '+(b.durationMs/DAY_MS)+'d';
-      if (b.lockId) h += '<br>&nbsp;&nbsp;lock='+b.lockId;
+      const onchain = b.status === 'onchain' && b.lockId;
+      const color = onchain ? 'var(--green)' : '#ffc864';
+      const bg    = onchain ? 'rgba(0,255,136,0.04)' : 'rgba(255,200,100,0.04)';
+      const badge = onchain ? '✓ ON-CHAIN' : '⏳ STAGED';
+      h += '<div class="font-mono text-xs" style="padding:8px 10px;border-left:2px solid '+color+';background:'+bg+';margin-bottom:4px;color:#9ab">';
+      h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">';
+      h += '<div><span style="color:'+color+';font-weight:bold">'+badge+'</span> · #'+(i+1)+' · '+escapeHtml(b.label)+' → '+fmtAddr(b.beneficiary)+'</div>';
+      if (!onchain) h += '<button onclick="tknDsgRemoveStaged('+i+')" class="font-mono text-xs" style="background:transparent;border:1px solid rgba(255,70,90,0.4);color:#ff465a;padding:2px 8px;cursor:pointer">✗ remove</button>';
+      h += '</div>';
+      h += '<div style="margin-top:4px;color:#6a8bad">'+b.totalAmount+' raw · TGE '+(b.tgeBps/100).toFixed(2)+'% · cliff '+(b.cliffMs/DAY_MS)+'d · vest '+(b.durationMs/DAY_MS)+'d</div>';
+      if (b.lockId) h += '<div style="margin-top:4px"><span style="color:var(--green)">lock=</span><code style="color:var(--cyan)">'+b.lockId+'</code></div>';
       h += '</div>';
     });
     wrap.innerHTML = h;
   }
 
+  // A2: render the wallet guard banner. Compares connected wallet vs _dsg.creator.
+  window.tknDsgRenderWalletGuard = function(targetId){
+    const el = $(targetId); if (!el) return;
+    const conn = window.connectedWallet?.address || null;
+    const need = _dsg.creator || null;
+    if (!conn) {
+      el.innerHTML = '<div style="padding:8px 10px;border:1px solid rgba(255,200,100,0.4);background:rgba(255,200,100,0.05);color:#ffc864">⚠ No wallet connected. Click CONNECT in the top-right before signing.</div>';
+      return;
+    }
+    if (!need) {
+      el.innerHTML = '<div style="padding:8px 10px;border:1px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.05);color:var(--cyan)">🔒 Connected: <code>'+conn+'</code></div>';
+      return;
+    }
+    const ok = conn.toLowerCase() === need.toLowerCase();
+    if (ok) {
+      el.innerHTML = '<div style="padding:8px 10px;border:1px solid rgba(0,255,136,0.4);background:rgba(0,255,136,0.05);color:var(--green)">✓ Correct wallet. You are signing as the schedule creator: <code>'+fmtAddr(conn)+'</code></div>';
+    } else {
+      el.innerHTML = '<div style="padding:10px 12px;border:1px solid rgba(255,70,90,0.5);background:rgba(255,70,90,0.08);color:#ff465a"><b>✗ WRONG WALLET</b><br>Schedule creator: <code>'+need+'</code><br>You are connected as: <code>'+conn+'</code><br>Switch in your wallet extension before signing — TX will revert otherwise.</div>';
+    }
+  };
+
+  // A3: render a TX receipt card with copy buttons + SuiVision links.
+  window.tknDsgRenderTxReceipt = function(targetId, { kind, status, digest, ids = [], error = '' }){
+    const el = $(targetId); if (!el) return;
+    const success = status === 'success';
+    const color = success ? 'var(--green)' : '#ff465a';
+    const bg    = success ? 'rgba(0,255,136,0.04)' : 'rgba(255,70,90,0.06)';
+    let h = '<div style="padding:10px 12px;border:1px solid '+color+';background:'+bg+';margin-bottom:8px">';
+    h += '<div class="font-mono text-xs" style="color:'+color+';font-weight:bold;margin-bottom:6px">'+(success?'✓':'✗')+' '+kind.replace(/_/g,' ').toUpperCase()+'</div>';
+    if (digest) {
+      h += '<div class="font-mono text-xs" style="color:#9ab;margin-bottom:4px">';
+      h += 'TX digest: <code style="color:var(--cyan);word-break:break-all">'+digest+'</code> ';
+      h += '<button onclick="navigator.clipboard.writeText(\''+digest+'\')" style="background:transparent;border:1px solid rgba(0,245,255,0.3);color:var(--cyan);padding:1px 6px;cursor:pointer;font-size:10px">copy</button> ';
+      h += '<a href="https://suivision.xyz/txblock/'+digest+'?network=testnet" target="_blank" style="color:var(--cyan);margin-left:6px">testnet ↗</a> · ';
+      h += '<a href="https://suivision.xyz/txblock/'+digest+'" target="_blank" style="color:var(--cyan)">mainnet ↗</a>';
+      h += '</div>';
+    }
+    for (const o of ids) {
+      if (!o.id) continue;
+      h += '<div class="font-mono text-xs" style="color:#9ab;margin-bottom:3px">';
+      h += (o.kind||'Object')+' ('+escapeHtml(o.label||'')+'): <code style="color:var(--cyan);word-break:break-all">'+o.id+'</code> ';
+      h += '<button onclick="navigator.clipboard.writeText(\''+o.id+'\')" style="background:transparent;border:1px solid rgba(0,245,255,0.3);color:var(--cyan);padding:1px 6px;cursor:pointer;font-size:10px">copy</button> ';
+      h += '<a href="https://suivision.xyz/object/'+o.id+'?network=testnet" target="_blank" style="color:var(--cyan);margin-left:4px">↗</a>';
+      h += '</div>';
+    }
+    if (error) h += '<div class="font-mono text-xs" style="color:#ff465a;margin-top:6px;word-break:break-word">'+escapeHtml(error)+'</div>';
+    h += '</div>';
+    el.innerHTML = h + el.innerHTML; // newest receipt on top
+  };
+
+  // Renders a summary on Step 4 + decides whether FINALIZE button is enabled.
+  window.tknDsgRenderFinalizeSummary = function(){
+    const el = $('tknDsgFinalizeSummary'); const btn = $('tknDsgFinalizeBtn');
+    if (!el) return;
+    const onchain = _dsg.buckets.filter(b => b.status === 'onchain' && b.lockId);
+    const staged  = _dsg.buckets.filter(b => b.status === 'staged');
+    if (onchain.length === 0) {
+      el.innerHTML = '<div style="padding:10px 12px;border:1px solid rgba(255,70,90,0.5);background:rgba(255,70,90,0.08);color:#ff465a"><b>✗ Cannot finalize: this schedule has 0 buckets on-chain.</b><br>Go back to Step 3 and sign at least 1 bucket first. Finalizing an empty schedule creates a permanently dead schedule.</div>';
+      if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed'; }
+      return;
+    }
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
+    let h = '<div style="padding:10px 12px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.04)">';
+    h += '<div style="color:var(--green);font-weight:bold;margin-bottom:6px">Ready to finalize '+onchain.length+' bucket'+(onchain.length===1?'':'s')+' on-chain</div>';
+    if (staged.length > 0) {
+      h += '<div style="color:#ffc864;margin-bottom:6px">⚠ '+staged.length+' staged bucket'+(staged.length===1?' is':'s are')+' NOT yet on-chain — they will be lost if you finalize now. Go back and SIGN ALL first.</div>';
+    }
+    let total = 0n;
+    for (const b of onchain) { try { total += BigInt(b.totalAmount); } catch{} }
+    h += '<div style="color:#9ab">Total tokens to be locked: <code style="color:var(--cyan)">'+total.toString()+'</code> raw</div>';
+    h += '</div>';
+    el.innerHTML = h;
+  };
+
+  // D1: typed-confirmation modal before finalize.
+  window.tknDsgFinalizeRequest = function(){
+    const onchain = _dsg.buckets.filter(b => b.status === 'onchain' && b.lockId);
+    if (onchain.length === 0) { setStatus('tknStep4Status','✗ Refusing to finalize: 0 buckets on-chain','#ff465a'); return; }
+    const conn = window.connectedWallet?.address || '';
+    if (_dsg.creator && conn.toLowerCase() !== _dsg.creator.toLowerCase()) {
+      setStatus('tknStep4Status','✗ Wrong wallet. Switch to creator '+fmtAddr(_dsg.creator),'#ff465a'); return;
+    }
+    const ans = window.prompt('⚠ FINAL CONFIRMATION ⚠\\n\\nYou are about to permanently finalize a schedule with '+onchain.length+' bucket'+(onchain.length===1?'':'s')+'.\\n\\nThis CANNOT be undone. After this, no more buckets can be added.\\n\\nType FINALIZE (all caps) to confirm, or cancel:');
+    if (ans !== 'FINALIZE') { setStatus('tknStep4Status','Cancelled','#ffc864'); return; }
+    tknDsgFinalize();
+  };
+
   window.tknDsgFinalize = async function(){
     setStatus('tknStep4Status','Building TX…','#6a8bad');
     try {
       if (!window.connectedWallet) await window.connectWallet();
+      if (!window.connectedWallet) throw new Error('Wallet not connected');
+      if (_dsg.creator && window.connectedWallet.address.toLowerCase() !== _dsg.creator.toLowerCase()) {
+        throw new Error('Wrong wallet. Schedule creator is '+fmtAddr(_dsg.creator)+'; you are '+fmtAddr(window.connectedWallet.address));
+      }
       const r = await api('/build-finalize-schedule-tx', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ sender: window.connectedWallet.address, coinType: _dsg.coinType, scheduleId: _dsg.scheduleId }),
@@ -9774,9 +9943,16 @@ if (typeof _origConnect === 'function') {
       setStatus('tknStep4Status','Sign in your wallet…','#6a8bad');
       const out = await _tknSignAndExecute(tx);
       const digest = out?.digest || out?.effects?.transactionDigest || '';
+      if (out?.effects?.status?.status === 'failure') {
+        throw new Error('Finalize TX FAILED on-chain: '+(out.effects.status.error||'unknown')+' (digest '+digest+')');
+      }
+      tknDsgRenderTxReceipt('tknDsgReceipts4', { kind:'finalize_schedule', status:'success', digest, ids:[{label:'Schedule', id:_dsg.scheduleId, kind:'VestingSchedule'}] });
       setStatus('tknStep4Status','✓ Finalized (immutable). tx='+digest,'var(--green)');
       setTimeout(() => tknDsgGoStep(5), 1200);
-    } catch(e){ setStatus('tknStep4Status','✗ '+e.message,'#ff465a'); }
+    } catch(e){
+      tknDsgRenderTxReceipt('tknDsgReceipts4', { kind:'finalize_schedule', status:'failed', error:e.message });
+      setStatus('tknStep4Status','✗ '+e.message,'#ff465a');
+    }
   };
 
   window.tknDsgSaveMeta = async function(){
